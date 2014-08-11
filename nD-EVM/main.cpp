@@ -33,7 +33,7 @@ void insertVertex(trieNode **rootNode,double * inputKey,int length);
 void printTrie(trieNode *currentNode,double **key, int dim);
 void printTrie(trieNode *currentNode);
 string vectorToString(double **vector,int size);
-bool removeVertex(trieNode **prevNode,trieNode **currentNode,double *key);
+bool removeVertex(trieNode **prevNode,trieNode **currentNode,double *key,int currentDim);
 void removeVertex(trieNode **currentNode,double *key);
 trieNode *cloneTrie(trieNode **originalRootNode);
 void cloneTrie(trieNode **prevNode,trieNode **currentNode,trieNode **copyPrevNode,trieNode **copyCurrentNode);
@@ -263,20 +263,27 @@ void printTrie(trieNode *currentNode,double **key, int dim){
     }
 }
 
-/*Método Principal Recursivo para Imprimir en consola el contenido de un árbol trie.
+/*Método Auxiliar para obtener el Tamaño de un árbol trie.
  * Argumentos:
  * -Nodo raíz.
- * -Apuntador doble, para almacenar los elementos del trie
- * -Dimension actual
 */
 double EVMSize(trieNode *rootNode){
     double size = 0.0;
+    if((rootNode) == NULL){   //que el arbol no este vacio
+        return 0.0;
+    }
     EVMSize(rootNode,&size);
     return size;
 }
 
+/*Método Principal Recursivo para obtener el Tamaño de un árbol trie.
+ * Argumentos:
+ * -Nodo raíz.
+ * -apuntador al tamaño del arbol
+*/
 void EVMSize(trieNode *currentNode,double *size){
-    if((currentNode) == NULL){   //que el arbol no este vacio
+    //Si se llega a un nodo hoja
+    if((currentNode) == NULL){
         *size = (*size) +1;
         return;
     }
@@ -288,26 +295,40 @@ void EVMSize(trieNode *currentNode,double *size){
     }
 }
 
+/*Método Auxiliar para comparar dos árboles trie.
+ * Argumentos:
+ * -Nodo raíz del primer arbol.
+ * -Nodo raíz del segundo arbol.
+*/
 bool compareTrie(trieNode **currentNode,trieNode **otherCurrentNode){
-    bool compare = true;
-    compareTrie(currentNode,otherCurrentNode,&compare);
-    return compare;
+    bool compare1 = true, compare2 = true;
+    compareTrie(currentNode,otherCurrentNode,&compare1);
+    compareTrie(otherCurrentNode,currentNode,&compare2);
+    return compare1 and compare2;
 }
 
+/*Método Principal Recursivo para comparar dos árboles trie.
+ * Argumentos:
+ * -Nodo raíz del primer arbol.
+ * -Nodo raíz del segundo arbol.
+ * -Apuntador a la variable con el valor de comparación.
+*/
 void compareTrie(trieNode **currentNode,trieNode **otherCurrentNode,bool *compare){
+    //Si en alguna llamada son diferentes
     if((*compare) == false)
         return;
     
-    if((*currentNode) == NULL and (*otherCurrentNode) == NULL){//Si el arbol esta vacio
+    //Si en alguna llamada ambos árboles estan vacíos
+    if((*currentNode) == NULL and (*otherCurrentNode) == NULL){
         (*compare) = true;
         return;
     }else{        
-        if((*currentNode)->dimDepth != (*otherCurrentNode)->dimDepth and (*currentNode)->value != (*otherCurrentNode)->value){
+        if((*currentNode)->value != (*otherCurrentNode)->value){
             (*compare) = false;
             return;
         }
-
-        if((*currentNode)->nextDim != NULL){//Si no es nodo hoja, explorar la siguiente dimension
+        //Si no es nodo hoja, explorar la siguiente dimension
+        if((*currentNode)->nextDim != NULL){
             if((*otherCurrentNode)->nextDim != NULL)
                 compareTrie(&(*currentNode)->nextDim,&(*otherCurrentNode)->nextDim,compare);
             else{
@@ -342,6 +363,10 @@ void compareTrie(trieNode **currentNode,trieNode **otherCurrentNode,bool *compar
     (*compare) = true;
 }
 
+/*Método Auxiliar para clonar un árbol trie.
+ * Argumentos:
+ * -Nodo raíz del arbol original.
+*/
 trieNode *cloneTrie(trieNode **originalRootNode){
     trieNode *copyRootNode = NULL;
     trieNode *prevNode = NULL;
@@ -351,6 +376,13 @@ trieNode *cloneTrie(trieNode **originalRootNode){
     return copyRootNode;
 }
 
+/*Método Principal Recursivo para clonar un árbol trie.
+ * Argumentos:
+ * -Nodo previo del arbol original.
+ * -Nodo raíz del arbol original.
+ * -Nodo previo del arbol copia.
+ * -Nodo raíz del arbol copia.
+*/
 void cloneTrie(trieNode **prevNode,trieNode **currentNode,trieNode **copyPrevNode,trieNode **copyCurrentNode){
     if((*currentNode) == NULL){//Si el arbol esta vacio
         return;
@@ -378,88 +410,125 @@ void cloneTrie(trieNode **prevNode,trieNode **currentNode,trieNode **copyPrevNod
     }
 }
 
+/*Método Auxiliar para remover un vertice de un árbol trie.
+ * Argumentos:
+ * -Nodo raíz del arbol.
+ * -Apuntador al vector del elemento a eliminar.
+*/
 void removeVertex(trieNode **rootNode,double *key){
     trieNode * prevNode = NULL;
-    removeVertex(&prevNode,rootNode,key);
+    removeVertex(&prevNode,rootNode,key,0);
 }
 
-bool removeVertex(trieNode **prevNode,trieNode **currentNode,double *key){
+/*Método Principal Recursivo para remover un vertice de un árbol trie.
+ * Argumentos:
+ * -Nodo previo.
+ * -Nodo raíz del arbol.
+ * -Apuntador al vector del elemento a eliminar.
+*/
+bool removeVertex(trieNode **prevNode,trieNode **currentNode,double *key,int currentDim){
+    //Si se llega al un nodo hoja, entonces si existe el vertice
+    //Si el arbol esta vacio desde el inicio, no habra llamada recursiva que haga algo con este valor TRUE
     if((*currentNode) == NULL)
         return true;
-    else//Explorar en la dimension actual
-        //No existe el nodo, hay un nodo con un valor mayor
-        if((*currentNode)->value > key[(*currentNode)->dimDepth])
-            return false;
-        else
-            if((*currentNode)->value == key[(*currentNode)->dimDepth])//Evaluar el nodo actual
+
+    //Si hay un nodo con un valor mayor en la dimension actual, entonces no existe el nodo
+    if((*currentNode)->value > key[currentDim])
+        return false;
+
+    //Si el nodo actual tiene un valor igual en la dimension actual
+    if((*currentNode)->value == key[currentDim])
+    {
+        //Si el valor devuelto por la llamada recursiva es true, entonces se puede intentar eliminar el nodo actual
+        if(removeVertex(currentNode,&(*currentNode)->nextDim,key,currentDim+1))
+        {
+            //Si se llega por profundidad
+            if((*prevNode)->nextDim == (*currentNode)) 
             {
-                if(removeVertex(currentNode,&(*currentNode)->nextDim,key))//Explorar la siguiente dimension
+                //Si no hay mas nodos a la derecha
+                if((*currentNode)->nextTrieNode == NULL)
                 {
-                    if((*prevNode)->nextDim == (*currentNode)) //Si se llega por profundidad
-                    {
-                        if((*currentNode)->nextTrieNode == NULL)    //No hay mas nodos a la derecha
-                        {
-                            delete *currentNode;
-                            *currentNode = NULL;
-                            return true;    //Intentar eliminar nodo padre
-                        }else
-                        {
-                            trieNode *node = (*currentNode)->nextTrieNode;
-                            delete *currentNode;
-                            *currentNode = NULL;
-                            (*prevNode)->nextDim = node;//Que apunte al siguiente nodo en la misma dimension
-                            return false;   //Nodo padre no puede ser eliminado
-                        }
-                    }else
-                    {
-                        //Se llega por amplitud, busqueda en la misma dimension
-                        if((*currentNode)->nextTrieNode == NULL)    //No hay mas nodos a la derecha
-                        {
-                            delete *currentNode;
-                            *currentNode = NULL;
-                        }else
-                        {
-                            trieNode *node = (*currentNode)->nextTrieNode;
-                            delete *currentNode;
-                            *currentNode = NULL;
-                            (*prevNode)->nextTrieNode= node;//Que apunte al siguiente nodo en la dimension actual
-                        }
-                        return false;
-                    }
-                }  
+                    delete *currentNode;
+                    *currentNode = NULL;
+                    return true;    //Intentar eliminar nodo padre
+                }else
+                {
+                    trieNode *node = (*currentNode)->nextTrieNode;
+                    delete *currentNode;
+                    *currentNode = NULL;
+                    (*prevNode)->nextDim = node;//Que apunte al siguiente nodo en la misma dimension
+                    return false;   //Nodo padre no puede ser eliminado
+                }
+            }else
+            {
+                //Si se llega por amplitud, busqueda en la misma dimension
+                //No hay mas nodos a la derecha
+                if((*currentNode)->nextTrieNode == NULL)    
+                {
+                    delete *currentNode;
+                    *currentNode = NULL;
+                }else
+                {
+                    trieNode *node = (*currentNode)->nextTrieNode;
+                    delete *currentNode;
+                    *currentNode = NULL;
+                    (*prevNode)->nextTrieNode= node;//Que apunte al siguiente nodo en la dimension actual
+                }
+                //Nodo padre no puede ser eliminado
+                return false;
             }
-                            
-    while((*currentNode)->nextTrieNode != NULL)//Explorar en la dimension actual
-        return removeVertex(currentNode,&(*currentNode)->nextTrieNode,key);
+        }  
+    }
+
+    if((*currentNode)->nextTrieNode != NULL)//Explorar en la dimension actual
+        return removeVertex(currentNode,&(*currentNode)->nextTrieNode,key,currentDim);
     
     return false;//No se hallo el valor para la dimension actual
 }
 
+/*Método Auxiliar para verificar que un vertice exista en un árbol trie.
+ * Argumentos:
+ * -Nodo raíz del arbol.
+ * -Apuntador al vector del vertice.
+ * -Tamaño del vector.
+*/
 bool existsVertex(trieNode **rootNode,double * inputKey,int length){
-    //trieNode * prevNode = NULL;
     return existsVertex(rootNode,inputKey,length,0);
 }
 
+/*Método Principal Recursivo para verificar que un vertice exista en un árbol trie.
+ * Argumentos:
+ * -Nodo raíz del arbol.
+ * -Apuntador al vector del vertice.
+ * -Tamaño del vector.
+ * -Dimension Actual.
+*/
 bool existsVertex(trieNode **currentNode,double * inputKey,int length,int currentDim){
-    //Se inicia desde el root.
-    //currentDim inicia desde cero, es la posicion de la dimension actual en el array
+    //Si se llega a explorar hasta el punto donde la dimension actual no es menor que el tamaño del arreglo (0,1,...,n),
+    //entonces el vertice si existe
     if(!(currentDim < length))
-        return true;   //El vertice ya existe
+        return true;   //El vertice si existe
     
     if(*currentNode == NULL){
-        return false;    //El vertice es nuevo
+        return false;    //El vertice no existe
     }else{
-        if((*currentNode)->value == inputKey[currentDim]){//Si existe un nodo igual en la dimension actual, explorar siguiente dimension
+        //Si el nodo actual tiene un valor igual en la dimension actual, explorar siguiente dimension
+        if((*currentNode)->value == inputKey[currentDim]){
             return existsVertex(&((*currentNode)->nextDim),inputKey,length, currentDim+1);
         }else    
-            if((*currentNode)->value > inputKey[currentDim]){//Si esxiste un valor mayor en la dimension actual, entonces no existe
+            //Si eñ nodo actual tiene un valor mayor en la dimension actual, entonces no existe
+            if((*currentNode)->value > inputKey[currentDim]){
                 return false;
             }else   //Se explora otro nodo en la dimension actual
                 return existsVertex(&((*currentNode)->nextTrieNode),inputKey,length, currentDim);
     }
 }
 
-/*****************************************************SubTrie*/
+/*Método para obtener un sub-árbol trie de otro, usando un valor como referencia.
+ * Argumentos:
+ * -Nodo raíz del arbol.
+ * -Valor.
+*/
 trieNode *getSubTrie(trieNode **currentNode,double key){
     if((*currentNode) == NULL)
         return NULL;
@@ -476,6 +545,11 @@ trieNode *getSubTrie(trieNode **currentNode,double key){
         return NULL;
 }
 
+/*Método para obtener un sub-árbol trie de otro, usando un contador como referencia.
+ * Argumentos:
+ * -Nodo raíz del arbol.
+ * -Valor del contador.
+*/
 trieNode *getSubTrie2(trieNode **currentNode,double key){
     if((*currentNode) == NULL)
         return NULL;
@@ -484,19 +558,34 @@ trieNode *getSubTrie2(trieNode **currentNode,double key){
         return (*currentNode)->nextDim;
 
     if((*currentNode)->nextTrieNode != NULL)//Explorar en la dimension actual
-        return getSubTrie(&(*currentNode)->nextTrieNode,key-1);
+        return getSubTrie2(&(*currentNode)->nextTrieNode,key-1);
     else
         return NULL;   
 }
 
+/*Método para realizar la operación XOR de dos tries.
+ * Argumentos:
+ * -Nodo raíz del primer arbol trie.
+ * -Nodo raíz del segundo arbol trie.
+ * -Dimensión.
+*/
 trieNode *XORTrie(trieNode **firstTrie, trieNode **secondTrie,int dim){
     trieNode *resultTrie = NULL;
+    //Se clona el primer trie.
     resultTrie = cloneTrie(firstTrie);
-    double *key = new double[dim];
+    double *key = new double[dim];  //ELIMINAR
+    //Se realiza la inserción de los elementos del segundo trie en el clon del primero.
     XORTrie(&resultTrie,secondTrie,&key,0);
     return resultTrie;
 }
 
+/*Método Principal Recursivo para realizar la operación XOR de dos tries.
+ * Argumentos:
+ * -Nodo raíz del primer arbol trie.
+ * -Nodo raíz del segundo arbol trie.
+ * -Apuntador doble del vector para almacenar los elementos.
+ * -Dimensión.
+*/
 void XORTrie(trieNode **resultTrie,trieNode **currentNode,double **key,int dim){
     if((*currentNode) == NULL){//Si el arbol esta vacio
         //cout<<vectorToString(key,dim)<<'\n';
@@ -512,6 +601,11 @@ void XORTrie(trieNode **resultTrie,trieNode **currentNode,double **key,int dim){
         XORTrie(resultTrie,&(*currentNode)->nextTrieNode,key,dim);
 }
 
+/*Método para Imprimir en consola un vector.
+ * Argumentos:
+ * -Apuntador doble del vector.
+ * -Tamaño del vector.
+*/
 string vectorToString(double **vector,int size){
     string output="(  ";
     for(int i =0;i<size;i++)
@@ -519,59 +613,67 @@ string vectorToString(double **vector,int size){
     return output+")";
 }
 
+/*Método para vaciar un archivo .raw a un trie.
+ * Argumentos:
+ * -Nodo Raiz.
+ * -Nombre del archivo.
+*/
 void rawFileToEVM(trieNode **rootNode,string fileName){
-    using namespace std;
     //const char * file = "VL-vismale-(128x256x256)-(1.5,1,1).raw";
     ifstream fileInput;
     fileInput.open(fileName.c_str(), ios_base::in |ios_base::binary); // binary file
 
-    //ofstream outputFile( "evm.txt" );
     unsigned char buffer;
-    double *newKey = new double[4];
+    double *newKey = new double[4]; //ELIMINAR
     double value;
     double i = 0;
     
     if (fileInput.is_open())
     {
-        cout << "Here are the current contents of the "<< fileName << " file:\n";
+        cout << "Se abrio correctamente el archivo: "<< fileName << "\n";
         
+        //Primeramente, se hace un barrido en la dimensión 3
         for(double x3 = 0.0; x3 < 240; x3++){
             newKey[3] = x3;
+            //Se hace el barrido en la dimensión 2
             for(double x2 = 0.0; x2 < 384; x2++){
                 newKey[2] = x2;
+                //Se hace el barrido en la dimensión 1
                 for(double x1 = 0.0; x1 < 384; x1++)
                 {                    
                     newKey[1] = x1;
+                    //Se lee 1 Byte de información a la vez
                     if(fileInput.read((char *)( &buffer ), sizeof(buffer)))
                     {
                         value = buffer;
-//                        cout<<value<<',';
                         newKey[0] = 0.0;
                         populate3DVoxel(rootNode,&newKey);
-//                        cout<<vectorToString(&newKey,4)<<endl;
                         newKey[0] = value+1.0;
                         populate3DVoxel(rootNode,&newKey);
-//                        cout<<vectorToString(&newKey,4)<<endl;
                         i++;
                     }
                 }
             }
         }
 
-//        while(fileInput.read(reinterpret_cast<char*>( &buffer ), sizeof(buffer)))
-//        {
-//            int value = buffer;
-//            
-//            cout << value << endl;
-//        }
         fileInput.close();
     }
 }
 
+/*Método para generar e insertar la voxelización que consiste de 8 vértices, generada a partir del vértice en el origen.
+ * Argumentos:
+ * -Nodo Raiz.
+ * -Apuntador doble del vector de entrada.
+*/
 void populate3DVoxel(trieNode **rootNode,double **inputKey){
     populate3DVoxel(rootNode,inputKey,3,0);
 }
 
+/*Método Principal y Recursivo para generar e insertar la voxelización que consiste de 8 vértices, generada a partir del vértice en el origen.
+ * Argumentos:
+ * -Nodo Raiz.
+ * -Apuntador doble del vector de entrada.
+*/
 void populate3DVoxel(trieNode **rootNode,double **inputKey,int dim,int currentDim){
     if(!(currentDim < dim)){
         insertVertex(rootNode,*inputKey,4);
@@ -584,17 +686,28 @@ void populate3DVoxel(trieNode **rootNode,double **inputKey,int dim,int currentDi
     (*inputKey)[currentDim+1] = (*inputKey)[currentDim+1]-1;
 }
 
+/*Método para vaciar un arbol trie en un archivo de texto .evm
+ * Argumentos:
+ * -Nodo Raiz.
+*/
 void EVMFile(trieNode *currentNode){
-    double * testKey = new double[4];
+    double * testKey = new double[4];   //Eliminar
     ofstream outputFile( "EVMFile.evm" );
     if ( ! outputFile.is_open() ){    
-        cout << "Could not open file!" << '\n';    
+        cout << "El archivo no se pudo abrir!" << '\n';    
         return;
     } 
     EVMFile(&outputFile,currentNode,&testKey,0);
     outputFile.close();
 }
 
+/*Método Principal y Recursivo para vaciar un arbol trie en un archivo de texto .evm
+ * Argumentos:
+ * -APuntador al archivo en donde se almacena la información.
+ * -Nodo Raiz.
+ * -Apuntador doble al vector que se usa para obtener la información
+ * -Dimension.
+*/
 void EVMFile(ofstream *outputFile,trieNode *currentNode,double **key, int dim){
     if((currentNode) == NULL){   //que el arbol no este vacio
         *outputFile << vectorToString2(key,dim)<<'\n';
@@ -609,6 +722,11 @@ void EVMFile(ofstream *outputFile,trieNode *currentNode,double **key, int dim){
     }
 }
 
+/*Método que retorna en texto el contenido de un vector
+ * Argumentos:
+ * -Apuntador doble al vector
+ * -Tamaño del vector
+*/
 string vectorToString2(double **vector,int size){
     string output="";
     char s[5];
