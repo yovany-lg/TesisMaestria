@@ -22,10 +22,12 @@ template <typename T> std::string to_string(T value)
 
 nDEVM::nDEVM() {
     rootNode = NULL;
+    resetCoupletIndex();
 }
 
 nDEVM::nDEVM(trieNode *node) {
     rootNode = node;
+    resetCoupletIndex();
 }
 
 nDEVM::nDEVM(const nDEVM& orig) {
@@ -34,6 +36,9 @@ nDEVM::nDEVM(const nDEVM& orig) {
 nDEVM::~nDEVM() {   //METODO PARA ELIMINAR EL ARBOL TRIE
 }
 
+void nDEVM::resetCoupletIndex(){
+    coupletIndex = &rootNode;
+}
 /*Método Auxiliar para Insertar un vértice en un árbol trie.
  * Argumentos:
  * -Nodo raíz.
@@ -42,7 +47,7 @@ nDEVM::~nDEVM() {   //METODO PARA ELIMINAR EL ARBOL TRIE
  */
 void nDEVM::insertVertex(double * inputKey,int length){
     trieNode * prevNode = NULL;
-    insertVertex(&prevNode,&rootNode,inputKey,length,0,length);
+    insertVertex(&prevNode,&rootNode,inputKey,length,0,0,length);
 }
 
 /*Método Auxiliar para Insertar un vértice en un árbol trie.
@@ -53,14 +58,14 @@ void nDEVM::insertVertex(double * inputKey,int length){
  */
 void nDEVM::insertVertex(trieNode **otherRootNode,double * inputKey,int length){
     trieNode * prevNode = NULL;
-    insertVertex(&prevNode,otherRootNode,inputKey,length,0,length);
+    insertVertex(&prevNode,otherRootNode,inputKey,length,0,0,length);
 }
-
 
 /*Método Principal Recursivo para Insertar un vértice en un árbol trie.
  * Se utilizan contadores para determinar si se alcanzó la profundidad máxima
  */
-bool nDEVM::insertVertex(trieNode **prevNode,trieNode **currentNode,double * inputKey,int length,int currentDim,int matchCount){
+bool nDEVM::insertVertex(trieNode **prevNode,trieNode **currentNode,double * inputKey,
+        int length,int prevDim,int currentDim,int matchCount){
     //currentDim inicia desde cero, es la posicion de la dimension actual en el array
     if(!(currentDim < length))
         if(matchCount == 0)
@@ -71,7 +76,6 @@ bool nDEVM::insertVertex(trieNode **prevNode,trieNode **currentNode,double * inp
     if(*currentNode == NULL){
         trieNode *node = new trieNode;
         node->value = inputKey[currentDim];
-        node->dimDepth = currentDim;
         node->nextDim = NULL;
         node->nextTrieNode = NULL;
         
@@ -79,54 +83,70 @@ bool nDEVM::insertVertex(trieNode **prevNode,trieNode **currentNode,double * inp
         //Que no sea el nodo raiz
         if(*prevNode != NULL)
             //Cuando se inserta un nodo en la misma dimension
-            if((*prevNode)->dimDepth == currentDim)
+            if(prevDim == currentDim)
                 (*prevNode)->nextTrieNode = *currentNode;
             else
                 (*prevNode)->nextDim = *currentNode;
         //Moverse a la siguiente dimension
-        insertVertex(currentNode,&((*currentNode)->nextDim),inputKey,length, currentDim+1,matchCount);
+        insertVertex(currentNode,&((*currentNode)->nextDim),inputKey,length,currentDim,currentDim+1,matchCount);
     }else{
         //Si ya existe un nodo con el mismo valor en esta dimension
         if((*currentNode)->value == inputKey[currentDim]){
-            bool vertexStatus = insertVertex(currentNode,&((*currentNode)->nextDim),inputKey,length, currentDim+1,matchCount-1);
+            bool vertexStatus = insertVertex(currentNode,&((*currentNode)->nextDim),inputKey,length,currentDim,currentDim+1,matchCount-1);
             //Si el vertice ya existe, se intenta eliminar
             if(vertexStatus){
-                //Si se llega por profundidad
-                if((*prevNode)->nextDim == (*currentNode))
-                {
-                    //Si no hay mas nodos a la derecha
-                    if((*currentNode)->nextTrieNode == NULL)
-                    {
+                //Si es el nodo raiz
+                if(rootNode == (*currentNode)){
+                    //Si existe un nodo siguiente en la primer dimension
+                    if(rootNode->nextTrieNode != NULL){
+                        trieNode *tempNode = rootNode;
+                        rootNode = rootNode->nextTrieNode;
+                        delete tempNode;
+                        tempNode = NULL;
+                    }else{
+                        rootNode == NULL;
                         delete *currentNode;
                         *currentNode = NULL;
-                        //Intentar eliminar nodo padre
-                        return true;
+                    }
+                }else{
+                    
+                    //Si se llega por profundidad
+                    if((*prevNode)->nextDim == (*currentNode))
+                    {
+                        //Si no hay mas nodos a la derecha
+                        if((*currentNode)->nextTrieNode == NULL)
+                        {
+                            delete *currentNode;
+                            *currentNode = NULL;
+                            //Intentar eliminar nodo padre
+                            return true;
+                        }else
+                        {
+                            trieNode *node = (*currentNode)->nextTrieNode;
+                            delete *currentNode;
+                            *currentNode = NULL;
+                            (*prevNode)->nextDim = node;
+                            //Nodo padre no puede ser eliminado
+                            return false;
+                        }
                     }else
                     {
-                        trieNode *node = (*currentNode)->nextTrieNode;
-                        delete *currentNode;
-                        *currentNode = NULL;
-                        (*prevNode)->nextDim = node;
+                        //Se llega por amplitud, busqueda en la misma dimension
+                        if((*currentNode)->nextTrieNode == NULL)
+                        {
+                            delete *currentNode;
+                            *currentNode = NULL;
+                        }else
+                        {
+                            trieNode *node = (*currentNode)->nextTrieNode;
+                            delete *currentNode;
+                            *currentNode = NULL;
+                            (*prevNode)->nextTrieNode= node;
+                        }
                         //Nodo padre no puede ser eliminado
                         return false;
-                    }
-                }else
-                {
-                    //Se llega por amplitud, busqueda en la misma dimension
-                    if((*currentNode)->nextTrieNode == NULL)
-                    {
-                        delete *currentNode;
-                        *currentNode = NULL;
-                    }else
-                    {
-                        trieNode *node = (*currentNode)->nextTrieNode;
-                        delete *currentNode;
-                        *currentNode = NULL;
-                        (*prevNode)->nextTrieNode= node;
-                    }
-                    //Nodo padre no puede ser eliminado
-                    return false;
-                }                
+                    }                
+                }
             }
         }else    
             //Busqueda por comparacion
@@ -135,20 +155,24 @@ bool nDEVM::insertVertex(trieNode **prevNode,trieNode **currentNode,double * inp
                 //Insertar nuevo nodo antes de dicho nodo
                 trieNode *node = new trieNode;
                 node->value = inputKey[currentDim];
-                node->dimDepth = currentDim;
                 node->nextDim = NULL;
                 node->nextTrieNode = (*currentNode);
-                //Si se llega por profundidad
-                if((*prevNode)->nextDim == (*currentNode)){
-                    (*prevNode)->nextDim = node;                
-                }else{
-                    (*prevNode)->nextTrieNode = node;                
+                //Si es el nodo raiz
+                if(rootNode == (*currentNode))
+                    rootNode = node;
+                else{
+                    //Si se llega por profundidad
+                    if((*prevNode)->nextDim == (*currentNode)){
+                        (*prevNode)->nextDim = node;                
+                    }else{
+                        (*prevNode)->nextTrieNode = node;                
+                    }
                 }                
 
-                insertVertex(&node,&node->nextDim,inputKey,length, currentDim+1,matchCount);
+                insertVertex(&node,&node->nextDim,inputKey,length,currentDim,currentDim+1,matchCount);
             }else
                 //Se explora otro nodo en la misma dimension
-                insertVertex(currentNode,&((*currentNode)->nextTrieNode),inputKey,length, currentDim,matchCount);
+                insertVertex(currentNode,&((*currentNode)->nextTrieNode),inputKey,length,currentDim,currentDim,matchCount);
     }
 }
 
@@ -321,7 +345,6 @@ void nDEVM::cloneTrie(trieNode **prevNode,trieNode **currentNode,trieNode **copy
         return;
     }else{
         trieNode *node = new trieNode;
-        node->dimDepth = (*currentNode)->dimDepth;
         node->nextDim = NULL;
         node->nextTrieNode = NULL;        
         node->value = (*currentNode)->value;
@@ -529,8 +552,30 @@ trieNode * nDEVM::getSubTrie2(trieNode **currentNode,double key){
  * -Apuntador al otro EVM.
  * -Dimension
 */
-nDEVM* nDEVM::XOR(nDEVM* otherEVM,int dim){
-    nDEVM *xorEVM = new nDEVM(XORTrie(&(otherEVM->rootNode),dim));
+nDEVM* nDEVM::mergeXOR(nDEVM* otherEVM){
+    //Se considera que esta operacion se realizara con EVMs de la misma dimension.
+    if(rootNode == NULL and otherEVM->rootNode != NULL)
+        return otherEVM->cloneEVM();
+   
+    if(rootNode != NULL and otherEVM->rootNode == NULL)
+        return cloneEVM();
+
+    if(rootNode == NULL and otherEVM->rootNode == NULL){
+        nDEVM *xorEVM = new nDEVM();
+        return xorEVM;
+    }
+        
+
+    int dimDepth = getDimDepth();
+    //Se clona el trie del EVM desde donde se llama la operacion mergeXOR.
+    nDEVM *xorEVM = new nDEVM(cloneTrie());
+    
+    double *key = new double[dimDepth];  //ELIMINAR
+    //Hay problemas con el apuntador a root...
+    //nDEVM *xorEVM = new nDEVM(XORTrie(&(otherEVM->rootNode),dimDepth));
+    
+    //Para no perder referencia al root desde la funcion insertVertex...
+    xorEVM->XORTrie(&(xorEVM->rootNode),&(otherEVM->rootNode),&key,0);
     return xorEVM;
 }
 
@@ -648,9 +693,11 @@ void nDEVM::populate3DVoxel(double **inputKey,int dim,int currentDim){
  * Argumentos:
  * -Nodo Raiz.
 */
-void nDEVM::EVMFile(){
+void nDEVM::EVMFile(int index){
     double * testKey = new double[4];   //Eliminar
-    ofstream outputFile( "EVMFile.evm" );
+    string fileName = "EVMFiles/EVMFile_"+to_string(index)+".evm";
+    
+    ofstream outputFile( fileName );
     if ( ! outputFile.is_open() ){    
         cout << "El archivo no se pudo abrir!" << '\n';    
         return;
@@ -708,4 +755,138 @@ string nDEVM::vectorToString2(double **vector,int size){
         output+=to_string(s);
     }
     return output;
+}
+
+/*
+ *Metodo auxiliar para agregar un Couplet perpendicular a la dimension x1:
+ * Argumentos:
+ * -El (n-1)D EVM del couplet.
+ */
+void nDEVM::putCouplet(nDEVM * couplet){
+    trieNode * prevNode = NULL;
+    //CLONE???????
+    //trieNode* coupletTrie = couplet->cloneTrie();//Clonar el trie del Couplet
+    putCouplet(&prevNode,&rootNode,couplet->rootNode);
+}
+
+/*
+ *Metodo Principal para agregar un Couplet perpendicular a la dimension x1 en la posicion dada:
+ * Argumentos:
+ * -El EVM del couplet.
+ */
+void nDEVM::putCouplet(trieNode** prevNode,trieNode **currentNode,trieNode *coupletRoot){
+    if((*currentNode) == NULL){
+        if((*prevNode) != NULL)//AL menos hay un nodo en el Trie
+            (*prevNode)->nextTrieNode = coupletRoot;
+        else//El trie esta vacio
+            *currentNode = coupletRoot;
+            
+        return;
+    }
+    
+    putCouplet(currentNode,&((*currentNode)->nextTrieNode),coupletRoot);
+}
+
+/**
+ * Obtiene el couplet de la primera dimension asociado a la posicion donde
+ * actualmente se encuentra el apuntador de couplets coupletIndex.
+ * @return 
+ * nDEVM*
+ */
+nDEVM* nDEVM::readCouplet(){
+    if(!endEVM()){
+        nDEVM* coupletEVM = new nDEVM((*coupletIndex)->nextDim);
+        coupletIndex = &((*coupletIndex)->nextTrieNode);
+        return coupletEVM;
+    }else
+        return NULL;
+}
+
+/**
+ * Metodo que indica si se ha alcanzado el ultimo couplet, en base a la posicion
+ * del indice de couplets.
+ * @return 
+ * Boolean
+ */
+bool nDEVM::endEVM(){
+    if(*coupletIndex == NULL)
+        return true;
+    else
+        return false;
+}
+
+/**
+ * Metodo que inserta un nuevo nodo en la dimension x1 con el valor dado, y 
+ * el nuevo nodo sera el nodo raiz.
+ * @param coord
+ * @return 
+ */
+void nDEVM::setCoord(double coord){
+    //CLONE?????
+    //trieNode* coupletTrie = cloneTrie();
+    trieNode* coupletRoot = new trieNode;
+    coupletRoot->value = coord;
+    coupletRoot->nextTrieNode = NULL;
+    coupletRoot->nextDim = rootNode;
+    rootNode = coupletRoot;
+}
+
+/**
+ * Metodo que devuelve el valor de la primera dimension del couplet asociado al
+ * nodo raiz.
+ * @return 
+ */
+double nDEVM::getCoord(){
+    return rootNode->value;
+}
+
+nDEVM* nDEVM::getSection(nDEVM* section, nDEVM *couplet){
+    return section->mergeXOR(couplet);
+}
+
+nDEVM* nDEVM::getCouplet(nDEVM* section1, nDEVM *section2){
+    return section1->mergeXOR(section2);
+}
+
+void nDEVM::EVMSectionSequence(){
+    nDEVM* currentCouplet = new nDEVM();
+    nDEVM* prevSection = new nDEVM();
+    nDEVM* nextSection = new nDEVM();
+    currentCouplet = readCouplet();
+    int i = 0;
+    while(!endEVM()){
+        //cout<<"currentCouplet: "<<endl;
+        //currentCouplet->printTrie();
+        cout<<endl;
+        nextSection = getSection(prevSection,currentCouplet);
+        cout<<"Section "<<i<<endl;
+        nextSection->EVMFile(i);
+        cout<<endl;
+        //Process();
+        prevSection = nextSection;
+        currentCouplet = readCouplet();
+        i++;
+    }
+    resetCoupletIndex();
+}
+
+/**
+ * Metodo que devuelve la profundidad dimensional de un trie.
+ * @return 
+ */
+int nDEVM::getDimDepth(){
+    return getDimDepth(rootNode,0);
+}
+
+/**
+ * Metodo que devuelve la profundidad dimensional de un trie.
+ * @param currentNode
+ * @param dim
+ * @return 
+ */
+int nDEVM::getDimDepth(trieNode* currentNode,int dim){
+    if(currentNode == NULL)
+        return dim;
+    
+    return getDimDepth(currentNode->nextDim,dim+1);
 }

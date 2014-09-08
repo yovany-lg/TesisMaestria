@@ -11,7 +11,6 @@
 #define	NDEVM_H
 
 struct trieNode{
-    int dimDepth;   //Profundidad de la dimension 0,...,n-1
     double value;  //Valor de la dimension actual
     trieNode *nextDim;
     trieNode *nextTrieNode;
@@ -28,7 +27,7 @@ public:
     /*Metodos del Trie*/
     void insertVertex(double * inputKey,int length);
     void insertVertex(trieNode **otherRootNode,double * inputKey,int length);
-    bool insertVertex(trieNode **prevNode,trieNode **currentNode,double * inputKey,int length,int iDim,int matchCount);
+    bool insertVertex(trieNode **prevNode,trieNode **currentNode,double * inputKey,int length,int prevDim,int currentDim,int matchCount);
     
     void printTrie();
     void printTrie(trieNode *currentNode,double **key, int dim);
@@ -55,7 +54,7 @@ public:
     trieNode *getSubTrie2(double key);
     trieNode *getSubTrie2(trieNode **currentNode,double key);
 
-    nDEVM* XOR(nDEVM *secondTrie,int dim);
+    nDEVM* mergeXOR(nDEVM *secondTrie);
     trieNode *XORTrie(trieNode **secondTrie,int dim);
     void XORTrie(trieNode **resultTrie,trieNode **currentNode,double **key,int dim);
 
@@ -64,14 +63,30 @@ public:
     void populate3DVoxel(double **inputKey);
     void populate3DVoxel(double **inputKey,int dim,int currentDim);
 
-    void EVMFile();
+    void EVMFile(int index);
     void EVMFile(ofstream *EVMFile,trieNode *currentNode,double **key, int dim);
     
     string vectorToString(double **vector,int size);
     string vectorToString2(double **vector,int size);
+    
+    void putCouplet(nDEVM * couplet);
+    void putCouplet(trieNode** prevNode,trieNode **currentNode,trieNode *coupletRoot);
+    
+    void setCoord(double coord);
+    double getCoord();
+    
+    void resetCoupletIndex();
+    nDEVM* readCouplet();
+    bool endEVM();
+    nDEVM* getSection(nDEVM* section, nDEVM *couplet);
+    nDEVM* getCouplet(nDEVM* section1, nDEVM *section2);
+    void EVMSectionSequence();
+    
+    int getDimDepth();
+    int getDimDepth(trieNode* currentNode,int dim);
 private:
     trieNode *rootNode;
-
+    trieNode **coupletIndex;
 };
 
 #endif	/* TRIETREE_H */

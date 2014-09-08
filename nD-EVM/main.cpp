@@ -54,7 +54,7 @@ int main(int argc, char** argv) {
 //    evmCouplet->printTrie();
 //    cout<<endl;
 //    
-//    nDEVM * xorEVM = evm1->XOR(evm2,4);
+//    nDEVM * xorEVM = evm1->mergeXOR(evm2);
 //    
 //    cout<<"Operador XOR: "<<endl;
 //    xorEVM->printTrie();
@@ -64,24 +64,92 @@ int main(int argc, char** argv) {
 //    string fileName = "VL-baby-(256x256x98)-(1,1,2).raw";
 //    evm->rawFileToEVM(fileName,256,256,98);
 
+//    nDEVM *evm2 = new nDEVM();
+//    string fileName2 = "VL-vismale-(128x256x256)-(1.5,1,1).raw";
+//    evm2->rawFileToEVM(fileName2,128,256,256);
+//    //cout<<"Tamaño del EVM: "<<evm2->EVMSize()<<endl;
+//
+////    nDEVM * xorEVM = evm->XOR(evm2,4);
+////    cout<<"Operador XOR: "<<endl;
+//
+////    nDEVM * newEVM = new nDEVM();
+////    for(int i = 0; i < 10; i++){
+////        nDEVM * tempEVM = evm2->couplet((double)i);
+////        newEVM->putCouplet(tempEVM,(double)i);
+//////        newEVM->printTrie();
+//////        cout<<endl;
+////    }
+//
+//    double couplet;
+//    cout<<"Elige un Couplet:"<<endl;
+//    cin >> couplet;
+//    while(couplet != -1){
+//        nDEVM *EVMCouplet = evm2->couplet(couplet);
+//        nDEVM* EVMnewCoord = EVMCouplet->setCoord(0);
+//        EVMnewCoord->EVMFile();
+//        cout<<"Elige un Couplet:"<<endl;    
+//        cin >> couplet;
+//    }
+
+//    nDEVM * evm1 = new nDEVM();
+//    double inputKey [] = {0,0,0};
+//    evm1->insertVertex(inputKey,3);
+//    double inputKey2 [] = {1,0,0};
+//    evm1->insertVertex(inputKey2,3);
+//    double inputKey3 [] = {2,0,0};
+//    evm1->insertVertex(inputKey3,3);
+//    double inputKey4 [] = {4,0,0};
+//    evm1->insertVertex(inputKey4,3);
+//    double inputKey5 [] = {3,0,-1};
+//    evm1->insertVertex(inputKey5,3);
+//    double inputKey6 [] = {4,0,-1};
+//    evm1->insertVertex(inputKey6,3);
+//    double inputKey7 [] = {0,0,1};
+//    evm1->insertVertex(inputKey7,3);
+//    double inputKey8 [] = {1,0,1};
+//    evm1->insertVertex(inputKey8,3);
+//    double inputKey9 [] = {2,0,1};
+//    evm1->insertVertex(inputKey9,3);
+//    double inputKey10 [] = {3,0,1};
+//    evm1->insertVertex(inputKey10,3);
+//    
+//    double inputKey11 [] = {0,1,0};
+//    evm1->insertVertex(inputKey11,3);
+//    double inputKey12 [] = {2,1,0};
+//    evm1->insertVertex(inputKey12,3);
+//    double inputKey13 [] = {1,1,-1};
+//    evm1->insertVertex(inputKey13,3);
+//    double inputKey14 [] = {3,1,-1};
+//    evm1->insertVertex(inputKey14,3);
+//    double inputKey15 [] = {0,1,1};
+//    evm1->insertVertex(inputKey15,3);
+//    double inputKey16 [] = {1,1,1};
+//    evm1->insertVertex(inputKey16,3);
+//    double inputKey17 [] = {2,1,1};
+//    evm1->insertVertex(inputKey17,3);
+//    double inputKey18 [] = {3,1,1};
+//    evm1->insertVertex(inputKey18,3);
+//    
+//    double inputKey19 [] = {1,2,0};
+//    evm1->insertVertex(inputKey19,3);
+//    double inputKey20 [] = {4,2,0};
+//    evm1->insertVertex(inputKey20,3);
+//    double inputKey21 [] = {1,2,-1};
+//    evm1->insertVertex(inputKey21,3);
+//    double inputKey22 [] = {4,2,-1};
+//    evm1->insertVertex(inputKey22,3);
+//    
+//    evm1->EVMFile(0);
+//    cout<<"Trie Original: "<<endl;
+//    evm1->printTrie();
+//    cout<<evm1->getDimDepth();
+//    evm1->EVMSectionSequence();
+//    
     nDEVM *evm2 = new nDEVM();
     string fileName2 = "VL-vismale-(128x256x256)-(1.5,1,1).raw";
     evm2->rawFileToEVM(fileName2,128,256,256);
-    //cout<<"Tamaño del EVM: "<<evm2->EVMSize()<<endl;
-
-//    nDEVM * xorEVM = evm->XOR(evm2,4);
-//    cout<<"Operador XOR: "<<endl;
-
-
-    double couplet;
-    cout<<"Elige un Couplet:"<<endl;
-    cin >> couplet;
-    while(couplet != -1){
-        nDEVM *EVMCouplet = evm2->couplet(couplet);
-        EVMCouplet->EVMFile();
-        cout<<"Elige un Couplet:"<<endl;    
-        cin >> couplet;
-    }
+    
+    evm2->EVMSectionSequence();
     
     return 0;
 }
