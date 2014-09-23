@@ -142,14 +142,30 @@ int main(int argc, char** argv) {
 //    evm1->EVMFile(0);
 //    cout<<"Trie Original: "<<endl;
 //    evm1->printTrie();
-//    cout<<evm1->getDimDepth();
-//    evm1->EVMSectionSequence();
-//    
-    nDEVM *evm2 = new nDEVM();
-    string fileName2 = "VL-vismale-(128x256x256)-(1.5,1,1).raw";
-    evm2->rawFileToEVM(fileName2,128,256,256);
+    //cout<<evm1->getDimDepth()<<endl;
     
-    evm2->EVMSectionSequence();
+    nDEVM *evm1 = new nDEVM();
+    string fileName2 = "VL-vismale-(128x256x256)-(1.5,1,1).raw";
+    evm1->rawFileToEVM(fileName2,128,256,256);
+
+    nDEVM* evm2 = evm1->EVMSectionSequence();
+
+    cout<<endl<<"Section Sequence Obtained..."<<endl;
+    //evm2->printTrie();
+    
+    nDEVM* evm3 = evm2->EVMCoupletSequence();
+    cout<<endl<<"Couplet Sequence obtained..."<<endl;
+    //evm3->printTrie();
+    
+    cout<<"Comparacion del EVM de la secuencia de couplets y el EVM original: "
+            <<evm1->compareByCouplets(evm3)<<endl;
+    
+
+//    nDEVM *evm2 = new nDEVM();
+//    string fileName2 = "VL-vismale-(128x256x256)-(1.5,1,1).raw";
+//    evm2->rawFileToEVM(fileName2,128,256,256);
+//    
+//    evm2->EVMSectionSequence();
     
     return 0;
 }

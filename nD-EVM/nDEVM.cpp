@@ -39,6 +39,7 @@ nDEVM::~nDEVM() {   //METODO PARA ELIMINAR EL ARBOL TRIE
 void nDEVM::resetCoupletIndex(){
     coupletIndex = &rootNode;
 }
+
 /*Método Auxiliar para Insertar un vértice en un árbol trie.
  * Argumentos:
  * -Nodo raíz.
@@ -61,8 +62,19 @@ void nDEVM::insertVertex(trieNode **otherRootNode,double * inputKey,int length){
     insertVertex(&prevNode,otherRootNode,inputKey,length,0,0,length);
 }
 
-/*Método Principal Recursivo para Insertar un vértice en un árbol trie.
- * Se utilizan contadores para determinar si se alcanzó la profundidad máxima
+/**
+ * Método Principal Recursivo para Insertar un vértice en un árbol trie. 
+ * Se utilizan contadores para determinar si se alcanzó la profundidad máxima.
+ * @param prevNode: Nodo Trie previo en la exploracion.
+ * @param currentNode: Nodo Trie actual en la exploracion.
+ * @param inputKey: Arreglo del vertice que se va a insertar.
+ * @param length: Tamaño maximo de el arreglo del vertice.
+ * @param prevDim: Dimension previa en la exploracion.
+ * @param currentDim: Dimension actual en la exploracion.
+ * @param matchCount: Contador de coincidencias en el Trie, usado para saber si
+ * el vertice que se va a insertar ya existe.
+ * @return @return Se retorna un valor booleano que indica si el nodo anterior puede 
+ * ser eliminado
  */
 bool nDEVM::insertVertex(trieNode **prevNode,trieNode **currentNode,double * inputKey,
         int length,int prevDim,int currentDim,int matchCount){
@@ -176,21 +188,20 @@ bool nDEVM::insertVertex(trieNode **prevNode,trieNode **currentNode,double * inp
     }
 }
 
-/*Método Auxiliar para Imprimir en consola el contenido de un árbol trie.
- * Argumentos:
- * -Nodo raíz.
-*/
+/**
+ * Método Auxiliar para Imprimir en consola el contenido de un árbol Trie.
+ */
 void nDEVM::printTrie(){
     double * testKey = new double[4];
     printTrie(rootNode,&testKey,0);
 }
 
-/*Método Principal Recursivo para Imprimir en consola el contenido de un árbol trie.
- * Argumentos:
- * -Nodo raíz.
- * -Apuntador doble, para almacenar los elementos del trie
- * -Dimension actual
-*/
+/**
+ * Método Principal Recursivo para Imprimir en consola el contenido de un árbol Trie.
+ * @param currentNode, Nodo Trie actual en la exploración.
+ * @param key: Vector auxiliar para almacenar los vértices hallados en el Trie.
+ * @param dim: Dimensión actual en el la exploración.
+ */
 void nDEVM::printTrie(trieNode *currentNode,double **key, int dim){
     if((currentNode) == NULL){   //que el arbol no este vacio
         cout << vectorToString(key,dim)<<endl;
@@ -218,11 +229,11 @@ double nDEVM::EVMSize(){
     return size;
 }
 
-/*Método Principal Recursivo para obtener el Tamaño de un árbol trie.
- * Argumentos:
- * -Nodo raíz.
- * -apuntador al tamaño del arbol
-*/
+/**
+ * Método Principal para obtener el Tamaño (número de nodos hoja) de un árbol Trie.
+ * @param currentNode: Nodo actual en la exploración.
+ * @param size: Contador del tamaño.
+ */
 void nDEVM::EVMSize(trieNode *currentNode,double *size){
     //Si se llega a un nodo hoja
     if((currentNode) == NULL){
@@ -242,6 +253,11 @@ void nDEVM::EVMSize(trieNode *currentNode,double *size){
  * -Nodo raíz del primer arbol.
  * -Nodo raíz del segundo arbol.
 */
+/**
+ * Método para comparar dos EVMs.
+ * @param otherEVM: El EVM que será comparado con el EVM actual.
+ * @return Se retorna un valor booleano (true, false).
+ */
 bool nDEVM::compareEVM(nDEVM *otherEVM){
     bool compare1 = true, compare2 = true;
     compareTrie(&rootNode,&(otherEVM->rootNode),&compare1);
@@ -249,12 +265,52 @@ bool nDEVM::compareEVM(nDEVM *otherEVM){
     return compare1 and compare2;
 }
 
-/*Método Principal Recursivo para comparar dos árboles trie.
- * Argumentos:
- * -Nodo raíz del primer arbol.
- * -Nodo raíz del segundo arbol.
- * -Apuntador a la variable con el valor de comparación.
-*/
+/**
+ * Método para comparar dos EVMs considerando los couplets sobre la primera dimensión
+ * @param otherEVM: El EVM que será comparado con el EVM actual.
+ * @return Se retorna un valor booleano (true, false).
+ */
+bool nDEVM::compareByCouplets(nDEVM *otherEVM){
+    bool compare1, compare2, totalCompare;
+    nDEVM* currentCouplet1 = new nDEVM();
+    nDEVM* currentCouplet2 = new nDEVM();
+    
+    while(!(endEVM()) and !(otherEVM->endEVM())){
+        compare1 = compare2 = true;
+        currentCouplet1 = readCouplet();
+        currentCouplet2 = otherEVM->readCouplet();
+        compareTrie(&(currentCouplet1->rootNode),&(currentCouplet2->rootNode),&compare1);
+        compareTrie(&(currentCouplet2->rootNode),&(currentCouplet1->rootNode),&compare2);
+        totalCompare = compare1 and compare2;
+        if(!totalCompare)
+            return false;
+    }
+    
+    if(endEVM()){
+        if(!(otherEVM->endEVM())){
+            resetCoupletIndex();
+            otherEVM->resetCoupletIndex();
+            return false;
+        }
+    }else{
+        if(otherEVM->endEVM()){
+            resetCoupletIndex();
+            otherEVM->resetCoupletIndex();
+            return false;
+        }
+    }
+    
+    resetCoupletIndex();
+    otherEVM->resetCoupletIndex();
+    return totalCompare;
+}
+
+/**
+ * Método Principal para comparar dos árboles Trie.
+ * @param currentNode: Nodo actual del primer árbol Trie en la exploración.
+ * @param otherCurrentNode: Nodo actual del segundo árbol Trie en la exploración.
+ * @param compare: Par almacenar la comparación.
+ */
 void nDEVM::compareTrie(trieNode **currentNode,trieNode **otherCurrentNode,bool *compare){
     //Si en alguna llamada son diferentes
     if((*compare) == false)
@@ -309,6 +365,10 @@ void nDEVM::compareTrie(trieNode **currentNode,trieNode **otherCurrentNode,bool 
  * Argumentos:
  * -Nodo raíz del arbol original.
 */
+/**
+ * Método para clonar un EVM.
+ * @return nDEVM *, apuntador al nuevo EVM.
+ */
 nDEVM * nDEVM::cloneEVM(){
     trieNode *copyRootNode = NULL;
     trieNode *prevNode = NULL;
@@ -333,13 +393,13 @@ trieNode * nDEVM::cloneTrie(){
     return copyRootNode;
 }
 
-/*Método Principal Recursivo para clonar un árbol trie.
- * Argumentos:
- * -Nodo previo del arbol original.
- * -Nodo raíz del arbol original.
- * -Nodo previo del arbol copia.
- * -Nodo raíz del arbol copia.
-*/
+/**
+ * Método Principal para clonar un árbol trie.
+ * @param prevNode: Nodo previo, del Trie original, en la exploración.
+ * @param currentNode: Nodo actual, del Trie original, en la exploración.
+ * @param copyPrevNode: Nodo previo, de la copia, en la exploración.
+ * @param copyCurrentNode: Nodo actual, de la copia, en la exploración.
+ */
 void nDEVM::cloneTrie(trieNode **prevNode,trieNode **currentNode,trieNode **copyPrevNode,trieNode **copyCurrentNode){
     if((*currentNode) == NULL){//Si el arbol esta vacio
         return;
@@ -382,6 +442,15 @@ void nDEVM::removeVertex(double *key){
  * -Nodo raíz del arbol.
  * -Apuntador al vector del elemento a eliminar.
 */
+/**
+ * Método principal para remover un vértice de un árbol Trie.
+ * @param prevNode: Nodo previo en la exploración.
+ * @param currentNode: Nodo actual en la exploración.
+ * @param key: Arreglo que contiene el vértice que se desea eliminar.
+ * @param currentDim: Dimensión actual en la exploración.
+ * @return Un valor booleano, que indica si se puede intentar eliminar el nodo actual,
+ * ya que probablemente tenga relación con otros nodos.
+ */
 bool nDEVM::removeVertex(trieNode **prevNode,trieNode **currentNode,double *key,int currentDim){
     //Si se llega al un nodo hoja, entonces si existe el vertice
     //Si el arbol esta vacio desde el inicio, no habra llamada recursiva que haga algo con este valor TRUE
@@ -787,6 +856,18 @@ void nDEVM::putCouplet(trieNode** prevNode,trieNode **currentNode,trieNode *coup
     putCouplet(currentNode,&((*currentNode)->nextTrieNode),coupletRoot);
 }
 
+/*
+ *Metodo auxiliar para agregar una Seccion perpendicular a la dimension x1:
+ * Argumentos:
+ * -El (n-1)D EVM del couplet.
+ */
+void nDEVM::putSection(nDEVM * section){
+    trieNode * prevNode = NULL;
+    //CLONE???????
+    //trieNode* coupletTrie = couplet->cloneTrie();//Clonar el trie del Couplet
+    putCouplet(&prevNode,&rootNode,section->rootNode);
+}
+
 /**
  * Obtiene el couplet de la primera dimension asociado a la posicion donde
  * actualmente se encuentra el apuntador de couplets coupletIndex.
@@ -800,6 +881,16 @@ nDEVM* nDEVM::readCouplet(){
         return coupletEVM;
     }else
         return NULL;
+}
+
+/**
+ * Obtiene el couplet de la primera dimension asociado a la posicion donde
+ * actualmente se encuentra el apuntador de couplets coupletIndex.
+ * @return 
+ * nDEVM*
+ */
+nDEVM* nDEVM::readSection(){
+    return readCouplet();
 }
 
 /**
@@ -848,28 +939,78 @@ nDEVM* nDEVM::getCouplet(nDEVM* section1, nDEVM *section2){
     return section1->mergeXOR(section2);
 }
 
-void nDEVM::EVMSectionSequence(){
+nDEVM* nDEVM::EVMSectionSequence(){
+    nDEVM* sectionSequence = new nDEVM();
+    EVMSectionSequence(&sectionSequence);
+    return sectionSequence;
+}
+
+void nDEVM::EVMSectionSequence(nDEVM** sectionSequence){
     nDEVM* currentCouplet = new nDEVM();
     nDEVM* prevSection = new nDEVM();
-    nDEVM* nextSection = new nDEVM();
+    nDEVM* currentSection = new nDEVM();
     currentCouplet = readCouplet();
     int i = 0;
     while(!endEVM()){
-        //cout<<"currentCouplet: "<<endl;
-        //currentCouplet->printTrie();
-        cout<<endl;
-        nextSection = getSection(prevSection,currentCouplet);
-        cout<<"Section "<<i<<endl;
-        nextSection->EVMFile(i);
-        cout<<endl;
-        //Process();
-        prevSection = nextSection;
+        currentSection = getSection(prevSection,currentCouplet);
+//        cout<<"Section "<<i<<": "<<endl;
+//        currentSection->printTrie();
+        
+        // Procesamiento
+        if(i > 0){
+            prevSection->setCoord(i - 1);
+            (*sectionSequence)->putSection(prevSection);
+        }
+        
+        //currentSection->EVMFile(i);
+        //cout<<endl;
+        
+        // Siguiente Iteración
+        prevSection = currentSection;
         currentCouplet = readCouplet();
+        i++;
+    }
+    currentSection->setCoord(i - 1);
+    (*sectionSequence)->putSection(currentSection);
+    resetCoupletIndex();
+}
+
+nDEVM* nDEVM::EVMCoupletSequence(){
+    nDEVM* coupletSequence = new nDEVM();
+    EVMCoupletSequence(&coupletSequence);
+    return coupletSequence;
+}
+
+void nDEVM::EVMCoupletSequence(nDEVM** coupletSequence){
+    nDEVM* currentCouplet = new nDEVM();
+    nDEVM* prevSection = new nDEVM();
+    nDEVM* currentSection = readSection();
+    int i = 0;
+    while(true){
+        currentCouplet = getSection(prevSection,currentSection);
+        //cout<<"Couplet "<<i<<": "<<endl;
+        //currentCouplet->printTrie();
+        
+        // Procesamiento
+        currentCouplet->setCoord(i);
+        (*coupletSequence)->putCouplet(currentCouplet);
+
+        //currentSection->EVMFile(i);
+        //cout<<endl;
+        
+        if(endEVM()){
+            currentCouplet = currentSection->cloneEVM();
+            currentCouplet->setCoord(i+1);
+            (*coupletSequence)->putCouplet(currentCouplet);
+            break;
+        }
+        // Siguiente Iteración
+        prevSection = currentSection;
+        currentSection = readSection();
         i++;
     }
     resetCoupletIndex();
 }
-
 /**
  * Metodo que devuelve la profundidad dimensional de un trie.
  * @return 

@@ -36,6 +36,7 @@ public:
     void EVMSize(trieNode *currentNode,double *size);
 
     bool compareEVM(nDEVM *otherEVM);
+    bool compareByCouplets(nDEVM *otherEVM);
     void compareTrie(trieNode **currentNode,trieNode **otherCurrentNode,bool *compare);
 
     nDEVM *cloneEVM();
@@ -71,16 +72,21 @@ public:
     
     void putCouplet(nDEVM * couplet);
     void putCouplet(trieNode** prevNode,trieNode **currentNode,trieNode *coupletRoot);
+    void putSection(nDEVM * section);
     
     void setCoord(double coord);
     double getCoord();
     
     void resetCoupletIndex();
     nDEVM* readCouplet();
+    nDEVM* readSection();
     bool endEVM();
     nDEVM* getSection(nDEVM* section, nDEVM *couplet);
     nDEVM* getCouplet(nDEVM* section1, nDEVM *section2);
-    void EVMSectionSequence();
+    nDEVM* EVMSectionSequence();
+    void EVMSectionSequence(nDEVM** sectionSequence);
+    nDEVM* EVMCoupletSequence();
+    void EVMCoupletSequence(nDEVM** sectionSequence);
     
     int getDimDepth();
     int getDimDepth(trieNode* currentNode,int dim);
