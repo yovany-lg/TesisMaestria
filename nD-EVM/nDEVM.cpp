@@ -40,6 +40,17 @@ void nDEVM::resetCoupletIndex(){
     coupletIndex = &rootNode;
 }
 
+bool nDEVM::isEmpty(){
+    if(rootNode == NULL)
+        return true;
+    else
+        return false;
+}
+
+trieNode *nDEVM::getRootNode(){
+    return rootNode;
+}
+
 /*Método Auxiliar para Insertar un vértice en un árbol trie.
  * Argumentos:
  * -Nodo raíz.
@@ -719,7 +730,7 @@ void nDEVM::rawFileToEVM(string fileName,int x1,int x2,int x3){
                     {
                         value = buffer;
                         newKey[0] = 0.0;
-                        populate3DVoxel(&newKey);
+                        populate3DVoxel(&newKey);   //Corregir: Insertar en un metodo populate4DVoxel
                         newKey[0] = value+1.0;
                         populate3DVoxel(&newKey);
                     }
@@ -738,7 +749,11 @@ void nDEVM::rawFileToEVM(string fileName,int x1,int x2,int x3){
  * -Apuntador doble del vector de entrada.
 */
 void nDEVM::populate3DVoxel(double **inputKey){
-    populate3DVoxel(inputKey,3,0);
+    populateVoxel(inputKey,3,0,1);
+}
+
+void nDEVM::populate2DVoxel(double **inputKey){
+    populateVoxel(inputKey,2,0,0);
 }
 
 /*Método Principal y Recursivo para generar e insertar la voxelización que consiste de 8 vértices, generada a partir del vértice en el origen.
@@ -746,16 +761,16 @@ void nDEVM::populate3DVoxel(double **inputKey){
  * -Nodo Raiz.
  * -Apuntador doble del vector de entrada.
 */
-void nDEVM::populate3DVoxel(double **inputKey,int dim,int currentDim){
+void nDEVM::populateVoxel(double **inputKey,int dim,int currentDim,int offset){
     if(!(currentDim < dim)){
-        insertVertex(*inputKey,4);
+        insertVertex(*inputKey,dim+offset);
         //cout<<vectorToString(&inputKey,dim+1)<<endl;
         return;
     }
-    populate3DVoxel(inputKey,dim,currentDim+1);
-    (*inputKey)[currentDim+1] = (*inputKey)[currentDim+1]+1;
-    populate3DVoxel(inputKey,dim,currentDim+1);
-    (*inputKey)[currentDim+1] = (*inputKey)[currentDim+1]-1;
+    populateVoxel(inputKey,dim,currentDim+1,offset);
+    (*inputKey)[currentDim+offset] = (*inputKey)[currentDim+offset]+1;
+    populateVoxel(inputKey,dim,currentDim+1,offset);
+    (*inputKey)[currentDim+offset] = (*inputKey)[currentDim+offset]-1;
 }
 
 /*Método para vaciar un arbol trie en un archivo de texto .evm
@@ -1030,4 +1045,313 @@ int nDEVM::getDimDepth(trieNode* currentNode,int dim){
         return dim;
     
     return getDimDepth(currentNode->nextDim,dim+1);
+}
+
+/**
+ * Método para realizar una operación booleana entre dos EVMs.
+ * @param evm1
+ * @param evm2
+ * @param op
+ * @return 
+ */
+nDEVM* nDEVM::booleanOperation(nDEVM* evm2, string op, int n){
+    return booleanOperation(this,evm2,op,n);
+}
+
+nDEVM* nDEVM::booleanOperation(nDEVM *p, nDEVM *q, string op, int n){
+    nDEVM *pSection, *qSection, *couplet;
+    nDEVM *result, *rPrevSection, *rCurrentSection;
+    bool fromP, fromQ;
+    double coord;
+    if(n == 1){
+        return unionOperation(p,q);
+    }
+    pSection = new nDEVM();
+    qSection = new nDEVM();
+    rCurrentSection = new nDEVM();
+    result = new nDEVM();
+    while(!(p->endEVM()) and !(q->endEVM())){
+        nextObject(p,q,&coord,&fromP,&fromQ);
+        if(fromP){
+            couplet = p->readCouplet();
+            cout<<"section fromP, coord: "<<coord<<"\n";
+            pSection = getSection(pSection,couplet);
+            pSection->printTrie();
+        }
+        if(fromQ){
+            couplet = q->readCouplet();
+            cout<<"section fromQ, coord: "<<coord<<"\n";
+            qSection = getSection(qSection,couplet);
+            qSection->printTrie();
+        }
+        rPrevSection = rCurrentSection;
+        rCurrentSection = booleanOperation(pSection, qSection,op,n-1);
+        
+        cout<<"\nSection Result: \n";
+        rCurrentSection->printTrie();
+        
+        couplet = getCouplet(rPrevSection,rCurrentSection);
+
+        cout<<"\nCouplet Result: \n";
+        couplet->printTrie();
+        cout<<"---\n";
+
+        if(!couplet->isEmpty()){
+            couplet->setCoord(coord);
+
+            result->putCouplet(couplet);
+        }
+    }
+    while(!(p->endEVM())){
+        if(putCoupletByOp(op,1)){
+            coord = (*(p->coupletIndex))->value;
+            couplet = (p->readCouplet())->cloneEVM();
+            couplet->setCoord(coord);
+            result->putCouplet(couplet);
+        }else
+            break;
+    }
+
+    while(!(q->endEVM())){
+        if(putCoupletByOp(op,2)){
+            coord = (*(q->coupletIndex))->value;
+            couplet = (q->readCouplet())->cloneEVM();
+            couplet->setCoord(coord);
+            result->putCouplet(couplet);
+        }else
+            break;
+    }
+    p->resetCoupletIndex();
+    q->resetCoupletIndex();
+    return result;
+}
+
+void nDEVM::nextObject(nDEVM *p, nDEVM *q,double *coord,bool *fromP, bool *fromQ){
+    // Falt incluir el caso en que se toma la coord de ambos
+    
+    // Ambos no pueden llegar al final de sus couplets al mismo tiempo.
+//    if(p->endEVM()){
+//        *coord = (*(q->coupletIndex))->value;
+//        *fromP = false;
+//        *fromQ = true;
+//        return;
+//    }
+//    
+//    if(q->endEVM()){
+//        *coord = (*(p->coupletIndex))->value;
+//        *fromP = true;
+//        *fromQ = false;
+//        return;
+//    }
+
+    if((*(p->coupletIndex))->value < (*(q->coupletIndex))->value){
+        *coord = (*(p->coupletIndex))->value;
+        *fromP = true;
+        *fromQ = false;
+        return;
+    }
+
+    if((*(q->coupletIndex))->value < (*(p->coupletIndex))->value){
+        *coord = (*(q->coupletIndex))->value;
+        *fromQ = true;
+        *fromP = false;
+        return;
+    }
+
+    if((*(p->coupletIndex))->value == (*(q->coupletIndex))->value){
+        *coord = (*(p->coupletIndex))->value;
+        *fromQ = true;
+        *fromP = true;
+        return;
+    }
+}
+
+nDEVM* nDEVM::unionOperation(nDEVM* section1, nDEVM* section2){
+    if(section1->isEmpty() and !section2->isEmpty()){
+        return section2->cloneEVM();
+    }
+    
+    if(section2->isEmpty() and !section1->isEmpty()){
+        return section1->cloneEVM();
+    }
+    
+    if(section1->isEmpty() and section2->isEmpty()){
+        return new nDEVM();
+    }
+        
+    
+    //Un caso normal
+    nDEVM* result = new nDEVM();
+    trieNode *subSection1 = section1->rootNode, *subSection2 = section2->rootNode;
+    trieNode *resultTrie;
+    
+    unionOperation(subSection1,subSection2,&result);
+    subSection1 = subSection1->nextTrieNode->nextTrieNode;
+    subSection2 = subSection2->nextTrieNode->nextTrieNode;
+    resultTrie = result->rootNode;
+    while(subSection1 != NULL and subSection2 != NULL){
+        //Si el resultado son dos segmentos a--b c--d
+        if(resultTrie->nextTrieNode->nextTrieNode != NULL)
+            resultTrie = resultTrie->nextTrieNode->nextTrieNode;
+        
+        if(subSection1->value <= subSection2->value){
+            unionOperation(subSection1,resultTrie,&result);
+            subSection1 = subSection1->nextTrieNode->nextTrieNode;
+        }else{
+            unionOperation(subSection2,resultTrie,&result);
+            subSection2 = subSection2->nextTrieNode->nextTrieNode;
+        }
+    }
+//    cout<<"UnionTrieResult: \n";
+//    result->printTrie();
+    
+    if(subSection1 != NULL){
+        while(subSection1 != NULL){
+            //Se realiza la union con el ultimo segmento del trie resultante
+            //**Se cumple para segmentos que se encuentran antes o despues del inicio de este segmento
+            unionOperation(subSection1,resultTrie,&result);
+            subSection1 = subSection1->nextTrieNode->nextTrieNode;
+        }
+//        //Los segmentos restantes de section1 estan mas adelante del trie resultante
+//        if(resultTrie->nextTrieNode->value <= subSection1->value){
+//        }
+    }
+    
+    if(subSection2 != NULL){
+        while(subSection2 != NULL){
+            //Se realiza la union con el ultimo segmento del trie resultante
+            //**Se cumple para segmentos que se encuentran antes o despues del inicio de este segmento
+            unionOperation(subSection2,resultTrie,&result);
+            subSection2 = subSection2->nextTrieNode->nextTrieNode;
+        }
+    }
+    
+    cout<<"UnionTrieResult: \n";
+    result->printTrie();
+    
+    //No funciona
+//    while(subSection2 != NULL)
+//    {
+//        unionOperation(subSection1,subSection2,&result);
+//        subSection2 = subSection2->nextTrieNode->nextTrieNode;
+//    }
+//    subSection1 = subSection1->nextTrieNode->nextTrieNode;
+//    resultTrie = result->rootNode;
+//    cout<<"UnionTrieResult: \n";
+//    result->printTrie();
+//    
+//    while(subSection1 != NULL){
+//        while(resultTrie != NULL){
+//            unionOperation(subSection1,resultTrie,&result);
+//            resultTrie = resultTrie->nextTrieNode->nextTrieNode;
+//        }
+//        subSection1 = subSection1->nextTrieNode->nextTrieNode;
+//        resultTrie = result->rootNode;
+//    }
+    
+    return result;
+}
+
+/**
+ * Metodo que realiza la operacion Union entre dos secciones 1D, este es el caso base. 
+ * Las secciones 1D de entrada consisten en un par de vértices, que acotan una línea.
+ * @param section1: apuntador al nodo inicial de la primer seccion 1D, el nodo 
+ * final se conoce como section1->nextTrieNode.
+ * @param section2: apuntador al nodo inicial de la segunda seccion 1D, el nodo 
+ * final se conoce  como section2->nextTrieNode.
+ * @return 
+ */
+void nDEVM::unionOperation(trieNode* section1, trieNode* section2,nDEVM **result){
+    // Los vertices estan ordenados de menor a mayor.
+    double vertex[1];
+    double a,b,c,d;
+    
+    // Validaciones para el caso de que uno o ambos sean nulos
+    if(section1 == NULL and section2 == NULL){
+        return;
+    }
+    
+    if(section1 != NULL and section2 == NULL){
+        vertex[0] = section1->value;
+        (*result)->insertVertex(vertex,1);
+        vertex[0] = section1->nextTrieNode->value;
+        (*result)->insertVertex(vertex,1);
+        return;
+    }
+        
+    if(section1 == NULL and section2 != NULL){
+        vertex[0] = section2->value;
+        (*result)->insertVertex(vertex,1);
+        vertex[0] = section2->nextTrieNode->value;
+        (*result)->insertVertex(vertex,1);
+        return;
+    }
+
+    // Para una situacion normal
+    a = section1->value, b = section1->nextTrieNode->value; // Arista a---b
+    c = section2->value, d = section2->nextTrieNode->value; // Arista c---d
+    
+    // Caso 1: las aristas son disjuntas
+    if(b < c or d < a){
+        vertex[0] = a;
+        (*result)->condInsertVertex(vertex,1);
+        vertex[0] = b;
+        (*result)->condInsertVertex(vertex,1);
+        vertex[0] = c;
+        (*result)->condInsertVertex(vertex,1);
+        vertex[0] = d;
+        (*result)->condInsertVertex(vertex,1);
+        return;
+    }
+    
+    // Caso 2.1: las aristas son contiguas;  Caso 5.1: Superposicion
+    if(a < c and b >= c and b < d){
+        vertex[0] = a;
+        (*result)->condInsertVertex(vertex,1);
+        vertex[0] = d;
+        (*result)->condInsertVertex(vertex,1);
+        return;
+    }
+    
+    // Caso 2.2: las aristas son contiguas;  Caso 5.2: Superposicion
+    if(c < a and d >= a and d < b){
+        vertex[0] = c;
+        (*result)->condInsertVertex(vertex,1);
+        vertex[0] = b;
+        (*result)->condInsertVertex(vertex,1);
+        return;
+    }
+       
+    // Caso 3: Las aristas coinciden
+    // Caso 4.1: Inclusion
+    // * La arista 2 esta adentro de la arista 1.
+    if(a <= c and d <= b){
+        vertex[0] = a;
+        (*result)->condInsertVertex(vertex,1);
+        vertex[0] = b;
+        (*result)->condInsertVertex(vertex,1);
+        return;
+    }
+
+    // Caso 4.2: Inlusion en el otro sentido
+    if(c <= a and b <= d){
+        vertex[0] = c;
+        (*result)->condInsertVertex(vertex,1);
+        vertex[0] = d;
+        (*result)->condInsertVertex(vertex,1);
+        return;
+    }
+}
+
+bool nDEVM::putCoupletByOp(string op,int argPosition){
+    if(op.compare("union") == 0){
+        return true;
+    }
+    
+    return false;
+}
+
+void nDEVM::condInsertVertex(double * inputKey,int length){
+    if(!existsVertex(inputKey,length))
+        insertVertex(inputKey, length);
 }

@@ -25,6 +25,8 @@ public:
     nDEVM(const nDEVM& orig);
     virtual ~nDEVM();
     /*Metodos del Trie*/
+    trieNode *getRootNode();
+    bool isEmpty();
     void insertVertex(double * inputKey,int length);
     void insertVertex(trieNode **otherRootNode,double * inputKey,int length);
     bool insertVertex(trieNode **prevNode,trieNode **currentNode,double * inputKey,int length,int prevDim,int currentDim,int matchCount);
@@ -62,7 +64,9 @@ public:
     void rawFileToEVM(string fileName,int x1,int x2,int x3);
 
     void populate3DVoxel(double **inputKey);
-    void populate3DVoxel(double **inputKey,int dim,int currentDim);
+    void populate2DVoxel(double **inputKey);
+    void populateVoxel(double **inputKey,int dim,int currentDim,int offset);
+//    void populateVoxel2(double **inputKey,int dim,int currentDim);
 
     void EVMFile(int index);
     void EVMFile(ofstream *EVMFile,trieNode *currentNode,double **key, int dim);
@@ -90,6 +94,18 @@ public:
     
     int getDimDepth();
     int getDimDepth(trieNode* currentNode,int dim);
+
+//-- Operaciones regularizadas
+    nDEVM* booleanOperation(nDEVM* evm2,string op, int n);
+    nDEVM* booleanOperation(nDEVM *evm1, nDEVM* evm2, string op, int n);
+    void nextObject(nDEVM *p, nDEVM *q,double *coord,bool *fromP, bool *fromQ);
+    // Operacion basica entre dos segmentos 1D.
+//    void generalUnionOperation(trieNode* section1, trieNode* section2,nDEVM **result);
+    void condInsertVertex(double * inputKey,int length);
+    nDEVM* unionOperation(nDEVM* section1, nDEVM* section2);
+    void unionOperation(trieNode* segment1, trieNode* segment2,nDEVM **result);
+    bool putCoupletByOp(string op,int argPosition);
+    
 private:
     trieNode *rootNode;
     trieNode **coupletIndex;
