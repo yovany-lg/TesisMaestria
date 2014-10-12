@@ -1127,23 +1127,6 @@ nDEVM* nDEVM::booleanOperation(nDEVM *p, nDEVM *q, string op, int n){
 }
 
 void nDEVM::nextObject(nDEVM *p, nDEVM *q,double *coord,bool *fromP, bool *fromQ){
-    // Falt incluir el caso en que se toma la coord de ambos
-    
-    // Ambos no pueden llegar al final de sus couplets al mismo tiempo.
-//    if(p->endEVM()){
-//        *coord = (*(q->coupletIndex))->value;
-//        *fromP = false;
-//        *fromQ = true;
-//        return;
-//    }
-//    
-//    if(q->endEVM()){
-//        *coord = (*(p->coupletIndex))->value;
-//        *fromP = true;
-//        *fromQ = false;
-//        return;
-//    }
-
     if((*(p->coupletIndex))->value < (*(q->coupletIndex))->value){
         *coord = (*(p->coupletIndex))->value;
         *fromP = true;
@@ -1176,78 +1159,76 @@ nDEVM* nDEVM::unionOperation(nDEVM* section1, nDEVM* section2){
     }
     
     if(section1->isEmpty() and section2->isEmpty()){
-        return new nDEVM();
+        return NULL;
     }
-        
-    
+
     //Un caso normal
     nDEVM* result = new nDEVM();
-    trieNode *subSection1 = section1->rootNode, *subSection2 = section2->rootNode;
-    trieNode *resultTrie;
+    trieNode *subSection1, *subSection2;
+    if(section1->rootNode->value <= section2->rootNode->value){
+        subSection1 = section1->getRootNode();
+        subSection2 = section2->getRootNode();
+    }else{
+        subSection1 = section2->getRootNode();
+        subSection2 = section1->getRootNode();
+    }
+    trieNode *prevResult, *currentResult; 
     
     unionOperation(subSection1,subSection2,&result);
     subSection1 = subSection1->nextTrieNode->nextTrieNode;
     subSection2 = subSection2->nextTrieNode->nextTrieNode;
-    resultTrie = result->rootNode;
+    prevResult = NULL;
+    currentResult = result->getRootNode();
     while(subSection1 != NULL and subSection2 != NULL){
+//        if(currentResult == NULL){  // Se quito el primer vertice de currentResult en la iteracion anterior
+//            currentResult = prevResult->nextTrieNode->nextTrieNode;
+//        }else{
+
         //Si el resultado son dos segmentos a--b c--d
-        if(resultTrie->nextTrieNode->nextTrieNode != NULL)
-            resultTrie = resultTrie->nextTrieNode->nextTrieNode;
-        
-        if(subSection1->value <= subSection2->value){
-            unionOperation(subSection1,resultTrie,&result);
-            subSection1 = subSection1->nextTrieNode->nextTrieNode;
-        }else{
-            unionOperation(subSection2,resultTrie,&result);
-            subSection2 = subSection2->nextTrieNode->nextTrieNode;
+        if(currentResult->nextTrieNode->nextTrieNode != NULL){
+            prevResult = currentResult;
+            currentResult = currentResult->nextTrieNode->nextTrieNode;
+        }else{// Si el resultado es un segmento a--b
+            if(subSection1->value <= subSection2->value){
+                unionOperation(currentResult,subSection1,&result);
+                subSection1 = subSection1->nextTrieNode->nextTrieNode;
+            }else{
+                unionOperation(currentResult,subSection2,&result);
+                subSection2 = subSection2->nextTrieNode->nextTrieNode;
+            }
         }
     }
-//    cout<<"UnionTrieResult: \n";
-//    result->printTrie();
-    
+
+    if(currentResult == NULL){  // Se quito el primer vertice de currentResult en la iteracion anterior
+        currentResult = prevResult->nextTrieNode->nextTrieNode;
+    }else{
+        //Si el resultado son dos segmentos a--b c--d
+        if(currentResult->nextTrieNode->nextTrieNode != NULL){
+            prevResult = currentResult;
+            currentResult = currentResult->nextTrieNode->nextTrieNode;
+        }
+    }
+   
     if(subSection1 != NULL){
         while(subSection1 != NULL){
             //Se realiza la union con el ultimo segmento del trie resultante
             //**Se cumple para segmentos que se encuentran antes o despues del inicio de este segmento
-            unionOperation(subSection1,resultTrie,&result);
+            unionOperation(currentResult,subSection1,&result);
             subSection1 = subSection1->nextTrieNode->nextTrieNode;
         }
-//        //Los segmentos restantes de section1 estan mas adelante del trie resultante
-//        if(resultTrie->nextTrieNode->value <= subSection1->value){
-//        }
     }
     
     if(subSection2 != NULL){
         while(subSection2 != NULL){
             //Se realiza la union con el ultimo segmento del trie resultante
             //**Se cumple para segmentos que se encuentran antes o despues del inicio de este segmento
-            unionOperation(subSection2,resultTrie,&result);
+            unionOperation(currentResult,subSection2,&result);
             subSection2 = subSection2->nextTrieNode->nextTrieNode;
         }
     }
     
     cout<<"UnionTrieResult: \n";
     result->printTrie();
-    
-    //No funciona
-//    while(subSection2 != NULL)
-//    {
-//        unionOperation(subSection1,subSection2,&result);
-//        subSection2 = subSection2->nextTrieNode->nextTrieNode;
-//    }
-//    subSection1 = subSection1->nextTrieNode->nextTrieNode;
-//    resultTrie = result->rootNode;
-//    cout<<"UnionTrieResult: \n";
-//    result->printTrie();
-//    
-//    while(subSection1 != NULL){
-//        while(resultTrie != NULL){
-//            unionOperation(subSection1,resultTrie,&result);
-//            resultTrie = resultTrie->nextTrieNode->nextTrieNode;
-//        }
-//        subSection1 = subSection1->nextTrieNode->nextTrieNode;
-//        resultTrie = result->rootNode;
-//    }
     
     return result;
 }
@@ -1262,6 +1243,7 @@ nDEVM* nDEVM::unionOperation(nDEVM* section1, nDEVM* section2){
  * @return 
  */
 void nDEVM::unionOperation(trieNode* section1, trieNode* section2,nDEVM **result){
+    // Despues de la primera iteracion, el primer argumento correpondera a un segmento del EVM resultante
     // Los vertices estan ordenados de menor a mayor.
     double vertex[1];
     double a,b,c,d;
@@ -1288,11 +1270,14 @@ void nDEVM::unionOperation(trieNode* section1, trieNode* section2,nDEVM **result
     }
 
     // Para una situacion normal
+    // Tomando a--b del EVM resultante
     a = section1->value, b = section1->nextTrieNode->value; // Arista a---b
     c = section2->value, d = section2->nextTrieNode->value; // Arista c---d
     
     // Caso 1: las aristas son disjuntas
+    // Aparentemente solo se presentara el caso: a--b c--d
     if(b < c or d < a){
+        cout<<"Caso 1: las aristas son disjuntas\n";
         vertex[0] = a;
         (*result)->condInsertVertex(vertex,1);
         vertex[0] = b;
@@ -1304,17 +1289,29 @@ void nDEVM::unionOperation(trieNode* section1, trieNode* section2,nDEVM **result
         return;
     }
     
-    // Caso 2.1: las aristas son contiguas;  Caso 5.1: Superposicion
+    // Caso 2.1: las aristas son contiguas;  Caso 5.1: Superposicion a--(b,c)--d
     if(a < c and b >= c and b < d){
+        cout<<"Caso 2.1: las aristas son contiguas;  Caso 5.1: Superposicion a--(b,c)--d\n";
+        // Eliminar si no es la primera iteracion
+        vertex[0] = b;
+        (*result)->removeVertex(vertex);
+        
         vertex[0] = a;
         (*result)->condInsertVertex(vertex,1);
+
         vertex[0] = d;
         (*result)->condInsertVertex(vertex,1);
         return;
     }
     
-    // Caso 2.2: las aristas son contiguas;  Caso 5.2: Superposicion
+    // Caso 2.2: las aristas son contiguas;  Caso 5.2: Superposicion c--(d,a)--b
     if(c < a and d >= a and d < b){
+        // Aparentemente no pasara
+        // Eliminar si no es la primera iteracion
+        cout<<"Caso 2.2: las aristas son contiguas;  Caso 5.2: Superposicion c--(d,a)--b\n";
+        vertex[0] = a;
+        (*result)->removeVertex(vertex);
+        
         vertex[0] = c;
         (*result)->condInsertVertex(vertex,1);
         vertex[0] = b;
@@ -1326,6 +1323,7 @@ void nDEVM::unionOperation(trieNode* section1, trieNode* section2,nDEVM **result
     // Caso 4.1: Inclusion
     // * La arista 2 esta adentro de la arista 1.
     if(a <= c and d <= b){
+        cout<<"Caso 3: Las aristas coinciden;  Caso 4.1: Inclusion\n";
         vertex[0] = a;
         (*result)->condInsertVertex(vertex,1);
         vertex[0] = b;
@@ -1335,6 +1333,13 @@ void nDEVM::unionOperation(trieNode* section1, trieNode* section2,nDEVM **result
 
     // Caso 4.2: Inlusion en el otro sentido
     if(c <= a and b <= d){
+        // Aparentemente no pasara
+        cout<<"Caso 4.2: Inlusion en el otro sentido\n";
+        vertex[0] = a;
+        (*result)->removeVertex(vertex);
+        vertex[0] = b;
+        (*result)->removeVertex(vertex);
+
         vertex[0] = c;
         (*result)->condInsertVertex(vertex,1);
         vertex[0] = d;
