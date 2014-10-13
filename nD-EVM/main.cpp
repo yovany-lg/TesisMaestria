@@ -17,6 +17,7 @@ void test2D(int size);
 string vectorToString(int **vector,int size);
 void hvUnion2D(int **hv1,int **hv2, int **result,int size,ofstream *resultFile);
 nDEVM *hvEVM(int **hv, int size, int dim);
+void test3D(int size);
 
 template <typename T> std::string to_string(T value)
 {
@@ -89,7 +90,7 @@ int main(int argc, char** argv) {
 //    evm1->booleanOperation(evm2,"union",1);
     
     
-    test2D(10);
+    test3D(4);
     
     return 0;
 }
@@ -183,7 +184,76 @@ void test2D(int size){
     hvEVMRes->EVMFile(3000);
     
     cout<<"Comparacion de operacion Union; HyperVoxelizaciones VS EVMs:  "<<evmResult->compareEVM(hvEVMRes);
+}
+
+void test3D(int size){
+    nDEVM *hvEVM1,*hvEVM2,*hvEVMRes,*evmResult;
+    int ***hv1,***hv2,***hvResult;
+    bool hyperBox1,hyperBox2;
+    double *inputKey = new double [3];
     
+    hvEVM1 = new nDEVM();
+    hvEVM2 = new nDEVM();
+    hvEVMRes = new nDEVM();
+
+    // Inicializacion aleatoria y almacenamiento
+    hv1 = new int **[size]; // Arreglo de dobles apuntadores [**x3] -> [[*x2] -> [x1]] => apuntan a mallas 2D
+    hv2 = new int **[size];
+    hvResult = new int **[size];
+    srand( time( NULL ) );
+    for(int x3 = 0; x3 < size; x3++){   // Dimension 3
+        hv1[x3] = new int *[size];   // Arreglo de apuntadores [*x2] -> [x1] => apuntan a vectores
+        hv2[x3] = new int *[size];
+        hvResult[x3] = new int *[size];
+        inputKey[2] = x3;
+        
+        for(int x2 = 0; x2 < size; x2++){
+            hv1[x3][x2] = new int [size]; // Arreglo [x1] => vectores
+            hv2[x3][x2] = new int [size]; 
+            hvResult[x3][x2] = new int [size]; 
+            inputKey[1] = x2;
+            
+            for(int x1 = 0; x1 < size; x1++){
+                hv1[x3][x2][x1] = rand() % 2;
+                hv2[x3][x2][x1] = rand() % 2;
+                // Si la hyperBox esta llena o vacia
+                hyperBox1 = hv1[x3][x2][x1] == 1;
+                hyperBox2 = hv2[x3][x2][x1] == 1;
+                
+                // Operacion de union, OR
+                if(hyperBox1 or hyperBox2){
+                    hvResult[x3][x2][x1] = 1;
+                    // Conversion al EVM
+                    inputKey[0] = x1;
+                    hvEVMRes->populateVoxel(&inputKey,3,0,0);
+                }else{
+                    hvResult[x3][x2][x1] = 0;
+                }
+                // Conversion al EVM
+                if(hv1[x3][x2][x1] == 1){
+                    inputKey[0] = x1;
+                    hvEVM1->populateVoxel(&inputKey,3,0,0);
+                }
+
+                if(hv2[x3][x2][x1] == 1){
+                    inputKey[0] = x1;
+                    hvEVM2->populateVoxel(&inputKey,3,0,0);
+                }
+            }
+        }
+    }
+    
+    evmResult = hvEVM1->booleanOperation(hvEVM2,"union",3);
+    
+    evmResult->EVMFile(3003);
+
+    hvEVM1->EVMFile(3001);
+
+    hvEVM2->EVMFile(3002);
+
+    hvEVMRes->EVMFile(3000);
+    
+    cout<<"Comparacion de operacion Union; HyperVoxelizaciones VS EVMs:  "<<evmResult->compareEVM(hvEVMRes);
 }
 
 // Se ahorra esta funcion...
@@ -215,6 +285,7 @@ nDEVM *hvEVM(int **hv, int size, int dim){
         }
     }
 }
+
 string vectorToString(int **vector,int size){
     string output="";
     for(int i =0;i<size;i++)
