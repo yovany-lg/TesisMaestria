@@ -476,44 +476,63 @@ bool nDEVM::removeVertex(trieNode **prevNode,trieNode **currentNode,double *key,
     if((*currentNode)->value == key[currentDim])
     {
         //Si el valor devuelto por la llamada recursiva es true, entonces se puede intentar eliminar el nodo actual
-        if(removeVertex(currentNode,&(*currentNode)->nextDim,key,currentDim+1))
-        {
-            //Si se llega por profundidad
-            if((*prevNode)->nextDim == (*currentNode)) 
-            {
-                //Si no hay mas nodos a la derecha
-                if((*currentNode)->nextTrieNode == NULL)
-                {
+        bool vertexStatus = removeVertex(currentNode,&(*currentNode)->nextDim,key,currentDim+1);
+        if(vertexStatus){
+            //Si es el nodo raiz
+            if(rootNode == (*currentNode)){
+                //Si existe un nodo siguiente en la primer dimension
+                if(rootNode->nextTrieNode != NULL){
+                    trieNode *tempNode = rootNode;
+                    rootNode = rootNode->nextTrieNode;
+                    delete tempNode;
+                    tempNode = NULL;
+                }else{
+                    rootNode == NULL;
                     delete *currentNode;
                     *currentNode = NULL;
-                    return true;    //Intentar eliminar nodo padre
-                }else
-                {
-                    trieNode *node = (*currentNode)->nextTrieNode;
-                    delete *currentNode;
-                    *currentNode = NULL;
-                    (*prevNode)->nextDim = node;//Que apunte al siguiente nodo en la misma dimension
-                    return false;   //Nodo padre no puede ser eliminado
                 }
-            }else
-            {
-                //Si se llega por amplitud, busqueda en la misma dimension
-                //No hay mas nodos a la derecha
-                if((*currentNode)->nextTrieNode == NULL)    
-                {
-                    delete *currentNode;
-                    *currentNode = NULL;
-                }else
-                {
-                    trieNode *node = (*currentNode)->nextTrieNode;
-                    delete *currentNode;
-                    *currentNode = NULL;
-                    (*prevNode)->nextTrieNode= node;//Que apunte al siguiente nodo en la dimension actual
-                }
-                //Nodo padre no puede ser eliminado
+                
                 return false;
+            }else{
+
+                //Si se llega por profundidad
+                if((*prevNode)->nextDim == (*currentNode))
+                {
+                    //Si no hay mas nodos a la derecha
+                    if((*currentNode)->nextTrieNode == NULL)
+                    {
+                        delete *currentNode;
+                        *currentNode = NULL;
+                        //Intentar eliminar nodo padre
+                        return true;
+                    }else
+                    {
+                        trieNode *node = (*currentNode)->nextTrieNode;
+                        delete *currentNode;
+                        *currentNode = NULL;
+                        (*prevNode)->nextDim = node;
+                        //Nodo padre no puede ser eliminado
+                        return false;
+                    }
+                }else
+                {
+                    //Se llega por amplitud, busqueda en la misma dimension
+                    if((*currentNode)->nextTrieNode == NULL)
+                    {
+                        delete *currentNode;
+                        *currentNode = NULL;
+                    }else
+                    {
+                        trieNode *node = (*currentNode)->nextTrieNode;
+                        delete *currentNode;
+                        *currentNode = NULL;
+                        (*prevNode)->nextTrieNode= node;
+                    }
+                    //Nodo padre no puede ser eliminado
+                    return false;
+                }                
             }
-        }  
+        }
     }
 
     if((*currentNode)->nextTrieNode != NULL)//Explorar en la dimension actual
@@ -1150,6 +1169,7 @@ void nDEVM::nextObject(nDEVM *p, nDEVM *q,double *coord,bool *fromP, bool *fromQ
 }
 
 nDEVM* nDEVM::unionOperation(nDEVM* section1, nDEVM* section2){
+    // Casos en el que uno o ambos EVMs estan vacios
     if(section1->isEmpty() and !section2->isEmpty()){
         return section2->cloneEVM();
     }
@@ -1161,69 +1181,54 @@ nDEVM* nDEVM::unionOperation(nDEVM* section1, nDEVM* section2){
     if(section1->isEmpty() and section2->isEmpty()){
         return new nDEVM();
     }
-
-    //Un caso normal
-    nDEVM* result = new nDEVM();
-    trieNode *subSection1, *subSection2;
-    if(section1->rootNode->value <= section2->rootNode->value){
-        subSection1 = section1->getRootNode();
-        subSection2 = section2->getRootNode();
-    }else{
-        subSection1 = section2->getRootNode();
-        subSection2 = section1->getRootNode();
-    }
-    trieNode *prevResult, *currentResult; 
     
-    unionOperation(subSection1,subSection2,&result);
-    subSection1 = subSection1->nextTrieNode->nextTrieNode;
-    subSection2 = subSection2->nextTrieNode->nextTrieNode;
-    prevResult = NULL;
-    currentResult = result->getRootNode();
-    while(subSection1 != NULL and subSection2 != NULL){
-        if(currentResult == NULL){  // Se quito el primer vertice de currentResult en la iteracion anterior
-            currentResult = prevResult->nextTrieNode->nextTrieNode;
-        }else{
-            //Si el resultado son dos segmentos a--b c--d
-            if(currentResult->nextTrieNode->nextTrieNode != NULL){
-                prevResult = currentResult;
-                currentResult = currentResult->nextTrieNode->nextTrieNode;
-            }else{// Si el resultado es un segmento a--b
-                if(subSection1->value <= subSection2->value){
-                    unionOperation(currentResult,subSection1,&result);
-                    subSection1 = subSection1->nextTrieNode->nextTrieNode;
-                }else{
-                    unionOperation(currentResult,subSection2,&result);
-                    subSection2 = subSection2->nextTrieNode->nextTrieNode;
-                }
-            }
-        }
-    }
+    // Variante de la solucion para la operacion union
+    nDEVM *result = new nDEVM();
+    trieNode *subSection1 = section1->getRootNode(), *subSection2 = section2->getRootNode();
+    trieNode **prevResult, **currentResult = &result->rootNode;
 
-    if(currentResult == NULL){  // Se quito el primer vertice de currentResult en la iteracion anterior
-        currentResult = prevResult->nextTrieNode->nextTrieNode;
-    }else{
-        //Si el resultado son dos segmentos a--b c--d
-        if(currentResult->nextTrieNode->nextTrieNode != NULL){
-            prevResult = currentResult;
-            currentResult = currentResult->nextTrieNode->nextTrieNode;
+    // Para el caso de la UNION se considera a result vacio inicialmente   
+    // Mientras ninguno de los dos llegue al final
+    while(subSection1 != NULL and subSection2 != NULL){
+        if(subSection1->value <= subSection2->value){
+            unionOperation(*currentResult,subSection1,&result);
+            //Pasar al siguiente segmento
+            subSection1 = subSection1->nextTrieNode->nextTrieNode;
+        }else{
+            unionOperation(*currentResult,subSection2,&result);
+            //Pasar al siguiente segmento
+            subSection2 = subSection2->nextTrieNode->nextTrieNode;
+        }
+        
+        if((*currentResult)->nextTrieNode->nextTrieNode != NULL){
+            prevResult = &((*currentResult)->nextTrieNode->nextTrieNode);
+            currentResult = &((*currentResult)->nextTrieNode->nextTrieNode);
         }
     }
    
     if(subSection1 != NULL){
         while(subSection1 != NULL){
             //Se realiza la union con el ultimo segmento del trie resultante
-            //**Se cumple para segmentos que se encuentran antes o despues del inicio de este segmento
-            unionOperation(currentResult,subSection1,&result);
+            unionOperation(*currentResult,subSection1,&result);
             subSection1 = subSection1->nextTrieNode->nextTrieNode;
+
+            if((*currentResult)->nextTrieNode->nextTrieNode != NULL){
+                prevResult = &((*currentResult)->nextTrieNode->nextTrieNode);
+                currentResult = &((*currentResult)->nextTrieNode->nextTrieNode);
+            }
         }
     }
     
     if(subSection2 != NULL){
         while(subSection2 != NULL){
             //Se realiza la union con el ultimo segmento del trie resultante
-            //**Se cumple para segmentos que se encuentran antes o despues del inicio de este segmento
-            unionOperation(currentResult,subSection2,&result);
+            unionOperation(*currentResult,subSection2,&result);
             subSection2 = subSection2->nextTrieNode->nextTrieNode;
+
+            if((*currentResult)->nextTrieNode->nextTrieNode != NULL){
+                prevResult = &((*currentResult)->nextTrieNode->nextTrieNode);
+                currentResult = &((*currentResult)->nextTrieNode->nextTrieNode);
+            }
         }
     }
     
@@ -1250,10 +1255,12 @@ void nDEVM::unionOperation(trieNode* section1, trieNode* section2,nDEVM **result
     
     // Validaciones para el caso de que uno o ambos sean nulos
     if(section1 == NULL and section2 == NULL){
+//        cout<<"Caso 0.1: Ambos Nulos...\n";
         return;
     }
     
     if(section1 != NULL and section2 == NULL){
+//        cout<<"Caso 0.2: Section1 Nulo...\n";
         vertex[0] = section1->value;
         (*result)->insertVertex(vertex,1);
         vertex[0] = section1->nextTrieNode->value;
@@ -1262,6 +1269,7 @@ void nDEVM::unionOperation(trieNode* section1, trieNode* section2,nDEVM **result
     }
         
     if(section1 == NULL and section2 != NULL){
+//        cout<<"Caso 0.3: Section2 Nulo...\n";
         vertex[0] = section2->value;
         (*result)->insertVertex(vertex,1);
         vertex[0] = section2->nextTrieNode->value;
@@ -1291,7 +1299,7 @@ void nDEVM::unionOperation(trieNode* section1, trieNode* section2,nDEVM **result
     
     // Caso 2.1: las aristas son contiguas;  Caso 5.1: Superposicion a--(b,c)--d
     if(a < c and b >= c and b < d){
-//        cout<<"Caso 2.1: las aristas son contiguas;  Caso 5.1: Superposicion a--(b,c)--d\n";
+        cout<<"Caso 2.1: las aristas son contiguas;  Caso 5.1: Superposicion a--(b,c)--d\n";
         // Eliminar si no es la primera iteracion
         vertex[0] = b;
         (*result)->removeVertex(vertex);
