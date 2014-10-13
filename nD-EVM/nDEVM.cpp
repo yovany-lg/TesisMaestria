@@ -1074,27 +1074,27 @@ nDEVM* nDEVM::booleanOperation(nDEVM *p, nDEVM *q, string op, int n){
         nextObject(p,q,&coord,&fromP,&fromQ);
         if(fromP){
             couplet = p->readCouplet();
-            cout<<"section fromP, coord: "<<coord<<"\n";
+//            cout<<"section fromP, coord: "<<coord<<"\n";
             pSection = getSection(pSection,couplet);
-            pSection->printTrie();
+//            pSection->printTrie();
         }
         if(fromQ){
             couplet = q->readCouplet();
-            cout<<"section fromQ, coord: "<<coord<<"\n";
+//            cout<<"section fromQ, coord: "<<coord<<"\n";
             qSection = getSection(qSection,couplet);
-            qSection->printTrie();
+//            qSection->printTrie();
         }
         rPrevSection = rCurrentSection;
         rCurrentSection = booleanOperation(pSection, qSection,op,n-1);
         
-        cout<<"\nSection Result: \n";
-        rCurrentSection->printTrie();
+//        cout<<"\nSection Result: \n";
+//        rCurrentSection->printTrie();
         
         couplet = getCouplet(rPrevSection,rCurrentSection);
 
-        cout<<"\nCouplet Result: \n";
-        couplet->printTrie();
-        cout<<"---\n";
+//        cout<<"\nCouplet Result: \n";
+//        couplet->printTrie();
+//        cout<<"---\n";
 
         if(!couplet->isEmpty()){
             couplet->setCoord(coord);
@@ -1159,7 +1159,7 @@ nDEVM* nDEVM::unionOperation(nDEVM* section1, nDEVM* section2){
     }
     
     if(section1->isEmpty() and section2->isEmpty()){
-        return NULL;
+        return new nDEVM();
     }
 
     //Un caso normal
@@ -1180,21 +1180,21 @@ nDEVM* nDEVM::unionOperation(nDEVM* section1, nDEVM* section2){
     prevResult = NULL;
     currentResult = result->getRootNode();
     while(subSection1 != NULL and subSection2 != NULL){
-//        if(currentResult == NULL){  // Se quito el primer vertice de currentResult en la iteracion anterior
-//            currentResult = prevResult->nextTrieNode->nextTrieNode;
-//        }else{
-
-        //Si el resultado son dos segmentos a--b c--d
-        if(currentResult->nextTrieNode->nextTrieNode != NULL){
-            prevResult = currentResult;
-            currentResult = currentResult->nextTrieNode->nextTrieNode;
-        }else{// Si el resultado es un segmento a--b
-            if(subSection1->value <= subSection2->value){
-                unionOperation(currentResult,subSection1,&result);
-                subSection1 = subSection1->nextTrieNode->nextTrieNode;
-            }else{
-                unionOperation(currentResult,subSection2,&result);
-                subSection2 = subSection2->nextTrieNode->nextTrieNode;
+        if(currentResult == NULL){  // Se quito el primer vertice de currentResult en la iteracion anterior
+            currentResult = prevResult->nextTrieNode->nextTrieNode;
+        }else{
+            //Si el resultado son dos segmentos a--b c--d
+            if(currentResult->nextTrieNode->nextTrieNode != NULL){
+                prevResult = currentResult;
+                currentResult = currentResult->nextTrieNode->nextTrieNode;
+            }else{// Si el resultado es un segmento a--b
+                if(subSection1->value <= subSection2->value){
+                    unionOperation(currentResult,subSection1,&result);
+                    subSection1 = subSection1->nextTrieNode->nextTrieNode;
+                }else{
+                    unionOperation(currentResult,subSection2,&result);
+                    subSection2 = subSection2->nextTrieNode->nextTrieNode;
+                }
             }
         }
     }
@@ -1227,8 +1227,8 @@ nDEVM* nDEVM::unionOperation(nDEVM* section1, nDEVM* section2){
         }
     }
     
-    cout<<"UnionTrieResult: \n";
-    result->printTrie();
+//    cout<<"UnionTrieResult: \n";
+//    result->printTrie();
     
     return result;
 }
@@ -1277,7 +1277,7 @@ void nDEVM::unionOperation(trieNode* section1, trieNode* section2,nDEVM **result
     // Caso 1: las aristas son disjuntas
     // Aparentemente solo se presentara el caso: a--b c--d
     if(b < c or d < a){
-        cout<<"Caso 1: las aristas son disjuntas\n";
+//        cout<<"Caso 1: las aristas son disjuntas\n";
         vertex[0] = a;
         (*result)->condInsertVertex(vertex,1);
         vertex[0] = b;
@@ -1291,7 +1291,7 @@ void nDEVM::unionOperation(trieNode* section1, trieNode* section2,nDEVM **result
     
     // Caso 2.1: las aristas son contiguas;  Caso 5.1: Superposicion a--(b,c)--d
     if(a < c and b >= c and b < d){
-        cout<<"Caso 2.1: las aristas son contiguas;  Caso 5.1: Superposicion a--(b,c)--d\n";
+//        cout<<"Caso 2.1: las aristas son contiguas;  Caso 5.1: Superposicion a--(b,c)--d\n";
         // Eliminar si no es la primera iteracion
         vertex[0] = b;
         (*result)->removeVertex(vertex);
@@ -1308,7 +1308,7 @@ void nDEVM::unionOperation(trieNode* section1, trieNode* section2,nDEVM **result
     if(c < a and d >= a and d < b){
         // Aparentemente no pasara
         // Eliminar si no es la primera iteracion
-        cout<<"Caso 2.2: las aristas son contiguas;  Caso 5.2: Superposicion c--(d,a)--b\n";
+//        cout<<"Caso 2.2: las aristas son contiguas;  Caso 5.2: Superposicion c--(d,a)--b\n";
         vertex[0] = a;
         (*result)->removeVertex(vertex);
         
@@ -1323,7 +1323,7 @@ void nDEVM::unionOperation(trieNode* section1, trieNode* section2,nDEVM **result
     // Caso 4.1: Inclusion
     // * La arista 2 esta adentro de la arista 1.
     if(a <= c and d <= b){
-        cout<<"Caso 3: Las aristas coinciden;  Caso 4.1: Inclusion\n";
+//        cout<<"Caso 3: Las aristas coinciden;  Caso 4.1: Inclusion\n";
         vertex[0] = a;
         (*result)->condInsertVertex(vertex,1);
         vertex[0] = b;
@@ -1334,7 +1334,7 @@ void nDEVM::unionOperation(trieNode* section1, trieNode* section2,nDEVM **result
     // Caso 4.2: Inlusion en el otro sentido
     if(c <= a and b <= d){
         // Aparentemente no pasara
-        cout<<"Caso 4.2: Inlusion en el otro sentido\n";
+//        cout<<"Caso 4.2: Inlusion en el otro sentido\n";
         vertex[0] = a;
         (*result)->removeVertex(vertex);
         vertex[0] = b;
