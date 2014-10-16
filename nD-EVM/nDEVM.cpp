@@ -805,6 +805,45 @@ void nDEVM::load3DRawFile(string fileName,int voxelSize){
     fileInput.close();
 }
 
+/**
+ * Cargar un archivo binario, que representa una voxelizacion en 3D, en el EVM...
+ * @param fileName
+ * @param voxelSize
+ */
+void nDEVM::load2DRawFile(string fileName,int voxelSize){
+    ifstream fileInput;
+    fileInput.open(fileName.c_str(), ios_base::in |ios_base::binary); // binary file
+
+    unsigned char buffer;
+    double *newVoxel = new double[2]; //ELIMINAR
+    
+    if(!fileInput.is_open()){
+        cout << "No se pudo abrir el archivo: "<< fileName << "\n";
+        return;
+    }
+    
+    //Se hace el barrido en la dimensión 2
+    for(int x2 = 0; x2 < voxelSize; x2++){
+        newVoxel[1] = x2;
+        //Se hace el barrido en la dimensión 1
+        for(int x1 = 0; x1 < voxelSize; x1++)
+        {
+            newVoxel[0] = x1;
+            //Se lee 1 Byte de información a la vez
+            if(fileInput.read((char *)( &buffer ), sizeof(buffer)))
+            {
+                //cout<< "Buffer: "<< buffer;
+                // Si el voxel esta lleno, se carga en el EVM
+                if(buffer == 1){
+                    populateVoxel(&newVoxel,2,0,0);
+                }
+            }
+        }
+    }
+
+    fileInput.close();
+}
+
 /*Método para generar e insertar la voxelización que consiste de 8 vértices, generada a partir del vértice en el origen.
  * Argumentos:
  * -Nodo Raiz.

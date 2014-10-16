@@ -111,6 +111,7 @@ public:
     
     //Pruebas de operaciones Booleanas
     void load3DRawFile(string fileName,int voxelSize);
+    void load2DRawFile(string fileName,int voxelSize);
 };
 
 #endif	/* TRIETREE_H */
