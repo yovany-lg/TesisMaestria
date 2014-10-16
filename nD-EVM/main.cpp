@@ -17,7 +17,7 @@ void test2D(int size);
 string vectorToString(int **vector,int size);
 void hvUnion2D(int **hv1,int **hv2, int **result,int size,ofstream *resultFile);
 nDEVM *hvEVM(int **hv, int size, int dim);
-void test3D(int size);
+bool test3D(int size, int testIndex);
 
 template <typename T> std::string to_string(T value)
 {
@@ -88,9 +88,13 @@ int main(int argc, char** argv) {
 //    evm2->insertVertex(inputKey4,1);
 //    
 //    evm1->booleanOperation(evm2,"union",1);
+
+    srand( time( NULL ) );
     
-    
-    test3D(4);
+    for(int i = 0; i < 2500; i++){
+        if(!test3D(5,i))
+            break;
+    }
     
     return 0;
 }
@@ -186,104 +190,196 @@ void test2D(int size){
     cout<<"Comparacion de operacion Union; HyperVoxelizaciones VS EVMs:  "<<evmResult->compareEVM(hvEVMRes);
 }
 
-void test3D(int size){
-    nDEVM *hvEVM1,*hvEVM2,*hvEVMRes,*evmResult;
-    int ***hv1,***hv2,***hvResult;
-    bool hyperBox1,hyperBox2;
-    double *inputKey = new double [3];
+bool test2D(int size, int testIndex){
+    nDEVM *hvEVM1,*hvEVM2,*hvResult,*evmResult;
+    unsigned char value1, value2,result;    // Las hypervoxelizaciones tienen dimensiones menores a 8 bits...
+    bool hyperBox1,hyperBox2,compare;
+    double *voxelInput = new double [3];
     
     hvEVM1 = new nDEVM();
     hvEVM2 = new nDEVM();
-    hvEVMRes = new nDEVM();
+    hvResult = new nDEVM();
+    ofstream hv1File("3DTest/hv1File"+to_string(testIndex)+".raw",ios_base::out | ios_base::binary);
+    ofstream hv2File("3DTest/hv2File"+to_string(testIndex)+".raw",ios_base::out | ios_base::binary);
+    ofstream hvResultFile("3DTest/hvUnionResult"+to_string(testIndex)+".raw",ios_base::out | ios_base::binary);
+    if(!hv1File.is_open()){
+        cout << "Could not open file!" << '\n';    
+        return false;
+    }
+    if(!hv2File.is_open()){
+        cout << "Could not open file!" << '\n';    
+        return false;
+    }
+    if(!hvResultFile.is_open()){
+        cout << "Could not open file!" << '\n';    
+        return false;
+    }
 
-    // Inicializacion aleatoria y almacenamiento
-    hv1 = new int **[size]; // Arreglo de dobles apuntadores [**x3] -> [[*x2] -> [x1]] => apuntan a mallas 2D
-    hv2 = new int **[size];
-    hvResult = new int **[size];
-    srand( time( NULL ) );
     for(int x3 = 0; x3 < size; x3++){   // Dimension 3
-        hv1[x3] = new int *[size];   // Arreglo de apuntadores [*x2] -> [x1] => apuntan a vectores
-        hv2[x3] = new int *[size];
-        hvResult[x3] = new int *[size];
-        inputKey[2] = x3;
+        voxelInput[2] = x3;
         
         for(int x2 = 0; x2 < size; x2++){
-            hv1[x3][x2] = new int [size]; // Arreglo [x1] => vectores
-            hv2[x3][x2] = new int [size]; 
-            hvResult[x3][x2] = new int [size]; 
-            inputKey[1] = x2;
+            voxelInput[1] = x2;
             
             for(int x1 = 0; x1 < size; x1++){
-                hv1[x3][x2][x1] = rand() % 2;
-                hv2[x3][x2][x1] = rand() % 2;
-                // Si la hyperBox esta llena o vacia
-                hyperBox1 = hv1[x3][x2][x1] == 1;
-                hyperBox2 = hv2[x3][x2][x1] == 1;
+                value1 = rand() % 2;
+                value2 = rand() % 2;
+                //cout<< "sizeof value1: "<<sizeof value1<<endl;
+                hv1File.write((char *) & value1, sizeof value1);
+                hv2File.write((char *) & value2, sizeof value2);
                 
+                // Conversion al EVM
+                if(value1 == 1){
+                    voxelInput[0] = x1;
+                    hvEVM1->populateVoxel(&voxelInput,3,0,0);
+                }
+
+                if(value2 == 1){
+                    voxelInput[0] = x1;
+                    hvEVM2->populateVoxel(&voxelInput,3,0,0);
+                }
+
+                // Si la hyperBox esta llena o vacia
+                hyperBox1 = value1 == 1;
+                hyperBox2 = value2 == 1;
+
                 // Operacion de union, OR
                 if(hyperBox1 or hyperBox2){
-                    hvResult[x3][x2][x1] = 1;
+                    //hvResultFile[x3][x2][x1] = 1;
+                    result = 1;
+                    hvResultFile.write((char *) & result, sizeof result);
                     // Conversion al EVM
-                    inputKey[0] = x1;
-                    hvEVMRes->populateVoxel(&inputKey,3,0,0);
+                    voxelInput[0] = x1;
+                    hvResult->populateVoxel(&voxelInput,3,0,0);
                 }else{
-                    hvResult[x3][x2][x1] = 0;
-                }
-                // Conversion al EVM
-                if(hv1[x3][x2][x1] == 1){
-                    inputKey[0] = x1;
-                    hvEVM1->populateVoxel(&inputKey,3,0,0);
-                }
-
-                if(hv2[x3][x2][x1] == 1){
-                    inputKey[0] = x1;
-                    hvEVM2->populateVoxel(&inputKey,3,0,0);
+//                    hvResultFile[x3][x2][x1] = 0;
+                    result = 0;
+                    hvResultFile.write((char *) & result, sizeof result);
                 }
             }
         }
     }
     
+    hv1File.close();
+    hv2File.close();
+    hvResultFile.close();
+
     evmResult = hvEVM1->booleanOperation(hvEVM2,"union",3);
     
-    evmResult->EVMFile(3003);
-
-    hvEVM1->EVMFile(3001);
-
-    hvEVM2->EVMFile(3002);
-
-    hvEVMRes->EVMFile(3000);
+//    evmResult->EVMFile(3003);
+//    hvEVM1->EVMFile(3001);
+//    hvEVM2->EVMFile(3002);
+//    hvResult->EVMFile(3000);
     
-    cout<<"Comparacion de operacion Union; HyperVoxelizaciones VS EVMs:  "<<evmResult->compareEVM(hvEVMRes);
-}
-
-// Se ahorra esta funcion...
-void hvUnion2D(int **hv1,int **hv2, int **result,int size,ofstream *resultFile){
-    bool hb1,hb2;
-    for(int i = 0; i < size; i++){
-        for(int j = 0; j < size; j++){
-            hb1 = hv1[i][j] == 1;
-            hb2 = hv2[i][j] == 1;
-            if(hb1 or hb2)
-                result[i][j] = 1;
-            else
-                result[i][j] = 0;                
-        }
-        *resultFile<<vectorToString(&(result[i]),size)<<endl;
+    compare = evmResult->compareEVM(hvResult);
+    if(compare){
+        cout<<"Comparacion de operacion Union; HyperVoxelizaciones VS EVMs: True"<<endl;
+        return true;
+    }else{
+        cout<<"Comparacion de operacion Union; HyperVoxelizaciones VS EVMs: False"<<endl;
+        return false;
     }
+    
+//    nDEVM *loadedFile = new nDEVM();
+//    loadedFile->load3DRawFile("3DTest/hvUnionResult.raw",size);
+//    cout<<"Comparación del EVM formado con el archivo binario resultante y el EVM resultante:  "<<loadedFile->compareEVM(hvResult);
 }
 
-nDEVM *hvEVM(int **hv, int size, int dim){
-    nDEVM *evm = new nDEVM();
-    double *inputKey = new double [dim];
-    for(int i = 0; i < size; i++){
-        inputKey[0] = i;
-        for(int j = 0; j < size; j++){
-            if(hv[i][j] == 1){
-                inputKey[1] = j;
-                evm->populate2DVoxel(&inputKey);
+
+bool test3D(int size, int testIndex){
+    nDEVM *hvEVM1,*hvEVM2,*hvResult,*evmResult;
+    unsigned char value1, value2,result;    // Las hypervoxelizaciones tienen dimensiones menores a 8 bits...
+    bool hyperBox1,hyperBox2,compare;
+    double *voxelInput = new double [3];
+    
+    hvEVM1 = new nDEVM();
+    hvEVM2 = new nDEVM();
+    hvResult = new nDEVM();
+    ofstream hv1File("3DTest/hv1File"+to_string(testIndex)+".raw",ios_base::out | ios_base::binary);
+    ofstream hv2File("3DTest/hv2File"+to_string(testIndex)+".raw",ios_base::out | ios_base::binary);
+    ofstream hvResultFile("3DTest/hvUnionResult"+to_string(testIndex)+".raw",ios_base::out | ios_base::binary);
+    if(!hv1File.is_open()){
+        cout << "Could not open file!" << '\n';    
+        return false;
+    }
+    if(!hv2File.is_open()){
+        cout << "Could not open file!" << '\n';    
+        return false;
+    }
+    if(!hvResultFile.is_open()){
+        cout << "Could not open file!" << '\n';    
+        return false;
+    }
+
+    srand( time( NULL ) );
+    for(int x3 = 0; x3 < size; x3++){   // Dimension 3
+        voxelInput[2] = x3;
+        
+        for(int x2 = 0; x2 < size; x2++){
+            voxelInput[1] = x2;
+            
+            for(int x1 = 0; x1 < size; x1++){
+                value1 = rand() % 2;
+                value2 = rand() % 2;
+                //cout<< "sizeof value1: "<<sizeof value1<<endl;
+                hv1File.write((char *) & value1, sizeof value1);
+                hv2File.write((char *) & value2, sizeof value2);
+                
+                // Conversion al EVM
+                if(value1 == 1){
+                    voxelInput[0] = x1;
+                    hvEVM1->populateVoxel(&voxelInput,3,0,0);
+                }
+
+                if(value2 == 1){
+                    voxelInput[0] = x1;
+                    hvEVM2->populateVoxel(&voxelInput,3,0,0);
+                }
+
+                // Si la hyperBox esta llena o vacia
+                hyperBox1 = value1 == 1;
+                hyperBox2 = value2 == 1;
+
+                // Operacion de union, OR
+                if(hyperBox1 or hyperBox2){
+                    //hvResultFile[x3][x2][x1] = 1;
+                    result = 1;
+                    hvResultFile.write((char *) & result, sizeof result);
+                    // Conversion al EVM
+                    voxelInput[0] = x1;
+                    hvResult->populateVoxel(&voxelInput,3,0,0);
+                }else{
+//                    hvResultFile[x3][x2][x1] = 0;
+                    result = 0;
+                    hvResultFile.write((char *) & result, sizeof result);
+                }
             }
         }
     }
+    
+    hv1File.close();
+    hv2File.close();
+    hvResultFile.close();
+
+    evmResult = hvEVM1->booleanOperation(hvEVM2,"union",3);
+    
+//    evmResult->EVMFile(3003);
+//    hvEVM1->EVMFile(3001);
+//    hvEVM2->EVMFile(3002);
+//    hvResult->EVMFile(3000);
+    
+    compare = evmResult->compareEVM(hvResult);
+    if(compare){
+        cout<<"Comparacion de operacion Union; HyperVoxelizaciones VS EVMs: True"<<endl;
+        return true;
+    }else{
+        cout<<"Comparacion de operacion Union; HyperVoxelizaciones VS EVMs: False"<<endl;
+        return false;
+    }
+    
+//    nDEVM *loadedFile = new nDEVM();
+//    loadedFile->load3DRawFile("3DTest/hvUnionResult.raw",size);
+//    cout<<"Comparación del EVM formado con el archivo binario resultante y el EVM resultante:  "<<loadedFile->compareEVM(hvResult);
 }
 
 string vectorToString(int **vector,int size){

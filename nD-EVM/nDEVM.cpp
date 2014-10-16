@@ -762,17 +762,60 @@ void nDEVM::rawFileToEVM(string fileName,int x1,int x2,int x3){
         cout << "No se abrio correctamente el archivo: "<< fileName << "\n";
 }
 
+/**
+ * Cargar un archivo binario, que representa una voxelizacion en 3D, en el EVM...
+ * @param fileName
+ * @param voxelSize
+ */
+void nDEVM::load3DRawFile(string fileName,int voxelSize){
+    ifstream fileInput;
+    fileInput.open(fileName.c_str(), ios_base::in |ios_base::binary); // binary file
+
+    unsigned char buffer;
+    double *newVoxel = new double[3]; //ELIMINAR
+    
+    if(!fileInput.is_open()){
+        cout << "No se pudo abrir el archivo: "<< fileName << "\n";
+        return;
+    }
+    
+    //Primeramente, se hace un barrido en la dimensión 3
+    for(int x3 = 0; x3 < voxelSize; x3++){
+        newVoxel[2] = x3;
+        //Se hace el barrido en la dimensión 2
+        for(int x2 = 0; x2 < voxelSize; x2++){
+            newVoxel[1] = x2;
+            //Se hace el barrido en la dimensión 1
+            for(int x1 = 0; x1 < voxelSize; x1++)
+            {
+                newVoxel[0] = x1;
+                //Se lee 1 Byte de información a la vez
+                if(fileInput.read((char *)( &buffer ), sizeof(buffer)))
+                {
+                    //cout<< "Buffer: "<< buffer;
+                    // Si el voxel esta lleno, se carga en el EVM
+                    if(buffer == 1){
+                        populateVoxel(&newVoxel,3,0,0);
+                    }
+                }
+            }
+        }
+    }
+
+    fileInput.close();
+}
+
 /*Método para generar e insertar la voxelización que consiste de 8 vértices, generada a partir del vértice en el origen.
  * Argumentos:
  * -Nodo Raiz.
  * -Apuntador doble del vector de entrada.
 */
-void nDEVM::populate3DVoxel(double **inputKey){
-    populateVoxel(inputKey,3,0,1);
+void nDEVM::populate3DVoxel(double **voxelInput){
+    populateVoxel(voxelInput,3,0,1);
 }
 
-void nDEVM::populate2DVoxel(double **inputKey){
-    populateVoxel(inputKey,2,0,0);
+void nDEVM::populate2DVoxel(double **voxelInput){
+    populateVoxel(voxelInput,2,0,0);
 }
 
 /*Método Principal y Recursivo para generar e insertar la voxelización que consiste de 8 vértices, generada a partir del vértice en el origen.
@@ -780,16 +823,16 @@ void nDEVM::populate2DVoxel(double **inputKey){
  * -Nodo Raiz.
  * -Apuntador doble del vector de entrada.
 */
-void nDEVM::populateVoxel(double **inputKey,int dim,int currentDim,int offset){
+void nDEVM::populateVoxel(double **voxelInput,int dim,int currentDim,int offset){
     if(!(currentDim < dim)){
-        insertVertex(*inputKey,dim+offset);
-        //cout<<vectorToString(&inputKey,dim+1)<<endl;
+        insertVertex(*voxelInput,dim+offset);
+        //cout<<vectorToString(&voxelInput,dim+1)<<endl;
         return;
     }
-    populateVoxel(inputKey,dim,currentDim+1,offset);
-    (*inputKey)[currentDim+offset] = (*inputKey)[currentDim+offset]+1;
-    populateVoxel(inputKey,dim,currentDim+1,offset);
-    (*inputKey)[currentDim+offset] = (*inputKey)[currentDim+offset]-1;
+    populateVoxel(voxelInput,dim,currentDim+1,offset);
+    (*voxelInput)[currentDim+offset] = (*voxelInput)[currentDim+offset]+1;
+    populateVoxel(voxelInput,dim,currentDim+1,offset);
+    (*voxelInput)[currentDim+offset] = (*voxelInput)[currentDim+offset]-1;
 }
 
 /*Método para vaciar un arbol trie en un archivo de texto .evm
@@ -1299,7 +1342,7 @@ void nDEVM::unionOperation(trieNode* section1, trieNode* section2,nDEVM **result
     
     // Caso 2.1: las aristas son contiguas;  Caso 5.1: Superposicion a--(b,c)--d
     if(a < c and b >= c and b < d){
-        cout<<"Caso 2.1: las aristas son contiguas;  Caso 5.1: Superposicion a--(b,c)--d\n";
+//        cout<<"Caso 2.1: las aristas son contiguas;  Caso 5.1: Superposicion a--(b,c)--d\n";
         // Eliminar si no es la primera iteracion
         vertex[0] = b;
         (*result)->removeVertex(vertex);

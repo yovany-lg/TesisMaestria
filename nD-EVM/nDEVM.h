@@ -19,6 +19,9 @@ struct trieNode{
 using namespace std;
 
 class nDEVM {
+private:
+    trieNode *rootNode;
+    trieNode **coupletIndex;
 public:
     nDEVM();
     nDEVM(trieNode *node);
@@ -106,9 +109,8 @@ public:
     void unionOperation(trieNode* segment1, trieNode* segment2,nDEVM **result);
     bool putCoupletByOp(string op,int argPosition);
     
-private:
-    trieNode *rootNode;
-    trieNode **coupletIndex;
+    //Pruebas de operaciones Booleanas
+    void load3DRawFile(string fileName,int voxelSize);
 };
 
 #endif	/* TRIETREE_H */
