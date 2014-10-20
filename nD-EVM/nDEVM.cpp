@@ -767,6 +767,48 @@ void nDEVM::rawFileToEVM(string fileName,int x1,int x2,int x3){
  * @param fileName
  * @param voxelSize
  */
+void nDEVM::loadnDRawFile(string fileName,int voxelSize,int dim){
+    ifstream inputFile;
+    inputFile.open(fileName.c_str(), ios_base::in |ios_base::binary); // binary file
+
+    
+    double *newVoxel = new double[dim]; //ELIMINAR
+    
+    if(!inputFile.is_open()){
+        cout << "No se pudo abrir el archivo: "<< fileName << "\n";
+        return;
+    }
+    
+    voxelizeRawFile(&newVoxel,&inputFile,voxelSize,dim,dim);
+    
+    inputFile.close();
+}
+
+void nDEVM::voxelizeRawFile(double **voxelInput,ifstream *inputFile,int voxelSize,int dim, int currentDim){
+    if(currentDim == 0){
+        unsigned char buffer;
+        //Se lee 1 Byte de información a la vez
+        if((*inputFile).read((char *)( &buffer ), sizeof(buffer)))
+        {
+            // Si el voxel esta lleno, se carga en el EVM
+            if(buffer == 1){
+                populateVoxel(voxelInput,dim,0,0);
+            }
+        }
+        return;
+    }
+
+    for(int i = 0; i < voxelSize; i++){
+        (*voxelInput)[currentDim - 1] = i;
+        voxelizeRawFile(voxelInput,inputFile,voxelSize,dim,currentDim-1);
+    }
+}
+
+/**
+ * Cargar un archivo binario, que representa una voxelizacion en 3D, en el EVM...
+ * @param fileName
+ * @param voxelSize
+ */
 void nDEVM::load3DRawFile(string fileName,int voxelSize){
     ifstream fileInput;
     fileInput.open(fileName.c_str(), ios_base::in |ios_base::binary); // binary file
