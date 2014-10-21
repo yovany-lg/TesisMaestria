@@ -36,6 +36,8 @@ public:
     
     void printTrie();
     void printTrie(trieNode *currentNode,double **key, int dim);
+    void deleteTrie();
+    void deleteTrie(trieNode *currentNode,int dim);
     
     double EVMSize();
     void EVMSize(trieNode *currentNode,double *size);

@@ -34,6 +34,7 @@ nDEVM::nDEVM(const nDEVM& orig) {
 }
 
 nDEVM::~nDEVM() {   //METODO PARA ELIMINAR EL ARBOL TRIE
+    deleteTrie();
 }
 
 void nDEVM::resetCoupletIndex(){
@@ -199,12 +200,38 @@ bool nDEVM::insertVertex(trieNode **prevNode,trieNode **currentNode,double * inp
     }
 }
 
+void nDEVM::deleteTrie(){
+    //int dim = getDimDepth();
+    //double * testKey = new double[dim];
+    deleteTrie(rootNode,0);
+    
+//    delete testKey;
+}
+
+void nDEVM::deleteTrie(trieNode *currentNode,int dim){
+    if((currentNode) == NULL){
+        return;
+    }
+//    (*key)[dim] = (currentNode)->value;
+    deleteTrie((currentNode)->nextDim, dim+1);
+
+    if((currentNode)->nextTrieNode != NULL){
+        deleteTrie((currentNode)->nextTrieNode, dim);
+    }
+//    (*key)[dim] = (currentNode)->value;
+//    cout<< "Eliminando el vector: " << vectorToString(key,dim+1)<<endl;
+    delete currentNode;
+    currentNode = NULL;
+}
 /**
  * Método Auxiliar para Imprimir en consola el contenido de un árbol Trie.
  */
 void nDEVM::printTrie(){
-    double * testKey = new double[4];
+    int dim = getDimDepth();
+    double * testKey = new double[dim];
     printTrie(rootNode,&testKey,0);
+    
+    delete testKey;
 }
 
 /**
@@ -384,7 +411,7 @@ nDEVM * nDEVM::cloneEVM(){
     trieNode *copyRootNode = NULL;
     trieNode *prevNode = NULL;
     trieNode *copyPrevNode = NULL;
-    //double * testKey = new double[4];
+
     cloneTrie(&prevNode,&rootNode,&copyPrevNode,&copyRootNode);
     nDEVM *cloneEVM = new nDEVM(copyRootNode);
     return cloneEVM;
@@ -399,7 +426,7 @@ trieNode * nDEVM::cloneTrie(){
     trieNode *copyRootNode = NULL;
     trieNode *prevNode = NULL;
     trieNode *copyPrevNode = NULL;
-    //double * testKey = new double[4];
+
     cloneTrie(&prevNode,&rootNode,&copyPrevNode,&copyRootNode);
     return copyRootNode;
 }
@@ -614,6 +641,7 @@ trieNode * nDEVM::getSubTrie(trieNode **currentNode,double key){
  * -Nodo raíz del arbol.
  * -Valor del contador.
 */
+//NO SE USA, OBTIENE COUPLETS EN BASE A UNA CLAVE
 nDEVM* nDEVM::couplet(double key){
     nDEVM *couplet = new nDEVM(getSubTrie2(&rootNode,key));
     return couplet;
@@ -624,6 +652,7 @@ nDEVM* nDEVM::couplet(double key){
  * -Nodo raíz del arbol.
  * -Valor del contador.
 */
+//NO SE HA USADO
 trieNode * nDEVM::getSubTrie2(double key){
     return getSubTrie2(&rootNode,key);
 }
@@ -633,6 +662,7 @@ trieNode * nDEVM::getSubTrie2(double key){
  * -Nodo raíz del arbol.
  * -Valor del contador.
 */
+//NO SE HA USADO
 trieNode * nDEVM::getSubTrie2(trieNode **currentNode,double key){
     if((*currentNode) == NULL)
         return NULL;
@@ -646,11 +676,11 @@ trieNode * nDEVM::getSubTrie2(trieNode **currentNode,double key){
         return NULL;   
 }
 
-/*Método para realizar la operación XOR de dos EVMs.
- * Argumentos:
- * -Apuntador al otro EVM.
- * -Dimension
-*/
+/**
+ * Método para realizar la operación XOR de dos EVMs.
+ * @param otherEVM: El otro EVM.
+ * @return El un nuevo EVM obtenido al operar los dos EVMs.
+ */
 nDEVM* nDEVM::mergeXOR(nDEVM* otherEVM){
     //Se considera que esta operacion se realizara con EVMs de la misma dimension.
     if(rootNode == NULL and otherEVM->rootNode != NULL)
@@ -670,9 +700,7 @@ nDEVM* nDEVM::mergeXOR(nDEVM* otherEVM){
     nDEVM *xorEVM = new nDEVM(cloneTrie());
     
     double *key = new double[dimDepth];  //ELIMINAR
-    //Hay problemas con el apuntador a root...
-    //nDEVM *xorEVM = new nDEVM(XORTrie(&(otherEVM->rootNode),dimDepth));
-    
+
     //Para no perder referencia al root desde la funcion insertVertex...
     xorEVM->XORTrie(&(xorEVM->rootNode),&(otherEVM->rootNode),&key,0);
     return xorEVM;
@@ -692,6 +720,8 @@ trieNode * nDEVM::XORTrie(trieNode **otherTrie,int dim){
     //Se realiza la inserción de los elementos del segundo trie en el clon del primero.
     XORTrie(&resultTrie,otherTrie,&key,0);
     return resultTrie;
+
+    delete key;
 }
 
 /*Método Principal Recursivo para realizar la operación XOR de dos tries.
@@ -760,12 +790,15 @@ void nDEVM::rawFileToEVM(string fileName,int x1,int x2,int x3){
         fileInput.close();
     }else
         cout << "No se abrio correctamente el archivo: "<< fileName << "\n";
+    
+    delete newKey;
 }
 
 /**
- * Cargar un archivo binario, que representa una voxelizacion en 3D, en el EVM...
- * @param fileName
- * @param voxelSize
+ * Cargar un archivo binario, que representa una voxelizacion en nD, en el EVM...
+ * @param fileName: Nombre del archivo...
+ * @param voxelSize: Tamaño de la voxelización...
+ * @param dim: Dimensión del espacio.
  */
 void nDEVM::loadnDRawFile(string fileName,int voxelSize,int dim){
     ifstream inputFile;
@@ -781,9 +814,18 @@ void nDEVM::loadnDRawFile(string fileName,int voxelSize,int dim){
     
     voxelizeRawFile(&newVoxel,&inputFile,voxelSize,dim,dim);
     
+    delete newVoxel;
     inputFile.close();
 }
 
+/**
+ * Generar la Voxelización mediante la exploración y el contenido (en bytes) del archivo.
+ * @param voxelInput: Vector que contiene las coordenadas del voxel.
+ * @param inputFile: Apuntador al archivo de entrada.
+ * @param voxelSize: Tamaño de la voxelización.
+ * @param dim: Dimensión del espacio.
+ * @param currentDim: Dimensión actual en la exploración
+ */
 void nDEVM::voxelizeRawFile(double **voxelInput,ifstream *inputFile,int voxelSize,int dim, int currentDim){
     if(currentDim == 0){
         unsigned char buffer;
@@ -804,88 +846,6 @@ void nDEVM::voxelizeRawFile(double **voxelInput,ifstream *inputFile,int voxelSiz
     }
 }
 
-/**
- * Cargar un archivo binario, que representa una voxelizacion en 3D, en el EVM...
- * @param fileName
- * @param voxelSize
- */
-void nDEVM::load3DRawFile(string fileName,int voxelSize){
-    ifstream fileInput;
-    fileInput.open(fileName.c_str(), ios_base::in |ios_base::binary); // binary file
-
-    unsigned char buffer;
-    double *newVoxel = new double[3]; //ELIMINAR
-    
-    if(!fileInput.is_open()){
-        cout << "No se pudo abrir el archivo: "<< fileName << "\n";
-        return;
-    }
-    
-    //Primeramente, se hace un barrido en la dimensión 3
-    for(int x3 = 0; x3 < voxelSize; x3++){
-        newVoxel[2] = x3;
-        //Se hace el barrido en la dimensión 2
-        for(int x2 = 0; x2 < voxelSize; x2++){
-            newVoxel[1] = x2;
-            //Se hace el barrido en la dimensión 1
-            for(int x1 = 0; x1 < voxelSize; x1++)
-            {
-                newVoxel[0] = x1;
-                //Se lee 1 Byte de información a la vez
-                if(fileInput.read((char *)( &buffer ), sizeof(buffer)))
-                {
-                    //cout<< "Buffer: "<< buffer;
-                    // Si el voxel esta lleno, se carga en el EVM
-                    if(buffer == 1){
-                        populateVoxel(&newVoxel,3,0,0);
-                    }
-                }
-            }
-        }
-    }
-
-    fileInput.close();
-}
-
-/**
- * Cargar un archivo binario, que representa una voxelizacion en 3D, en el EVM...
- * @param fileName
- * @param voxelSize
- */
-void nDEVM::load2DRawFile(string fileName,int voxelSize){
-    ifstream fileInput;
-    fileInput.open(fileName.c_str(), ios_base::in |ios_base::binary); // binary file
-
-    unsigned char buffer;
-    double *newVoxel = new double[2]; //ELIMINAR
-    
-    if(!fileInput.is_open()){
-        cout << "No se pudo abrir el archivo: "<< fileName << "\n";
-        return;
-    }
-    
-    //Se hace el barrido en la dimensión 2
-    for(int x2 = 0; x2 < voxelSize; x2++){
-        newVoxel[1] = x2;
-        //Se hace el barrido en la dimensión 1
-        for(int x1 = 0; x1 < voxelSize; x1++)
-        {
-            newVoxel[0] = x1;
-            //Se lee 1 Byte de información a la vez
-            if(fileInput.read((char *)( &buffer ), sizeof(buffer)))
-            {
-                //cout<< "Buffer: "<< buffer;
-                // Si el voxel esta lleno, se carga en el EVM
-                if(buffer == 1){
-                    populateVoxel(&newVoxel,2,0,0);
-                }
-            }
-        }
-    }
-
-    fileInput.close();
-}
-
 /*Método para generar e insertar la voxelización que consiste de 8 vértices, generada a partir del vértice en el origen.
  * Argumentos:
  * -Nodo Raiz.
@@ -893,10 +853,6 @@ void nDEVM::load2DRawFile(string fileName,int voxelSize){
 */
 void nDEVM::populate3DVoxel(double **voxelInput){
     populateVoxel(voxelInput,3,0,1);
-}
-
-void nDEVM::populate2DVoxel(double **voxelInput){
-    populateVoxel(voxelInput,2,0,0);
 }
 
 /*Método Principal y Recursivo para generar e insertar la voxelización que consiste de 8 vértices, generada a partir del vértice en el origen.
@@ -932,6 +888,7 @@ void nDEVM::EVMFile(int index){
     outputFile<<"XYZ"<<'\n'<<'3'<<'\n';
     EVMFile(&outputFile,rootNode,&testKey,0);
     outputFile.close();
+    delete testKey;
 }
 
 /*Método Principal y Recursivo para vaciar un arbol trie en un archivo de texto .evm
@@ -991,8 +948,6 @@ string nDEVM::vectorToString2(double **vector,int size){
  */
 void nDEVM::putCouplet(nDEVM * couplet){
     trieNode * prevNode = NULL;
-    //CLONE???????
-    //trieNode* coupletTrie = couplet->cloneTrie();//Clonar el trie del Couplet
     putCouplet(&prevNode,&rootNode,couplet->rootNode);
 }
 
@@ -1021,8 +976,6 @@ void nDEVM::putCouplet(trieNode** prevNode,trieNode **currentNode,trieNode *coup
  */
 void nDEVM::putSection(nDEVM * section){
     trieNode * prevNode = NULL;
-    //CLONE???????
-    //trieNode* coupletTrie = couplet->cloneTrie();//Clonar el trie del Couplet
     putCouplet(&prevNode,&rootNode,section->rootNode);
 }
 
@@ -1033,6 +986,7 @@ void nDEVM::putSection(nDEVM * section){
  * nDEVM*
  */
 nDEVM* nDEVM::readCouplet(){
+    //SI SE ELIMINA EL EVM RETORNADO, SE ELIMINARA DEL EVM ORIGINAL
     if(!endEVM()){
         nDEVM* coupletEVM = new nDEVM((*coupletIndex)->nextDim);
         coupletIndex = &((*coupletIndex)->nextTrieNode);
@@ -1089,10 +1043,24 @@ double nDEVM::getCoord(){
     return rootNode->value;
 }
 
+/**
+ * Devuelve la operación mergeXOR entre una sección y un couplet, con lo que se
+ * obtiene la siguiente sección...
+ * @param section
+ * @param couplet
+ * @return Un nuevo EVM resultante.
+ */
 nDEVM* nDEVM::getSection(nDEVM* section, nDEVM *couplet){
     return section->mergeXOR(couplet);
 }
 
+/**
+ * Método que realiza la operación mergeXOR entre dos secciones, con lo que se
+ * se obtiene el couplet que se encuentra entre ambas secciones...
+ * @param section1
+ * @param section2
+ * @return Un nuevo EVM resultante.
+ */
 nDEVM* nDEVM::getCouplet(nDEVM* section1, nDEVM *section2){
     return section1->mergeXOR(section2);
 }
@@ -1169,6 +1137,7 @@ void nDEVM::EVMCoupletSequence(nDEVM** coupletSequence){
     }
     resetCoupletIndex();
 }
+
 /**
  * Metodo que devuelve la profundidad dimensional de un trie.
  * @return 
@@ -1202,7 +1171,7 @@ nDEVM* nDEVM::booleanOperation(nDEVM* evm2, string op, int n){
 }
 
 nDEVM* nDEVM::booleanOperation(nDEVM *p, nDEVM *q, string op, int n){
-    nDEVM *pSection, *qSection, *couplet;
+    nDEVM *pSection,*pPrevSection, *qSection,*qPrevSection, *couplet;
     nDEVM *result, *rPrevSection, *rCurrentSection;
     bool fromP, fromQ;
     double coord;
@@ -1218,13 +1187,17 @@ nDEVM* nDEVM::booleanOperation(nDEVM *p, nDEVM *q, string op, int n){
         if(fromP){
             couplet = p->readCouplet();
 //            cout<<"section fromP, coord: "<<coord<<"\n";
+            pPrevSection = pSection;
             pSection = getSection(pSection,couplet);
+            delete pPrevSection;    //Liberar Memoria
 //            pSection->printTrie();
         }
         if(fromQ){
             couplet = q->readCouplet();
 //            cout<<"section fromQ, coord: "<<coord<<"\n";
+            qPrevSection = qSection;
             qSection = getSection(qSection,couplet);
+            delete qPrevSection;    //Liberar Memoria
 //            qSection->printTrie();
         }
         rPrevSection = rCurrentSection;
@@ -1238,12 +1211,14 @@ nDEVM* nDEVM::booleanOperation(nDEVM *p, nDEVM *q, string op, int n){
 //        cout<<"\nCouplet Result: \n";
 //        couplet->printTrie();
 //        cout<<"---\n";
-
+        
         if(!couplet->isEmpty()){
             couplet->setCoord(coord);
 
             result->putCouplet(couplet);
         }
+        
+        delete rPrevSection;    //Liberar Memoria
     }
     while(!(p->endEVM())){
         if(putCoupletByOp(op,1)){
@@ -1266,6 +1241,9 @@ nDEVM* nDEVM::booleanOperation(nDEVM *p, nDEVM *q, string op, int n){
     }
     p->resetCoupletIndex();
     q->resetCoupletIndex();
+    delete pSection;
+    delete qSection;
+    delete rCurrentSection;
     return result;
 }
 
