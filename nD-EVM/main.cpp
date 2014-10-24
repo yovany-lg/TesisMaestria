@@ -123,7 +123,7 @@ int main(int argc, char** argv) {
 
     // Test de Operaciones Booleanas
     srand( time( NULL ) );
-    int dim = 6;
+    int dim = 7;
     // Archivo donde se guarda el tiempo de ejecución...
     ofstream executionTime(to_string(dim)+"DTest/executionTime.txt",ios_base::out | ios_base::app);
     if (!executionTime.is_open()){
@@ -187,7 +187,7 @@ bool test(int size,int dim, int testIndex,ofstream *executionTime){
 //    float totalTime = ((float)clockTicks)/CLOCKS_PER_SEC;
     timestamp_t t1 = get_timestamp();
     double secs = (t1 - t0) / 1000000.0L;
-    *executionTime<<secs<<endl;
+    *executionTime<<hvEVM1->EVMSize()<<"\t"<<hvEVM2->EVMSize()<<"\t"<<secs<<endl;
 
     compare = evmResult->compareEVM(hvResult);
     delete hvEVM1;
