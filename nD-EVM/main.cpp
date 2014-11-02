@@ -21,13 +21,14 @@ void hvUnion2D(int **hv1,int **hv2, int **result,int size,ofstream *resultFile);
 nDEVM *hvEVM(int **hv, int size, int dim);
 bool test3D(int size, int testIndex);
 bool test2D(int size, int testIndex);
-bool test(int size,int dim, int testIndex,ofstream *executionTime);
+bool test(int size,int dim,string operation, int testIndex,ofstream *executionTime);
+void test(string operation, int dim,int voxelSize,int iterations);
 void hvGeneration(double **voxelInput,int size,nDEVM **hvEVM1,nDEVM **hvEVM2, nDEVM **hvResult,
         ofstream *hv1File,ofstream *hv2File,ofstream *hvResultFile, int dim,int currentDim);
 string vectorToStringD(double **vector,int size);
 
-
 typedef unsigned long long timestamp_t;
+
 static timestamp_t get_timestamp(){
   struct timeval now;
   gettimeofday (&now, NULL);
@@ -76,9 +77,9 @@ int main(int argc, char** argv) {
     // Pruebas Basicas de operaciones booleanas
     
 //    nDEVM * evm1 = new nDEVM();
-//    double inputKey [] = {0};
+//    double inputKey [] = {2};
 //    evm1->insertVertex(inputKey,1);
-//    double inputKey2 [] = {2};
+//    double inputKey2 [] = {5};
 //    evm1->insertVertex(inputKey2,1);
 //    
 //    double inputKey3 [] = {3};
@@ -92,17 +93,17 @@ int main(int argc, char** argv) {
 //    evm1->insertVertex(inputKey6,1);    
 //    
 //    nDEVM * evm2 = new nDEVM();
-//    inputKey [0] = 6;
+//    inputKey [0] = 0;
 //    evm2->insertVertex(inputKey,1);
-//    inputKey2 [0] = 8;
+//    inputKey2 [0] = 3;
 //    evm2->insertVertex(inputKey2,1);
 //    
-//    inputKey3 [0] = 10;
+//    inputKey3 [0] = 3;
 //    evm2->insertVertex(inputKey3,1);
-//    inputKey4 [0] = 12;
+//    inputKey4 [0] = 5;
 //    evm2->insertVertex(inputKey4,1);
 //    
-//    evm1->booleanOperation(evm2,"union",1);
+//    evm1->booleanOperation(evm2,"difference",1)->printTrie();
 
 //    nDEVM * evm1 = new nDEVM();
 //    double inputKey [] = {1,1,1,2};
@@ -122,23 +123,33 @@ int main(int argc, char** argv) {
 //    evm1->deleteEVM();
 
     // Test de Operaciones Booleanas
+    char x;
+    cout<<"Run? (y|n):";
+    cin>>x;
+    if(x == 'y')
+        test("intersection",2,5,2500);
+    return 0;
+}
+
+void test(string operation, int dim,int voxelSize,int iterations){
     srand( time( NULL ) );
-    int dim = 7;
+    //int dim = 2;
     // Archivo donde se guarda el tiempo de ejecución...
-    ofstream executionTime(to_string(dim)+"DTest/executionTime.txt",ios_base::out | ios_base::app);
+    ofstream executionTime("Tests/"+to_string(dim)+"DTest/executionTime.txt",ios_base::out | ios_base::app);
     if (!executionTime.is_open()){
-        cerr << "Can't open "+to_string(dim)+"DTest/executionTime.txt file for output.\n";
-        return false;
+        cerr << "Can't open Tests/"+to_string(dim)+"DTest/executionTime.txt file for output.\n";
+        return;
     }
     
-    for(int i = 0; i < 2500; i++){
-        if(!test(5,dim,i,&executionTime)){
+    for(int i = 0; i < iterations; i++){
+        if(!test(voxelSize,dim,operation,i,&executionTime)){
             cout<<"ERROR!!!"<<endl;
             break;
         }
+        //cout<<"----------\n";
     }
     executionTime.close();
-    return 0;
+    
 }
 
 /**
@@ -148,7 +159,7 @@ int main(int argc, char** argv) {
  * @param testIndex: Índice con el que serán guardados los archivos binarios.
  * @return 
  */
-bool test(int size,int dim, int testIndex,ofstream *executionTime){
+bool test(int size,int dim,string operation, int testIndex,ofstream *executionTime){
     nDEVM *hvEVM1,*hvEVM2,*hvResult,*evmResult;
     bool compare;
     double *voxelInput = new double [dim];
@@ -156,9 +167,10 @@ bool test(int size,int dim, int testIndex,ofstream *executionTime){
     hvEVM1 = new nDEVM();
     hvEVM2 = new nDEVM();
     hvResult = new nDEVM();
-    ofstream hv1File(to_string(dim)+"DTest/hv1File"+to_string(testIndex)+".raw",ios_base::out | ios_base::binary);
-    ofstream hv2File(to_string(dim)+"DTest/hv2File"+to_string(testIndex)+".raw",ios_base::out | ios_base::binary);
-    ofstream hvResultFile(to_string(dim)+"DTest/hvUnionResult"+to_string(testIndex)+".raw",ios_base::out | ios_base::binary);
+    operation[0] = toupper(operation[0]);
+    ofstream hv1File("Tests/"+to_string(dim)+"DTest/hv1File"+to_string(testIndex)+".raw",ios_base::out | ios_base::binary);
+    ofstream hv2File("Tests/"+to_string(dim)+"DTest/hv2File"+to_string(testIndex)+".raw",ios_base::out | ios_base::binary);
+    ofstream hvResultFile("Tests/"+to_string(dim)+"DTest/hv"+operation+to_string(testIndex)+".raw",ios_base::out | ios_base::binary);
     if(!hv1File.is_open()){
         cout << "Could not open file!" << '\n';    
         return false;
@@ -179,12 +191,10 @@ bool test(int size,int dim, int testIndex,ofstream *executionTime){
     hvResultFile.close();
 
     timestamp_t t0 = get_timestamp();
-//    clock_t clockTicks;
-//    clockTicks = clock();
-    evmResult = hvEVM1->booleanOperation(hvEVM2,"union",dim);
 
-//    clockTicks = clock() - clockTicks;
-//    float totalTime = ((float)clockTicks)/CLOCKS_PER_SEC;
+    operation[0] = tolower(operation[0]);    
+    evmResult = hvEVM1->booleanOperation(hvEVM2,operation,dim);
+
     timestamp_t t1 = get_timestamp();
     double secs = (t1 - t0) / 1000000.0L;
     *executionTime<<hvEVM1->EVMSize()<<"\t"<<hvEVM2->EVMSize()<<"\t"<<secs<<endl;
@@ -195,18 +205,20 @@ bool test(int size,int dim, int testIndex,ofstream *executionTime){
     delete evmResult;
     delete hvResult;
     delete voxelInput;
-    if(compare){
-//        cout<<"Comparacion de operacion Union; HyperVoxelizaciones VS EVMs: True"<<endl;
 
+    return compare;
+
+//    if(compare){
+//        cout<<"Comparacion de operacion "+operation+"; HyperVoxelizaciones VS EVMs: True"<<endl;
+//
 //        nDEVM *loadedFile = new nDEVM();
-//        loadedFile->loadnDRawFile(to_string(dim)+"DTest/hvUnionResult"+to_string(testIndex)+".raw",size,dim);
-//        cout<<"Comparación del EVM formado con el archivo binario resultante y el EVM resultante:  "<<loadedFile->compareEVM(hvResult);
-        return true;
-    }else{
+//        loadedFile->loadnDRawFile("Tests/"+to_string(dim)+"DTest/hv"+operation+to_string(testIndex)+".raw",size,dim);
+//        cout<<"Comparación del EVM formado con el archivo binario resultante y el EVM resultante:  "<<loadedFile->compareEVM(hvResult)<<endl;
+//        return true;
+//    }else{
 //        cout<<"Comparacion de operacion Union; HyperVoxelizaciones VS EVMs: False"<<endl;
-        return false;
-    }
-    
+//        return false;
+//    }
 }
 
 void hvGeneration(double **voxelInput,int size,nDEVM **hvEVM1,nDEVM **hvEVM2, nDEVM **hvResult,
@@ -233,8 +245,10 @@ void hvGeneration(double **voxelInput,int size,nDEVM **hvEVM1,nDEVM **hvEVM2, nD
         hyperBox1 = value1 == 1;
         hyperBox2 = value2 == 1;
 
-        // Operacion de union, OR, SEPARAR!!!
-        if(hyperBox1 or hyperBox2){
+        // Operacion de Interseccion, AND, SEPARAR!!!
+//        if(hyperBox1 and hyperBox2){
+        // Operacion de Diferencia
+        if((value1 - value2) > 0){
             result = 1;
             (*hvResultFile).write((char *) & result, sizeof result);
             // Conversion al EVM

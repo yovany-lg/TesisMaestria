@@ -37,7 +37,7 @@ public:
     void printTrie();
     void printTrie(trieNode *currentNode,double **key, int dim);
     void deleteTrie();
-    void deleteTrie(trieNode *currentNode,int dim);
+    void deleteTrie(trieNode *currentNode);
     
     double EVMSize();
     void EVMSize(trieNode *currentNode,double *size);
@@ -65,6 +65,7 @@ public:
     nDEVM* mergeXOR(nDEVM *secondTrie);
     trieNode *XORTrie(trieNode **secondTrie,int dim);
     void XORTrie(trieNode **resultTrie,trieNode **currentNode,double **key,int dim);
+    void trieXOR(trieNode **thisTrie,trieNode **otherTrie,int dim);
 
     void rawFileToEVM(string fileName,int x1,int x2,int x3);
 
@@ -103,6 +104,7 @@ public:
 //-- Operaciones regularizadas
     nDEVM* booleanOperation(nDEVM* evm2,string op, int n);
     nDEVM* booleanOperation(nDEVM *evm1, nDEVM* evm2, string op, int n);
+    nDEVM* booleanOperation(nDEVM *section1, nDEVM *section2, string op);
     void nextObject(nDEVM *p, nDEVM *q,double *coord,bool *fromP, bool *fromQ);
     // Operacion basica entre dos segmentos 1D.
 //    void generalUnionOperation(trieNode* section1, trieNode* section2,nDEVM **result);
@@ -110,7 +112,11 @@ public:
     nDEVM* unionOperation(nDEVM* section1, nDEVM* section2);
     void unionOperation(trieNode* segment1, trieNode* segment2,nDEVM **result);
     bool putCoupletByOp(string op,int argPosition);
-    
+    nDEVM* intersectionOperation(nDEVM* section1, nDEVM* section2);
+    void intersectionOperation(trieNode* section1, trieNode* section2,trieNode **result);
+    void mergeSegments(trieNode ***currentSegment, trieNode *otherSegment);
+    nDEVM* differenceOperation(nDEVM* section1, nDEVM* section2);
+    void differenceOperation(trieNode** section1, trieNode** section2,trieNode **result);
     //Pruebas de operaciones Booleanas
     void load3DRawFile(string fileName,int voxelSize);
     void load2DRawFile(string fileName,int voxelSize);
