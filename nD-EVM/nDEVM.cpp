@@ -355,6 +355,16 @@ void nDEVM::compareTrie(trieNode **currentNode,trieNode **otherCurrentNode,bool 
         return;
     
     //Si en alguna llamada ambos árboles estan vacíos
+    if((*currentNode) == NULL and (*otherCurrentNode) != NULL){
+        (*compare) = false;
+        return;
+    }
+    
+    if((*currentNode) != NULL and (*otherCurrentNode) == NULL){
+        (*compare) = false;
+        return;
+    }
+
     if((*currentNode) == NULL and (*otherCurrentNode) == NULL){
         (*compare) = true;
         return;
@@ -428,6 +438,15 @@ trieNode * nDEVM::cloneTrie(){
     trieNode *copyPrevNode = NULL;
 
     cloneTrie(&prevNode,&rootNode,&copyPrevNode,&copyRootNode);
+    return copyRootNode;
+}
+
+trieNode * nDEVM::cloneTrie(trieNode *root){
+    trieNode *copyRootNode = NULL;
+    trieNode *prevNode = NULL;
+    trieNode *copyPrevNode = NULL;
+
+    cloneTrie(&prevNode,&root,&copyPrevNode,&copyRootNode);
     return copyRootNode;
 }
 
@@ -1202,18 +1221,20 @@ nDEVM* nDEVM::booleanOperation(nDEVM *p, nDEVM *q, string op, int n){
             couplet = p->readCouplet();
             pPrevSection = pSection;
             pSection = getSection(pSection,couplet);
-            //delete pPrevSection;    //Liberar Memoria
+            delete pPrevSection;    //Liberar Memoria
+
+//            cout<<"section fromP, coord: "<<coord<<"\n";
+//            pSection->printTrie();
         }
         if(fromQ){
             couplet = q->readCouplet();
             qPrevSection = qSection;
             qSection = getSection(qSection,couplet);
-            //delete qPrevSection;    //Liberar Memoria
+            delete qPrevSection;    //Liberar Memoria
+
+//            cout<<"section fromQ, coord: "<<coord<<"\n";
+//            qSection->printTrie();
         }
-//        cout<<"section fromP, coord: "<<coord<<"\n";
-//        pSection->printTrie();
-//        cout<<"section fromQ, coord: "<<coord<<"\n";
-//        qSection->printTrie();
 
         rPrevSection = rCurrentSection;
         rCurrentSection = booleanOperation(pSection, qSection,op,n-1);
@@ -1234,9 +1255,10 @@ nDEVM* nDEVM::booleanOperation(nDEVM *p, nDEVM *q, string op, int n){
             result->putCouplet(couplet);
         }
         
-        //delete rPrevSection;    //Liberar Memoria
+        delete rPrevSection;    //Liberar Memoria
     }
     while(!(p->endEVM())){
+//        cout<<"I was Here...\n";
         if(putCoupletByOp(op,1)){
             coord = (*(p->coupletIndex))->value;
             couplet = (p->readCouplet())->cloneEVM();
@@ -1247,6 +1269,7 @@ nDEVM* nDEVM::booleanOperation(nDEVM *p, nDEVM *q, string op, int n){
     }
 
     while(!(q->endEVM())){
+//        cout<<"I was Here...\n";
         if(putCoupletByOp(op,2)){
             coord = (*(q->coupletIndex))->value;
             couplet = (q->readCouplet())->cloneEVM();
@@ -1257,9 +1280,9 @@ nDEVM* nDEVM::booleanOperation(nDEVM *p, nDEVM *q, string op, int n){
     }
     p->resetCoupletIndex();
     q->resetCoupletIndex();
-    //delete pSection;
-    //delete qSection;
-    //delete rCurrentSection;
+    delete pSection;
+    delete qSection;
+    delete rCurrentSection;
     return result;
 }
 
@@ -1297,6 +1320,10 @@ nDEVM* nDEVM::booleanOperation(nDEVM *section1, nDEVM *section2, string op){
 
     if(op.compare("difference") == 0){
         return differenceOperation(section1,section2);
+    }
+
+    if(op.compare("xor") == 0){
+        return xorOperation(section1,section2);
     }
 }
 
@@ -1944,6 +1971,387 @@ void nDEVM::differenceOperation(trieNode** section1, trieNode** section2,trieNod
     }
 }
 
+nDEVM* nDEVM::xorOperation(nDEVM* section1, nDEVM* section2){
+    // A xor B
+    if(!section1->isEmpty() and section2->isEmpty()){
+        return section1->cloneEVM();
+    }
+        
+    if(section1->isEmpty() and !section2->isEmpty()){
+        return section2->cloneEVM();
+    }
+    
+    trieNode *resultTrie = NULL, **currentSegment,*opResult = NULL;
+    trieNode *subSection1 = section1->getRootNode(), *subSection2 = section2->getRootNode();
+    currentSegment= &resultTrie;
+    
+    // Para el caso de la UNION se considera a result vacio inicialmente   
+    // Mientras ninguno de los dos llegue al final
+    xorOperation(subSection1,subSection2,&opResult);
+    mergeSegments(&currentSegment,opResult);
+    while(subSection1 != NULL and subSection2 != NULL){
+        // Si Hay interseccion el nodo final del resultado
+        if(subSection1->nextTrieNode->nextTrieNode == NULL)
+            subSection1 = subSection1->nextTrieNode->nextTrieNode;
+        else
+            if((*currentSegment) != NULL and 
+                    subSection1->nextTrieNode->nextTrieNode->value <= (*currentSegment)->nextTrieNode->value){
+                subSection1 = subSection1->nextTrieNode->nextTrieNode;
+                xorOperation(*currentSegment,subSection1,&opResult);
+                deleteTrie(*currentSegment);
+                *currentSegment = NULL;
+                mergeSegments(&currentSegment,opResult);
+            }else{
+                if(subSection2->nextTrieNode->nextTrieNode == NULL)
+                    subSection2 = subSection2->nextTrieNode->nextTrieNode;
+                else
+                    if((*currentSegment) != NULL and 
+                            subSection2->nextTrieNode->nextTrieNode->value <= (*currentSegment)->nextTrieNode->value){
+                        subSection2 = subSection2->nextTrieNode->nextTrieNode;
+                        xorOperation(*currentSegment,subSection2,&opResult);
+                        deleteTrie(*currentSegment);
+                        *currentSegment = NULL;
+                        mergeSegments(&currentSegment,opResult);
+                    }else{
+                        subSection1 = subSection1->nextTrieNode->nextTrieNode;
+                        xorOperation(*currentSegment,subSection1,&opResult);
+                        deleteTrie(*currentSegment);
+                        *currentSegment = NULL;
+                        mergeSegments(&currentSegment,opResult);
+
+                        subSection2 = subSection2->nextTrieNode->nextTrieNode;
+                        xorOperation(*currentSegment,subSection2,&opResult);
+                        deleteTrie(*currentSegment);
+                        *currentSegment = NULL;
+                        mergeSegments(&currentSegment,opResult);
+                    }
+            }
+    }
+    
+    while(subSection1 != NULL){
+        subSection1 = subSection1->nextTrieNode->nextTrieNode;
+        xorOperation(*currentSegment,subSection1,&opResult);
+        deleteTrie(*currentSegment);
+        *currentSegment = NULL;
+        mergeSegments(&currentSegment,opResult);
+    }
+
+    while(subSection2 != NULL){
+        subSection2 = subSection2->nextTrieNode->nextTrieNode;
+        xorOperation(*currentSegment,subSection2,&opResult);
+        deleteTrie(*currentSegment);
+        *currentSegment = NULL;
+        mergeSegments(&currentSegment,opResult);
+    }
+//    cout<<"UnionTrieResult: \n";
+//    result->printTrie();
+    
+    return new nDEVM(resultTrie);
+}
+
+void nDEVM::xorOperation(trieNode* section1, trieNode* section2,trieNode **result){
+    
+    if(section1 != NULL and section2 == NULL){
+        *result = cloneSegment(section1);
+        return;
+    }
+    
+    if(section1 == NULL and section2 != NULL){
+        *result = cloneSegment(section2);
+        return;
+    }
+
+    if(section1 == NULL and section2 == NULL){
+        *result = NULL;
+        return;
+    }
+
+    // Disjuntos A--B C--D
+    if(section1->nextTrieNode->value < section2->value){
+//        cout<<"Disjuntos A--B C--D\n";
+        *result = cloneSegment(section1);        
+        (*result)->nextTrieNode->nextTrieNode = cloneSegment(section2);
+        return;
+    }
+
+    // Disjuntos C--D A--B
+    if(section2->nextTrieNode->value < section1->value){
+//        cout<<"Disjuntos C--D A--B\n";
+        *result = cloneSegment(section2);        
+        (*result)->nextTrieNode->nextTrieNode = cloneSegment(section1);
+        return;
+    }
+
+    //Contiguos A--BC--D
+    if(section1->nextTrieNode->value == section2->value){
+//        cout<<"Contiguos A--BC--D\n";
+        //A
+        trieNode *firstNode= new trieNode;
+        firstNode->value = section1->value;
+        firstNode->nextDim = NULL;
+        //D
+        trieNode *secondNode = new trieNode;
+        secondNode->value = section2->nextTrieNode->value;
+        secondNode->nextDim = NULL;
+        secondNode->nextTrieNode = NULL;
+
+        firstNode->nextTrieNode = secondNode;
+
+        *result = firstNode;        
+        return;
+    }
+
+    //Contiguos C--DA--B
+    if(section2->nextTrieNode->value == section1->value){
+//        cout<<"Contiguos C--DA--B\n";
+        //C
+        trieNode *firstNode= new trieNode;
+        firstNode->value = section2->value;
+        firstNode->nextDim = NULL;
+        //B
+        trieNode *secondNode = new trieNode;
+        secondNode->value = section1->nextTrieNode->value;
+        secondNode->nextDim = NULL;
+        secondNode->nextTrieNode = NULL;
+
+        firstNode->nextTrieNode = secondNode;
+        *result = firstNode;        
+        return;
+    }
+
+    
+    // Coincidentes (AC)--(BD)
+    if(section1->value == section2->value and section1->nextTrieNode->value == section2->nextTrieNode->value){
+//        cout<<"Coincidentes (AC)--(BD)\n";
+        *result = NULL;
+        return;
+    }
+    
+    //Inclusivos A--C--D--B
+    // Inclusivos 1 A<C AND D<B
+    if(section1->value < section2->value and section2->nextTrieNode->value < section1->nextTrieNode->value){
+//        cout<<"Inclusivos A--C--D--B 1 A<C AND D<B\n";
+        //A
+        trieNode *firstNode = new trieNode;
+        firstNode->value = section1->value;
+        firstNode->nextDim = NULL;
+        //C
+        trieNode *secondNode = new trieNode;
+        secondNode->value = section2->value;
+        secondNode->nextDim = NULL;
+        secondNode->nextTrieNode = NULL;
+
+        firstNode->nextTrieNode = secondNode;
+        
+        //D
+        trieNode *thirdNode = new trieNode;
+        thirdNode->value = section2->nextTrieNode->value;
+        thirdNode->nextDim = NULL;
+        //B
+        trieNode *fourthNode = new trieNode;
+        fourthNode->value = section1->nextTrieNode->value;
+        fourthNode->nextDim = NULL;
+        fourthNode->nextTrieNode = NULL;
+
+        thirdNode->nextTrieNode = fourthNode;
+        secondNode->nextTrieNode = thirdNode;
+        *result = firstNode;
+        return;
+    }
+ 
+    //Inclusivos A--C--D--B
+    // Inclusivos 2 A==C AND D<B
+    if(section1->value == section2->value and section2->nextTrieNode->value < section1->nextTrieNode->value){
+//        cout<<"Inclusivos A--C--D--B 2 A==C AND D<B\n";
+        //D
+        trieNode *firstNode = new trieNode;
+        firstNode->value = section2->nextTrieNode->value;
+        firstNode->nextDim = NULL;
+        //B
+        trieNode *secondNode = new trieNode;
+        secondNode->value = section1->nextTrieNode->value;
+        secondNode->nextDim = NULL;
+        secondNode->nextTrieNode = NULL;
+
+        firstNode->nextTrieNode = secondNode;
+        
+        *result = firstNode;
+        return;
+    }
+    
+    //Inclusivos A--C--D--B
+    // Inclusivos 3 A<C AND D==B
+    if(section1->value < section2->value and section2->nextTrieNode->value == section1->nextTrieNode->value){
+//        cout<<"Inclusivos A--C--D--B 3 A<C AND D==B\n";
+        //A
+        trieNode *firstNode = new trieNode;
+        firstNode->value = section1->value;
+        firstNode->nextDim = NULL;
+        //C
+        trieNode *secondNode = new trieNode;
+        secondNode->value = section2->value;
+        secondNode->nextDim = NULL;
+        secondNode->nextTrieNode = NULL;
+
+        firstNode->nextTrieNode = secondNode;
+        
+        *result = firstNode;
+        return;
+    }
+
+    //Inclusivos 2 C--A--B--D
+    // Inclusivos 1 C<A AND B<D
+    if(section2->value < section1->value and section1->nextTrieNode->value < section2->nextTrieNode->value){
+//        cout<<"Inclusivos C--A--B--D 1 C<A AND B<D\n";
+        //c
+        trieNode *firstNode = new trieNode;
+        firstNode->value = section2->value;
+        firstNode->nextDim = NULL;
+        //A
+        trieNode *secondNode = new trieNode;
+        secondNode->value = section1->value;
+        secondNode->nextDim = NULL;
+        secondNode->nextTrieNode = NULL;
+
+        firstNode->nextTrieNode = secondNode;
+        
+        //B
+        trieNode *thirdNode = new trieNode;
+        thirdNode->value = section1->nextTrieNode->value;
+        thirdNode->nextDim = NULL;
+        //D
+        trieNode *fourthNode = new trieNode;
+        fourthNode->value = section2->nextTrieNode->value;
+        fourthNode->nextDim = NULL;
+        fourthNode->nextTrieNode = NULL;
+
+        thirdNode->nextTrieNode = fourthNode;
+        secondNode->nextTrieNode = thirdNode;
+
+        *result = firstNode;
+        return;
+    }
+ 
+    //Inclusivos 2 C--A--B--D
+    // Inclusivos 2 C==A AND B<D
+    if(section1->value == section2->value and section1->nextTrieNode->value < section2->nextTrieNode->value){
+//        cout<<"Inclusivos C--A--B--D 2 C==A AND B<D\n";
+        //B
+        trieNode *firstNode = new trieNode;
+        firstNode->value = section1->nextTrieNode->value;
+        firstNode->nextDim = NULL;
+        //D
+        trieNode *secondNode = new trieNode;
+        secondNode->value = section2->nextTrieNode->value;
+        secondNode->nextDim = NULL;
+        secondNode->nextTrieNode = NULL;
+
+        firstNode->nextTrieNode = secondNode;
+        
+        *result = firstNode;
+        return;
+    }
+    
+    //Inclusivos 2 C--A--B--D
+    // Inclusivos 3 C<A AND B==D
+    if(section2->value < section1->value and section2->nextTrieNode->value == section1->nextTrieNode->value){
+//        cout<<"Inclusivos C--A--B--D 3 C<A AND B==D\n";
+        //C
+        trieNode *firstNode = new trieNode;
+        firstNode->value = section2->value;
+        firstNode->nextDim = NULL;
+        //A
+        trieNode *secondNode = new trieNode;
+        secondNode->value = section1->value;
+        secondNode->nextDim = NULL;
+        secondNode->nextTrieNode = NULL;
+
+        firstNode->nextTrieNode = secondNode;
+        
+        *result = firstNode;
+        return;
+    }
+
+    //Superpuestos A--C--B--D
+    if(section1->value < section2->value and section1->nextTrieNode->value < section2->nextTrieNode->value){
+//        cout<<"Superpuestos A--C--B--D\n";
+        //A
+        trieNode *firstNode = new trieNode;
+        firstNode->value = section1->value;
+        firstNode->nextDim = NULL;
+        //C
+        trieNode *secondNode = new trieNode;
+        secondNode->value = section2->value;
+        secondNode->nextDim = NULL;
+        secondNode->nextTrieNode = NULL;
+
+        firstNode->nextTrieNode = secondNode;
+        
+        //B
+        trieNode *thirdNode = new trieNode;
+        thirdNode->value = section1->nextTrieNode->value;
+        thirdNode->nextDim = NULL;
+        //D
+        trieNode *fourthNode = new trieNode;
+        fourthNode->value = section2->nextTrieNode->value;
+        fourthNode->nextDim = NULL;
+        fourthNode->nextTrieNode = NULL;
+
+        thirdNode->nextTrieNode = fourthNode;
+        secondNode->nextTrieNode = thirdNode;
+        
+        *result = firstNode;
+        return;
+    }    
+
+    //Superpuestos 2 C--A--D--B
+    if(section2->value < section1->value and section2->nextTrieNode->value < section1->nextTrieNode->value){
+//        cout<<"Superpuestos 2 C--A--D--B\n";
+        //C
+        trieNode *firstNode = new trieNode;
+        firstNode->value = section2->value;
+        firstNode->nextDim = NULL;
+        //A
+        trieNode *secondNode = new trieNode;
+        secondNode->value = section1->value;
+        secondNode->nextDim = NULL;
+        secondNode->nextTrieNode = NULL;
+
+        firstNode->nextTrieNode = secondNode;
+        
+        //D
+        trieNode *thirdNode = new trieNode;
+        thirdNode->value = section2->nextTrieNode->value;
+        thirdNode->nextDim = NULL;
+        //B
+        trieNode *fourthNode = new trieNode;
+        fourthNode->value = section1->nextTrieNode->value;
+        fourthNode->nextDim = NULL;
+        fourthNode->nextTrieNode = NULL;
+
+        thirdNode->nextTrieNode = fourthNode;
+        secondNode->nextTrieNode = thirdNode;
+        
+        *result = firstNode;
+        return;
+    }    
+}
+
+trieNode *nDEVM::cloneSegment(trieNode *segment){
+        trieNode *firstTrie = new trieNode;
+        firstTrie->value = segment->value;
+        firstTrie->nextDim = NULL;
+
+        trieNode *secondTrie = new trieNode;
+        secondTrie->value = segment->nextTrieNode->value;
+        secondTrie->nextDim = NULL;
+        secondTrie->nextTrieNode = NULL;
+
+        firstTrie->nextTrieNode = secondTrie;
+        
+        return firstTrie;
+}
+
 bool nDEVM::putCoupletByOp(string op,int argPosition){
     if(op.compare("union") == 0){
         return true;
@@ -1957,6 +2365,10 @@ bool nDEVM::putCoupletByOp(string op,int argPosition){
         return true;
     }
 
+    if(op.compare("xor") == 0){
+        return true;
+    }
+    
     return false;
 }
 

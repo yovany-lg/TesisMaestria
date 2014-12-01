@@ -48,6 +48,7 @@ public:
 
     nDEVM *cloneEVM();
     trieNode *cloneTrie();
+    trieNode *cloneTrie(trieNode *root);
     void cloneTrie(trieNode **prevNode,trieNode **currentNode,trieNode **copyPrevNode,trieNode **copyCurrentNode);
 
     void removeVertex(double *key);
@@ -117,6 +118,9 @@ public:
     void mergeSegments(trieNode ***currentSegment, trieNode *otherSegment);
     nDEVM* differenceOperation(nDEVM* section1, nDEVM* section2);
     void differenceOperation(trieNode** section1, trieNode** section2,trieNode **result);
+    nDEVM* xorOperation(nDEVM* section1, nDEVM* section2);
+    void xorOperation(trieNode* section1, trieNode* section2,trieNode **result);
+    trieNode *cloneSegment(trieNode *segment);
     //Pruebas de operaciones Booleanas
     void load3DRawFile(string fileName,int voxelSize);
     void load2DRawFile(string fileName,int voxelSize);

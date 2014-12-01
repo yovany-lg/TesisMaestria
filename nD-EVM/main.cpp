@@ -23,9 +23,10 @@ bool test3D(int size, int testIndex);
 bool test2D(int size, int testIndex);
 bool test(int size,int dim,string operation, int testIndex,ofstream *executionTime);
 void test(string operation, int dim,int voxelSize,int iterations);
-void hvGeneration(double **voxelInput,int size,nDEVM **hvEVM1,nDEVM **hvEVM2, nDEVM **hvResult,
+void hvGeneration(string operation,double **voxelInput,int size,nDEVM **hvEVM1,nDEVM **hvEVM2, nDEVM **hvResult,
         ofstream *hv1File,ofstream *hv2File,ofstream *hvResultFile, int dim,int currentDim);
 string vectorToStringD(double **vector,int size);
+bool booleanOperation(string op,unsigned char value1, unsigned char value2);
 
 typedef unsigned long long timestamp_t;
 
@@ -67,9 +68,10 @@ int main(int argc, char** argv) {
 //    cout<<"Comparacion del EVM de la secuencia de couplets y el EVM original: "
 //            <<evm1->compareByCouplets(evm3)<<endl;
     
-//    nDEVM *evm2 = new nDEVM();
-//    string fileName2 = "VL-vismale-(128x256x256)-(1.5,1,1).raw";
-//    evm2->rawFileToEVM(fileName2,128,256,256);
+    nDEVM *evm2 = new nDEVM();
+    string fileName2 = "rawFiles/olaf45.raw";
+    evm2->rawFileToEVM(fileName2,128,128,128);
+    evm2->couplet(1)->EVMFile(1);
 //    
 //    evm2->EVMSectionSequence();
 
@@ -77,33 +79,33 @@ int main(int argc, char** argv) {
     // Pruebas Basicas de operaciones booleanas
     
 //    nDEVM * evm1 = new nDEVM();
-//    double inputKey [] = {2};
+//    double inputKey [] = {0};
 //    evm1->insertVertex(inputKey,1);
 //    double inputKey2 [] = {5};
 //    evm1->insertVertex(inputKey2,1);
 //    
-//    double inputKey3 [] = {3};
+//    double inputKey3 [] = {8};
 //    evm1->insertVertex(inputKey3,1);
-//    double inputKey4 [] = {5};
+//    double inputKey4 [] = {10};
 //    evm1->insertVertex(inputKey4,1);
 //    
-//    double inputKey5 [] = {7};
+//    double inputKey5 [] = {10};
 //    evm1->insertVertex(inputKey5,1);
-//    double inputKey6 [] = {9};
+//    double inputKey6 [] = {12};
 //    evm1->insertVertex(inputKey6,1);    
-//    
+    
 //    nDEVM * evm2 = new nDEVM();
-//    inputKey [0] = 0;
+//    inputKey [0] = 3;
 //    evm2->insertVertex(inputKey,1);
-//    inputKey2 [0] = 3;
+//    inputKey2 [0] = 7;
 //    evm2->insertVertex(inputKey2,1);
 //    
-//    inputKey3 [0] = 3;
+//    inputKey3 [0] = 8;
 //    evm2->insertVertex(inputKey3,1);
-//    inputKey4 [0] = 5;
+//    inputKey4 [0] = 10;
 //    evm2->insertVertex(inputKey4,1);
 //    
-//    evm1->booleanOperation(evm2,"difference",1)->printTrie();
+//    evm2->booleanOperation(evm1,"xor",1)->printTrie();
 
 //    nDEVM * evm1 = new nDEVM();
 //    double inputKey [] = {1,1,1,2};
@@ -123,11 +125,15 @@ int main(int argc, char** argv) {
 //    evm1->deleteEVM();
 
     // Test de Operaciones Booleanas
-    char x;
-    cout<<"Run? (y|n):";
-    cin>>x;
-    if(x == 'y')
-        test("intersection",2,5,2500);
+//    char x;
+//    cout<<"Run? (y|n):";
+//    cin>>x;
+//    if(x == 'y'){
+//        for(int dim = 2; dim <= 7; dim++){
+//            test("xor",dim,5,2500);
+//            cout<<"Test "+to_string(dim)+"D Done...\n";
+//        }
+//    }
     return 0;
 }
 
@@ -184,15 +190,14 @@ bool test(int size,int dim,string operation, int testIndex,ofstream *executionTi
         return false;
     }
     
-    hvGeneration(&voxelInput,size,&hvEVM1,&hvEVM2,&hvResult,&hv1File,&hv2File,&hvResultFile,dim,dim);
+    operation[0] = tolower(operation[0]);    
+    hvGeneration(operation,&voxelInput,size,&hvEVM1,&hvEVM2,&hvResult,&hv1File,&hv2File,&hvResultFile,dim,dim);
 
     hv1File.close();
     hv2File.close();
     hvResultFile.close();
 
     timestamp_t t0 = get_timestamp();
-
-    operation[0] = tolower(operation[0]);    
     evmResult = hvEVM1->booleanOperation(hvEVM2,operation,dim);
 
     timestamp_t t1 = get_timestamp();
@@ -216,17 +221,25 @@ bool test(int size,int dim,string operation, int testIndex,ofstream *executionTi
 //        cout<<"Comparación del EVM formado con el archivo binario resultante y el EVM resultante:  "<<loadedFile->compareEVM(hvResult)<<endl;
 //        return true;
 //    }else{
+//        hvEVM1->setCoord(0);
+//        hvEVM1->EVMFile(3001);
+//        hvEVM2->setCoord(0);
+//        hvEVM2->EVMFile(3002);
+//        hvResult->setCoord(0);
+//        hvResult->EVMFile(3000);
+//        evmResult->setCoord(0);
+//        evmResult->EVMFile(3003);
 //        cout<<"Comparacion de operacion Union; HyperVoxelizaciones VS EVMs: False"<<endl;
 //        return false;
 //    }
 }
 
-void hvGeneration(double **voxelInput,int size,nDEVM **hvEVM1,nDEVM **hvEVM2, nDEVM **hvResult,
+void hvGeneration(string operation,double **voxelInput,int size,nDEVM **hvEVM1,nDEVM **hvEVM2, nDEVM **hvResult,
         ofstream *hv1File,ofstream *hv2File,ofstream *hvResultFile, int dim,int currentDim){
     
     if(currentDim == 0){
         unsigned char value1, value2,result;    // Las hypervoxelizaciones tienen dimensiones menores a 8 bits...
-        bool hyperBox1,hyperBox2;
+        //bool hyperBox1,hyperBox2;
         value1 = rand() % 2;
         value2 = rand() % 2;
         (*hv1File).write((char *) & value1, sizeof value1);
@@ -241,14 +254,7 @@ void hvGeneration(double **voxelInput,int size,nDEVM **hvEVM1,nDEVM **hvEVM2, nD
             (*hvEVM2)->populateVoxel(voxelInput,dim,0,0);
         }
 
-        // Si la hyperBox esta llena o vacia
-        hyperBox1 = value1 == 1;
-        hyperBox2 = value2 == 1;
-
-        // Operacion de Interseccion, AND, SEPARAR!!!
-//        if(hyperBox1 and hyperBox2){
-        // Operacion de Diferencia
-        if((value1 - value2) > 0){
+        if(booleanOperation(operation,value1,value2)){
             result = 1;
             (*hvResultFile).write((char *) & result, sizeof result);
             // Conversion al EVM
@@ -262,7 +268,30 @@ void hvGeneration(double **voxelInput,int size,nDEVM **hvEVM1,nDEVM **hvEVM2, nD
     
     for(int i = 0; i < size; i++){
         (*voxelInput)[currentDim - 1] = i;
-        hvGeneration(voxelInput,size,hvEVM1,hvEVM2,hvResult,hv1File,hv2File,hvResultFile,dim,currentDim-1);
+        hvGeneration(operation,voxelInput,size,hvEVM1,hvEVM2,hvResult,hv1File,hv2File,hvResultFile,dim,currentDim-1);
+    }
+}
+
+bool booleanOperation(string op,unsigned char value1, unsigned char value2){
+    bool hyperBox1,hyperBox2;
+    // Si la hyperBox esta llena o vacia
+    hyperBox1 = value1 == 1;
+    hyperBox2 = value2 == 1;
+
+    if(op.compare("union") == 0){
+        return hyperBox1 or hyperBox2;
+    }
+    
+    if(op.compare("intersection") == 0){
+        return hyperBox1 and hyperBox2;
+    }
+
+    if(op.compare("difference") == 0){
+        return (value1 - value2) > 0;
+    }
+
+    if(op.compare("xor") == 0){
+        return hyperBox1 xor hyperBox2;
     }
 }
 
