@@ -7,66 +7,63 @@
 #include <cstring>
 #include <string>
 
+#include "TrieTree.h"
+
 #ifndef NDEVM_H
 #define	NDEVM_H
 
-struct trieNode{
-    double value;  //Valor de la dimension actual
-    trieNode *nextDim;
-    trieNode *nextTrieNode;
-};
+//struct trieNode{
+//    double value;  //Valor de la dimension actual
+//    trieNode *nextDim;
+//    trieNode *nextTrieNode;
+//};
 
 using namespace std;
 
 class nDEVM {
 private:
-    trieNode *rootNode;
-    trieNode **coupletIndex;
+//    trieNode *rootNode;
+//    trieNode **coupletIndex;
+    TrieTree *trieTree;
 public:
     nDEVM();
-    nDEVM(trieNode *node);
+    nDEVM(TrieTree *trie);
     nDEVM(const nDEVM& orig);
     virtual ~nDEVM();
     /*Metodos del Trie*/
     trieNode *getRootNode();
     bool isEmpty();
     void insertVertex(double * inputKey,int length);
-    void insertVertex(trieNode **otherRootNode,double * inputKey,int length);
-    bool insertVertex(trieNode **prevNode,trieNode **currentNode,double * inputKey,int length,int prevDim,int currentDim,int matchCount);
+//    void insertVertex(trieNode **otherRootNode,double * inputKey,int length);
+//    bool insertVertex(trieNode **prevNode,trieNode **currentNode,double * inputKey,int length,int prevDim,int currentDim,int matchCount);
     
-    void printTrie();
-    void printTrie(trieNode *currentNode,double **key, int dim);
-    void deleteTrie();
-    void deleteTrie(trieNode *currentNode);
-    
-    double EVMSize();
-    void EVMSize(trieNode *currentNode,double *size);
+    void printEVM();
+    double size();
 
     bool compareEVM(nDEVM *otherEVM);
     bool compareByCouplets(nDEVM *otherEVM);
-    void compareTrie(trieNode **currentNode,trieNode **otherCurrentNode,bool *compare);
 
     nDEVM *cloneEVM();
-    trieNode *cloneTrie();
-    trieNode *cloneTrie(trieNode *root);
-    void cloneTrie(trieNode **prevNode,trieNode **currentNode,trieNode **copyPrevNode,trieNode **copyCurrentNode);
+//    trieNode *cloneTrie();
+//    trieNode *cloneTrie(trieNode *root);
+//    void cloneTrie(trieNode **prevNode,trieNode **currentNode,trieNode **copyPrevNode,trieNode **copyCurrentNode);
 
     void removeVertex(double *key);
-    bool removeVertex(trieNode **prevNode,trieNode **currentNode,double *key,int currentDim);
+//    bool removeVertex(trieNode **prevNode,trieNode **currentNode,double *key,int currentDim);
 
     bool existsVertex(double * inputKey,int length);
-    bool existsVertex(trieNode **currentNode,double * inputKey,int length,int currentDim);
+//    bool existsVertex(trieNode **currentNode,double * inputKey,int length,int currentDim);
 
-    trieNode *getSubTrie(double key);
-    trieNode *getSubTrie(trieNode **currentNode,double key);
-    nDEVM* couplet(double key);
-    trieNode *getSubTrie2(double key);
-    trieNode *getSubTrie2(trieNode **currentNode,double key);
+//    trieNode *getSubTrie(double key);
+//    trieNode *getSubTrie(trieNode **currentNode,double key);
+//    nDEVM* couplet(double key);
+//    trieNode *getSubTrie2(double key);
+//    trieNode *getSubTrie2(trieNode **currentNode,double key);
 
     nDEVM* mergeXOR(nDEVM *secondTrie);
-    trieNode *XORTrie(trieNode **secondTrie,int dim);
-    void XORTrie(trieNode **resultTrie,trieNode **currentNode,double **key,int dim);
-    void trieXOR(trieNode **thisTrie,trieNode **otherTrie,int dim);
+//    trieNode *XORTrie(trieNode **secondTrie,int dim);
+//    void XORTrie(trieNode **resultTrie,trieNode **currentNode,double **key,int dim);
+//    void trieXOR(trieNode **thisTrie,trieNode **otherTrie,int dim);
 
     void rawFileToEVM(string fileName,int x1,int x2,int x3);
 
@@ -76,17 +73,19 @@ public:
 //    void populateVoxel2(double **inputKey,int dim,int currentDim);
 
     void EVMFile(int index);
+    void EVMFile(string suffix, int index);
     void EVMFile(ofstream *EVMFile,trieNode *currentNode,double **key, int dim);
     
     string vectorToString(double **vector,int size);
     string vectorToString2(double **vector,int size);
     
     void putCouplet(nDEVM * couplet);
-    void putCouplet(trieNode** prevNode,trieNode **currentNode,trieNode *coupletRoot);
+//    void putCouplet(trieNode** prevNode,trieNode **currentNode,trieNode *coupletRoot);
     void putSection(nDEVM * section);
     
     void setCoord(double coord);
     double getCoord();
+    double coupletCoord();
     
     void resetCoupletIndex();
     nDEVM* readCouplet();
@@ -99,7 +98,7 @@ public:
     nDEVM* EVMCoupletSequence();
     void EVMCoupletSequence(nDEVM** sectionSequence);
     
-    int getDimDepth();
+    int dimDepth();
     int getDimDepth(trieNode* currentNode,int dim);
 
 //-- Operaciones regularizadas
@@ -126,6 +125,15 @@ public:
     void load2DRawFile(string fileName,int voxelSize);
     void loadnDRawFile(string fileName,int voxelSize,int dim);
     void voxelizeRawFile(double **voxelInput,ifstream *inputFile,int voxelSize,int dim, int currentDim);
+    
+    // -- Contenido
+    double content();
+    double content(nDEVM *p, int n);    
+    double length();
+    double boundaryContent();
+    double boundaryContent(nDEVM *p, int n);
+    double perimeter();
+    double discreteCompactness();
 };
 
 #endif	/* TRIETREE_H */

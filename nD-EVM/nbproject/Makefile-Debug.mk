@@ -35,9 +35,9 @@ OBJECTDIR=${CND_BUILDDIR}/${CND_CONF}/${CND_PLATFORM}
 
 # Object Files
 OBJECTFILES= \
+	${OBJECTDIR}/TrieTree.o \
 	${OBJECTDIR}/main.o \
-	${OBJECTDIR}/nDEVM.o \
-	${OBJECTDIR}/trieTree.o
+	${OBJECTDIR}/nDEVM.o
 
 
 # C Compiler Flags
@@ -64,6 +64,11 @@ ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/nd-evm.exe: ${OBJECTFILES}
 	${MKDIR} -p ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}
 	${LINK.cc} -o ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/nd-evm ${OBJECTFILES} ${LDLIBSOPTIONS}
 
+${OBJECTDIR}/TrieTree.o: TrieTree.cpp 
+	${MKDIR} -p ${OBJECTDIR}
+	${RM} "$@.d"
+	$(COMPILE.cc) -g -std=c++11 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/TrieTree.o TrieTree.cpp
+
 ${OBJECTDIR}/main.o: main.cpp 
 	${MKDIR} -p ${OBJECTDIR}
 	${RM} "$@.d"
@@ -73,11 +78,6 @@ ${OBJECTDIR}/nDEVM.o: nDEVM.cpp
 	${MKDIR} -p ${OBJECTDIR}
 	${RM} "$@.d"
 	$(COMPILE.cc) -g -std=c++11 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/nDEVM.o nDEVM.cpp
-
-${OBJECTDIR}/trieTree.o: trieTree.cpp 
-	${MKDIR} -p ${OBJECTDIR}
-	${RM} "$@.d"
-	$(COMPILE.cc) -g -std=c++11 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/trieTree.o trieTree.cpp
 
 # Subprojects
 .build-subprojects:

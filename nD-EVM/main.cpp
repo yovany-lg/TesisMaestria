@@ -27,6 +27,8 @@ void hvGeneration(string operation,double **voxelInput,int size,nDEVM **hvEVM1,n
         ofstream *hv1File,ofstream *hv2File,ofstream *hvResultFile, int dim,int currentDim);
 string vectorToStringD(double **vector,int size);
 bool booleanOperation(string op,unsigned char value1, unsigned char value2);
+void testSequences();
+void testOperations();
 
 typedef unsigned long long timestamp_t;
 
@@ -50,28 +52,14 @@ using namespace std;
  * 
  */
 int main(int argc, char** argv) {   
-    // Pruebas para verificar la secuencia de secciones y de couplets
+//    testSequences();
     
-//    nDEVM *evm1 = new nDEVM();
-//    string fileName2 = "VL-vismale-(128x256x256)-(1.5,1,1).raw";
-//    evm1->rawFileToEVM(fileName2,128,256,256);
-//
-//    nDEVM* evm2 = evm1->EVMSectionSequence();
-//
-//    cout<<endl<<"Section Sequence Obtained..."<<endl;
-//    //evm2->printTrie();
-//    
-//    nDEVM* evm3 = evm2->EVMCoupletSequence();
-//    cout<<endl<<"Couplet Sequence obtained..."<<endl;
-//    //evm3->printTrie();
-//    
-//    cout<<"Comparacion del EVM de la secuencia de couplets y el EVM original: "
-//            <<evm1->compareByCouplets(evm3)<<endl;
-    
-    nDEVM *evm2 = new nDEVM();
-    string fileName2 = "rawFiles/olaf45.raw";
-    evm2->rawFileToEVM(fileName2,128,128,128);
-    evm2->couplet(1)->EVMFile(1);
+//    nDEVM *evm2 = new nDEVM();
+//    string fileName2 = "rawFiles/olaf.raw";
+//    evm2->rawFileToEVM(fileName2,128,128,128);
+//    nDEVM *temp = evm2->couplet(2);
+//    temp->discreteCompactness();
+    //cout<< "Contenido: "<<temp->content()<<", Área de la frontera: "<<temp->boundaryContent()<<"\n";
 //    
 //    evm2->EVMSectionSequence();
 
@@ -125,16 +113,48 @@ int main(int argc, char** argv) {
 //    evm1->deleteEVM();
 
     // Test de Operaciones Booleanas
-//    char x;
-//    cout<<"Run? (y|n):";
-//    cin>>x;
-//    if(x == 'y'){
-//        for(int dim = 2; dim <= 7; dim++){
-//            test("xor",dim,5,2500);
-//            cout<<"Test "+to_string(dim)+"D Done...\n";
-//        }
-//    }
+    testOperations();
     return 0;
+}
+
+void testSequences(){
+    // Pruebas para verificar la secuencia de secciones y de couplets
+    
+    nDEVM *evm1 = new nDEVM();
+    string fileName2 = "rawFiles/VL-baby-(256x256x98)-(1,1,2).raw";
+    evm1->rawFileToEVM(fileName2,128,256,256);
+    
+    nDEVM* evm2 = evm1->EVMSectionSequence();
+
+    cout<<endl<<"Section Sequence Obtained..."<<endl;
+    //evm2->printTrie();
+    
+    nDEVM* evm3 = evm2->EVMCoupletSequence();
+    cout<<endl<<"Couplet Sequence obtained..."<<endl;
+    //evm3->printTrie();
+    
+    cout<<"Comparacion del EVM de la secuencia de couplets y el EVM original: "
+            <<evm1->compareByCouplets(evm3)<<endl;
+    
+}
+
+void testOperations(){
+    // Test de Operaciones Booleanas
+    char x;
+    cout<<"Run? (y|n):";
+    cin>>x;
+    if(x == 'y'){
+        for(int dim = 3; dim <= 3; dim++){
+            test("xor",dim,10,100);
+            cout<<"Test "+to_string(dim)+"D Done...\n";
+        }
+    }
+
+    // -- Content Tests
+
+//    nDEVM *loadedFile = new nDEVM();
+//    loadedFile->loadnDRawFile("Tests/3DTest/hv2File0.raw",10,3);
+//    cout<<"Contenido: "<<loadedFile->content()<<"\n";
 }
 
 void test(string operation, int dim,int voxelSize,int iterations){
@@ -202,9 +222,10 @@ bool test(int size,int dim,string operation, int testIndex,ofstream *executionTi
 
     timestamp_t t1 = get_timestamp();
     double secs = (t1 - t0) / 1000000.0L;
-    *executionTime<<hvEVM1->EVMSize()<<"\t"<<hvEVM2->EVMSize()<<"\t"<<secs<<endl;
+    *executionTime<<hvEVM1->size()<<"\t"<<hvEVM2->size()<<"\t"<<secs<<endl;
 
     compare = evmResult->compareEVM(hvResult);
+    //hvEVM1->content();
     delete hvEVM1;
     delete hvEVM2;
     delete evmResult;

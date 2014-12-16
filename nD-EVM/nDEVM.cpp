@@ -10,6 +10,7 @@
 #include <sstream>
 #include <iostream>
 #include <fstream>
+#include <cmath>
 
 #include "nDEVM.h"
 
@@ -21,36 +22,33 @@ template <typename T> std::string to_string(T value)
 }
 
 nDEVM::nDEVM() {
-    rootNode = NULL;
-    resetCoupletIndex();
+//    rootNode = NULL;
+//    resetCoupletIndex();
+    trieTree = new TrieTree();
 }
 
-nDEVM::nDEVM(trieNode *node) {
-    rootNode = node;
-    resetCoupletIndex();
+nDEVM::nDEVM(TrieTree *trie) {
+    trieTree = trie;
+//    rootNode = node;
+//    resetCoupletIndex();
 }
 
 nDEVM::nDEVM(const nDEVM& orig) {
 }
 
 nDEVM::~nDEVM() {   //METODO PARA ELIMINAR EL ARBOL TRIE
-    deleteTrie();
+    delete trieTree;
+    //trieTree->deleteTrie();
 }
 
 void nDEVM::resetCoupletIndex(){
-    coupletIndex = &rootNode;
+    trieTree->resetCoupletIndex();
 }
 
 bool nDEVM::isEmpty(){
-    if(rootNode == NULL)
-        return true;
-    else
-        return false;
+    trieTree->isEmpty();
 }
 
-trieNode *nDEVM::getRootNode(){
-    return rootNode;
-}
 
 /*Método Auxiliar para Insertar un vértice en un árbol trie.
  * Argumentos:
@@ -59,248 +57,31 @@ trieNode *nDEVM::getRootNode(){
  * -Tamaño del vector.
  */
 void nDEVM::insertVertex(double * inputKey,int length){
-    trieNode * prevNode = NULL;
-    insertVertex(&prevNode,&rootNode,inputKey,length,0,0,length);
+    trieTree->insertVertex(inputKey,length);
 }
 
-/*Método Auxiliar para Insertar un vértice en un árbol trie.
- * Argumentos:
- * -Nodo raíz.
- * -Apuntador al vector de entrada
- * -Tamaño del vector.
- */
-void nDEVM::insertVertex(trieNode **otherRootNode,double * inputKey,int length){
-    trieNode * prevNode = NULL;
-    insertVertex(&prevNode,otherRootNode,inputKey,length,0,0,length);
-}
-
-/**
- * Método Principal Recursivo para Insertar un vértice en un árbol trie. 
- * Se utilizan contadores para determinar si se alcanzó la profundidad máxima.
- * @param prevNode: Nodo Trie previo en la exploracion.
- * @param currentNode: Nodo Trie actual en la exploracion.
- * @param inputKey: Arreglo del vertice que se va a insertar.
- * @param length: Tamaño maximo de el arreglo del vertice.
- * @param prevDim: Dimension previa en la exploracion.
- * @param currentDim: Dimension actual en la exploracion.
- * @param matchCount: Contador de coincidencias en el Trie, usado para saber si
- * el vertice que se va a insertar ya existe.
- * @return @return Se retorna un valor booleano que indica si el nodo anterior puede 
- * ser eliminado
- */
-bool nDEVM::insertVertex(trieNode **prevNode,trieNode **currentNode,double * inputKey,
-        int length,int prevDim,int currentDim,int matchCount){
-    //currentDim inicia desde cero, es la posicion de la dimension actual en el array
-    if(!(currentDim < length))
-        if(matchCount == 0)
-            return true;   //El vertice ya existe
-        else
-            return false;    //El vertice es nuevo
-    
-    if(*currentNode == NULL){
-        trieNode *node = new trieNode;
-        node->value = inputKey[currentDim];
-        node->nextDim = NULL;
-        node->nextTrieNode = NULL;
-        
-        *currentNode = node;
-        //Que no sea el nodo raiz
-        if(*prevNode != NULL)
-            //Cuando se inserta un nodo en la misma dimension
-            if(prevDim == currentDim)
-                (*prevNode)->nextTrieNode = *currentNode;
-            else
-                (*prevNode)->nextDim = *currentNode;
-        //Moverse a la siguiente dimension
-        insertVertex(currentNode,&((*currentNode)->nextDim),inputKey,length,currentDim,currentDim+1,matchCount);
-    }else{
-        //Si ya existe un nodo con el mismo valor en esta dimension
-        if((*currentNode)->value == inputKey[currentDim]){
-            bool vertexStatus = insertVertex(currentNode,&((*currentNode)->nextDim),inputKey,length,currentDim,currentDim+1,matchCount-1);
-            //Si el vertice ya existe, se intenta eliminar
-            if(vertexStatus){
-                //Si es el nodo raiz
-                if(rootNode == (*currentNode)){
-                    //Si existe un nodo siguiente en la primer dimension
-                    if(rootNode->nextTrieNode != NULL){
-                        trieNode *tempNode = rootNode;
-                        rootNode = rootNode->nextTrieNode;
-                        delete tempNode;
-                        tempNode = NULL;
-                    }else{
-                        rootNode == NULL;
-                        delete *currentNode;
-                        *currentNode = NULL;
-                    }
-                }else{
-                    
-                    //Si se llega por profundidad
-                    if((*prevNode)->nextDim == (*currentNode))
-                    {
-                        //Si no hay mas nodos a la derecha
-                        if((*currentNode)->nextTrieNode == NULL)
-                        {
-                            delete *currentNode;
-                            *currentNode = NULL;
-                            //Intentar eliminar nodo padre
-                            return true;
-                        }else
-                        {
-                            trieNode *node = (*currentNode)->nextTrieNode;
-                            delete *currentNode;
-                            *currentNode = NULL;
-                            (*prevNode)->nextDim = node;
-                            //Nodo padre no puede ser eliminado
-                            return false;
-                        }
-                    }else
-                    {
-                        //Se llega por amplitud, busqueda en la misma dimension
-                        if((*currentNode)->nextTrieNode == NULL)
-                        {
-                            delete *currentNode;
-                            *currentNode = NULL;
-                        }else
-                        {
-                            trieNode *node = (*currentNode)->nextTrieNode;
-                            delete *currentNode;
-                            *currentNode = NULL;
-                            (*prevNode)->nextTrieNode= node;
-                        }
-                        //Nodo padre no puede ser eliminado
-                        return false;
-                    }                
-                }
-            }
-        }else    
-            //Busqueda por comparacion
-            if((*currentNode)->value > inputKey[currentDim]){
-                //Si hay un nodo en la misma dimension con un valor mayor
-                //Insertar nuevo nodo antes de dicho nodo
-                trieNode *node = new trieNode;
-                node->value = inputKey[currentDim];
-                node->nextDim = NULL;
-                node->nextTrieNode = (*currentNode);
-                //Si es el nodo raiz
-                if(rootNode == (*currentNode))
-                    rootNode = node;
-                else{
-                    //Si se llega por profundidad
-                    if((*prevNode)->nextDim == (*currentNode)){
-                        (*prevNode)->nextDim = node;                
-                    }else{
-                        (*prevNode)->nextTrieNode = node;                
-                    }
-                }                
-
-                insertVertex(&node,&node->nextDim,inputKey,length,currentDim,currentDim+1,matchCount);
-            }else
-                //Se explora otro nodo en la misma dimension
-                insertVertex(currentNode,&((*currentNode)->nextTrieNode),inputKey,length,currentDim,currentDim,matchCount);
-    }
-}
-
-void nDEVM::deleteTrie(){
-    //int dim = getDimDepth();
-    //double * testKey = new double[dim];
-    deleteTrie(rootNode);
-    
-//    delete testKey;
-}
-
-void nDEVM::deleteTrie(trieNode *currentNode){
-    if((currentNode) == NULL){
-        return;
-    }
-//    (*key)[dim] = (currentNode)->value;
-    deleteTrie((currentNode)->nextDim);
-
-    if((currentNode)->nextTrieNode != NULL){
-        deleteTrie((currentNode)->nextTrieNode);
-    }
-//    (*key)[dim] = (currentNode)->value;
-//    cout<< "Eliminando el vector: " << vectorToString(key,dim+1)<<endl;
-    delete currentNode;
-    currentNode = NULL;
-}
 /**
  * Método Auxiliar para Imprimir en consola el contenido de un árbol Trie.
  */
-void nDEVM::printTrie(){
-    int dim = getDimDepth();
-    double * testKey = new double[dim];
-    printTrie(rootNode,&testKey,0);
-    
-    delete testKey;
-}
-
-/**
- * Método Principal Recursivo para Imprimir en consola el contenido de un árbol Trie.
- * @param currentNode, Nodo Trie actual en la exploración.
- * @param key: Vector auxiliar para almacenar los vértices hallados en el Trie.
- * @param dim: Dimensión actual en el la exploración.
- */
-void nDEVM::printTrie(trieNode *currentNode,double **key, int dim){
-    if((currentNode) == NULL){   //que el arbol no este vacio
-        cout << vectorToString(key,dim)<<endl;
-        return;
-    }
-
-    (*key)[dim] = (currentNode)->value;
-    printTrie((currentNode)->nextDim, key, dim+1);
-
-    if((currentNode)->nextTrieNode != NULL){
-        printTrie((currentNode)->nextTrieNode, key, dim);
-    }
+void nDEVM::printEVM(){
+    trieTree->printTrie();
 }
 
 /*Método Auxiliar para obtener el Tamaño de un árbol trie.
  * Argumentos:
  * -Nodo raíz.
 */
-double nDEVM::EVMSize(){
-    double size = 0.0;
-    if((&rootNode) == NULL){   //que el arbol no este vacio
-        return 0.0;
-    }
-    EVMSize(rootNode,&size);
-    return size;
+double nDEVM::size(){
+    return trieTree->size();
 }
 
-/**
- * Método Principal para obtener el Tamaño (número de nodos hoja) de un árbol Trie.
- * @param currentNode: Nodo actual en la exploración.
- * @param size: Contador del tamaño.
- */
-void nDEVM::EVMSize(trieNode *currentNode,double *size){
-    //Si se llega a un nodo hoja
-    if((currentNode) == NULL){
-        *size = (*size) +1;
-        return;
-    }
-
-    EVMSize((currentNode)->nextDim,size);
-
-    if((currentNode)->nextTrieNode != NULL){
-        EVMSize((currentNode)->nextTrieNode,size);
-    }
-}
-
-/*Método Auxiliar para comparar dos árboles trie.
- * Argumentos:
- * -Nodo raíz del primer arbol.
- * -Nodo raíz del segundo arbol.
-*/
 /**
  * Método para comparar dos EVMs.
  * @param otherEVM: El EVM que será comparado con el EVM actual.
  * @return Se retorna un valor booleano (true, false).
  */
 bool nDEVM::compareEVM(nDEVM *otherEVM){
-    bool compare1 = true, compare2 = true;
-    compareTrie(&rootNode,&(otherEVM->rootNode),&compare1);
-    compareTrie(&(otherEVM->rootNode),&rootNode,&compare2);
-    return compare1 and compare2;
+    return trieTree->compare(otherEVM->trieTree);
 }
 
 /**
@@ -317,9 +98,9 @@ bool nDEVM::compareByCouplets(nDEVM *otherEVM){
         compare1 = compare2 = true;
         currentCouplet1 = readCouplet();
         currentCouplet2 = otherEVM->readCouplet();
-        compareTrie(&(currentCouplet1->rootNode),&(currentCouplet2->rootNode),&compare1);
-        compareTrie(&(currentCouplet2->rootNode),&(currentCouplet1->rootNode),&compare2);
-        totalCompare = compare1 and compare2;
+        totalCompare = currentCouplet1->compareEVM(currentCouplet2);
+//        compareTrie(&(currentCouplet2->rootNode),&(currentCouplet1->rootNode),&compare2);
+//        totalCompare = compare1 and compare2;
         if(!totalCompare)
             return false;
     }
@@ -344,143 +125,13 @@ bool nDEVM::compareByCouplets(nDEVM *otherEVM){
 }
 
 /**
- * Método Principal para comparar dos árboles Trie.
- * @param currentNode: Nodo actual del primer árbol Trie en la exploración.
- * @param otherCurrentNode: Nodo actual del segundo árbol Trie en la exploración.
- * @param compare: Par almacenar la comparación.
- */
-void nDEVM::compareTrie(trieNode **currentNode,trieNode **otherCurrentNode,bool *compare){
-    //Si en alguna llamada son diferentes
-    if((*compare) == false)
-        return;
-    
-    //Si en alguna llamada ambos árboles estan vacíos
-    if((*currentNode) == NULL and (*otherCurrentNode) != NULL){
-        (*compare) = false;
-        return;
-    }
-    
-    if((*currentNode) != NULL and (*otherCurrentNode) == NULL){
-        (*compare) = false;
-        return;
-    }
-
-    if((*currentNode) == NULL and (*otherCurrentNode) == NULL){
-        (*compare) = true;
-        return;
-    }else{        
-        if((*currentNode)->value != (*otherCurrentNode)->value){
-            (*compare) = false;
-            return;
-        }
-        //Si no es nodo hoja, explorar la siguiente dimension
-        if((*currentNode)->nextDim != NULL){
-            if((*otherCurrentNode)->nextDim != NULL)
-                compareTrie(&(*currentNode)->nextDim,&(*otherCurrentNode)->nextDim,compare);
-            else{
-                (*compare) = false;
-                return;
-            }
-        }else//Es nulo en el primer trie
-            if((*otherCurrentNode)->nextDim != NULL){ //Si no es nulo el otro trie
-                (*compare) = false;
-                return;
-            }
-        
-        if((*compare) == false)
-            return;
-
-        if((*currentNode)->nextTrieNode != NULL){//Explorar en la dimension actual
-            if((*otherCurrentNode)->nextTrieNode != NULL)
-                compareTrie(&(*currentNode)->nextTrieNode,&(*otherCurrentNode)->nextTrieNode,compare);
-            else{
-                (*compare) = false;
-                return;
-            }
-        }else
-            if((*otherCurrentNode)->nextTrieNode != NULL){
-                (*compare) = false;
-                return;
-            }
-        
-        if((*compare) == false)
-            return;
-    }
-    (*compare) = true;
-}
-
-/*Método Auxiliar para clonar un EVM.
- * Argumentos:
- * -Nodo raíz del arbol original.
-*/
-/**
  * Método para clonar un EVM.
  * @return nDEVM *, apuntador al nuevo EVM.
  */
 nDEVM * nDEVM::cloneEVM(){
-    trieNode *copyRootNode = NULL;
-    trieNode *prevNode = NULL;
-    trieNode *copyPrevNode = NULL;
-
-    cloneTrie(&prevNode,&rootNode,&copyPrevNode,&copyRootNode);
-    nDEVM *cloneEVM = new nDEVM(copyRootNode);
+    TrieTree *copyTrie = trieTree->clone();
+    nDEVM *cloneEVM = new nDEVM(copyTrie);
     return cloneEVM;
-}
-
-
-/*Método Auxiliar para clonar un árbol trie.
- * Argumentos:
- * -Nodo raíz del arbol original.
-*/
-trieNode * nDEVM::cloneTrie(){
-    trieNode *copyRootNode = NULL;
-    trieNode *prevNode = NULL;
-    trieNode *copyPrevNode = NULL;
-
-    cloneTrie(&prevNode,&rootNode,&copyPrevNode,&copyRootNode);
-    return copyRootNode;
-}
-
-trieNode * nDEVM::cloneTrie(trieNode *root){
-    trieNode *copyRootNode = NULL;
-    trieNode *prevNode = NULL;
-    trieNode *copyPrevNode = NULL;
-
-    cloneTrie(&prevNode,&root,&copyPrevNode,&copyRootNode);
-    return copyRootNode;
-}
-
-/**
- * Método Principal para clonar un árbol trie.
- * @param prevNode: Nodo previo, del Trie original, en la exploración.
- * @param currentNode: Nodo actual, del Trie original, en la exploración.
- * @param copyPrevNode: Nodo previo, de la copia, en la exploración.
- * @param copyCurrentNode: Nodo actual, de la copia, en la exploración.
- */
-void nDEVM::cloneTrie(trieNode **prevNode,trieNode **currentNode,trieNode **copyPrevNode,trieNode **copyCurrentNode){
-    if((*currentNode) == NULL){//Si el arbol esta vacio
-        return;
-    }else{
-        trieNode *node = new trieNode;
-        node->nextDim = NULL;
-        node->nextTrieNode = NULL;        
-        node->value = (*currentNode)->value;
-        (*copyCurrentNode) = node;
-        
-        if((*prevNode) != NULL)//Si no es le nodo raiz
-            if((*prevNode)->nextDim == (*currentNode)){//si se llega por profundidad
-                (*copyPrevNode)->nextDim = (*copyCurrentNode);
-            }else{//Se llega por amplitud
-                (*copyPrevNode)->nextTrieNode = (*copyCurrentNode);
-            }
-            
-        if((*currentNode)->nextDim != NULL)//Si no es nodo hoja, explorar la siguiente dimension
-            cloneTrie(currentNode,&(*currentNode)->nextDim,copyCurrentNode,&(*copyCurrentNode)->nextDim);
-
-        if((*currentNode)->nextTrieNode != NULL){//Explorar en la dimension actual
-            cloneTrie(currentNode,&(*currentNode)->nextTrieNode,copyCurrentNode,&(*copyCurrentNode)->nextTrieNode);
-        }
-    }
 }
 
 /*Método Auxiliar para remover un vertice de un árbol trie.
@@ -489,102 +140,7 @@ void nDEVM::cloneTrie(trieNode **prevNode,trieNode **currentNode,trieNode **copy
  * -Apuntador al vector del elemento a eliminar.
 */
 void nDEVM::removeVertex(double *key){
-    trieNode * prevNode = NULL;
-    removeVertex(&prevNode,&rootNode,key,0);
-}
-
-/*Método Principal Recursivo para remover un vertice de un árbol trie.
- * Argumentos:
- * -Nodo previo.
- * -Nodo raíz del arbol.
- * -Apuntador al vector del elemento a eliminar.
-*/
-/**
- * Método principal para remover un vértice de un árbol Trie.
- * @param prevNode: Nodo previo en la exploración.
- * @param currentNode: Nodo actual en la exploración.
- * @param key: Arreglo que contiene el vértice que se desea eliminar.
- * @param currentDim: Dimensión actual en la exploración.
- * @return Un valor booleano, que indica si se puede intentar eliminar el nodo actual,
- * ya que probablemente tenga relación con otros nodos.
- */
-bool nDEVM::removeVertex(trieNode **prevNode,trieNode **currentNode,double *key,int currentDim){
-    //Si se llega al un nodo hoja, entonces si existe el vertice
-    //Si el arbol esta vacio desde el inicio, no habra llamada recursiva que haga algo con este valor TRUE
-    if((*currentNode) == NULL)
-        return true;
-
-    //Si hay un nodo con un valor mayor en la dimension actual, entonces no existe el nodo
-    if((*currentNode)->value > key[currentDim])
-        return false;
-
-    //Si el nodo actual tiene un valor igual en la dimension actual
-    if((*currentNode)->value == key[currentDim])
-    {
-        //Si el valor devuelto por la llamada recursiva es true, entonces se puede intentar eliminar el nodo actual
-        bool vertexStatus = removeVertex(currentNode,&(*currentNode)->nextDim,key,currentDim+1);
-        if(vertexStatus){
-            //Si es el nodo raiz
-            if(rootNode == (*currentNode)){
-                //Si existe un nodo siguiente en la primer dimension
-                if(rootNode->nextTrieNode != NULL){
-                    trieNode *tempNode = rootNode;
-                    rootNode = rootNode->nextTrieNode;
-                    delete tempNode;
-                    tempNode = NULL;
-                }else{
-                    rootNode == NULL;
-                    delete *currentNode;
-                    *currentNode = NULL;
-                }
-                
-                return false;
-            }else{
-
-                //Si se llega por profundidad
-                if((*prevNode)->nextDim == (*currentNode))
-                {
-                    //Si no hay mas nodos a la derecha
-                    if((*currentNode)->nextTrieNode == NULL)
-                    {
-                        delete *currentNode;
-                        *currentNode = NULL;
-                        //Intentar eliminar nodo padre
-                        return true;
-                    }else
-                    {
-                        trieNode *node = (*currentNode)->nextTrieNode;
-                        delete *currentNode;
-                        *currentNode = NULL;
-                        (*prevNode)->nextDim = node;
-                        //Nodo padre no puede ser eliminado
-                        return false;
-                    }
-                }else
-                {
-                    //Se llega por amplitud, busqueda en la misma dimension
-                    if((*currentNode)->nextTrieNode == NULL)
-                    {
-                        delete *currentNode;
-                        *currentNode = NULL;
-                    }else
-                    {
-                        trieNode *node = (*currentNode)->nextTrieNode;
-                        delete *currentNode;
-                        *currentNode = NULL;
-                        (*prevNode)->nextTrieNode= node;
-                    }
-                    //Nodo padre no puede ser eliminado
-                    return false;
-                }                
-            }
-        }
-    }
-
-    if((*currentNode)->nextTrieNode != NULL)//Explorar en la dimension actual
-        return removeVertex(currentNode,&(*currentNode)->nextTrieNode,key,currentDim);
-    
-    return false;//No se hallo el valor para la dimension actual
+    trieTree->removeVertex(key);
 }
 
 /*Método Auxiliar para verificar que un vertice exista en un árbol trie.
@@ -594,105 +150,7 @@ bool nDEVM::removeVertex(trieNode **prevNode,trieNode **currentNode,double *key,
  * -Tamaño del vector.
 */
 bool nDEVM::existsVertex(double * inputKey,int length){
-    return existsVertex(&rootNode,inputKey,length,0);
-}
-
-/*Método Principal Recursivo para verificar que un vertice exista en un árbol trie.
- * Argumentos:
- * -Nodo raíz del arbol.
- * -Apuntador al vector del vertice.
- * -Tamaño del vector.
- * -Dimension Actual.
-*/
-bool nDEVM::existsVertex(trieNode **currentNode,double * inputKey,int length,int currentDim){
-    //Si se llega a explorar hasta el punto donde la dimension actual no es menor que el tamaño del arreglo (0,1,...,n),
-    //entonces el vertice si existe
-    if(!(currentDim < length))
-        return true;   //El vertice si existe
-    
-    if(*currentNode == NULL){
-        return false;    //El vertice no existe
-    }else{
-        //Si el nodo actual tiene un valor igual en la dimension actual, explorar siguiente dimension
-        if((*currentNode)->value == inputKey[currentDim]){
-            return existsVertex(&((*currentNode)->nextDim),inputKey,length, currentDim+1);
-        }else    
-            //Si eñ nodo actual tiene un valor mayor en la dimension actual, entonces no existe
-            if((*currentNode)->value > inputKey[currentDim]){
-                return false;
-            }else   //Se explora otro nodo en la dimension actual
-                return existsVertex(&((*currentNode)->nextTrieNode),inputKey,length, currentDim);
-    }
-}
-
-/*Método Auxiliar para obtener un sub-árbol trie de otro, usando un valor como referencia.
- * Argumentos:
- * -Nodo raíz del arbol.
- * -Valor.
-*/
-trieNode * nDEVM::getSubTrie(double key){
-    return getSubTrie(&rootNode,key);
-}
-
-/*Método para obtener un sub-árbol trie de otro, usando un valor como referencia.
- * Argumentos:
- * -Nodo raíz del arbol.
- * -Valor.
-*/
-trieNode * nDEVM::getSubTrie(trieNode **currentNode,double key){
-    if((*currentNode) == NULL)
-        return NULL;
-    
-    if((*currentNode)->value == key)
-        return (*currentNode)->nextDim;
-    
-    if((*currentNode)->value > key)//Si hay un valor mayor a la llave, entonces no existe el subarbol
-        return NULL;
-
-    if((*currentNode)->nextTrieNode != NULL)//Explorar en la dimension actual
-        return getSubTrie(&(*currentNode)->nextTrieNode,key);
-    else
-        return NULL;
-}
-
-/*Método Auxiliar para obtener un sub-árbol trie de otro, usando un contador como referencia.
- * Argumentos:
- * -Nodo raíz del arbol.
- * -Valor del contador.
-*/
-//NO SE USA, OBTIENE COUPLETS EN BASE A UNA CLAVE
-nDEVM* nDEVM::couplet(double key){
-    nDEVM *couplet = new nDEVM(getSubTrie2(&rootNode,key));
-    return couplet;
-}
-
-/*Método Auxiliar para obtener un sub-árbol trie de otro, usando un contador como referencia.
- * Argumentos:
- * -Nodo raíz del arbol.
- * -Valor del contador.
-*/
-//NO SE HA USADO
-trieNode * nDEVM::getSubTrie2(double key){
-    return getSubTrie2(&rootNode,key);
-}
-
-/*Método para obtener un sub-árbol trie de otro, usando un contador como referencia.
- * Argumentos:
- * -Nodo raíz del arbol.
- * -Valor del contador.
-*/
-//NO SE HA USADO
-trieNode * nDEVM::getSubTrie2(trieNode **currentNode,double key){
-    if((*currentNode) == NULL)
-        return NULL;
-    
-    if(key == 0)
-        return (*currentNode)->nextDim;
-
-    if((*currentNode)->nextTrieNode != NULL)//Explorar en la dimension actual
-        return getSubTrie2(&(*currentNode)->nextTrieNode,key-1);
-    else
-        return NULL;   
+    return trieTree->existsVertex(inputKey,length);
 }
 
 /**
@@ -701,82 +159,9 @@ trieNode * nDEVM::getSubTrie2(trieNode **currentNode,double key){
  * @return El un nuevo EVM obtenido al operar los dos EVMs.
  */
 nDEVM* nDEVM::mergeXOR(nDEVM* otherEVM){
-    //Se considera que esta operacion se realizara con EVMs de la misma dimension.
-    if(rootNode == NULL and otherEVM->rootNode != NULL)
-        return otherEVM->cloneEVM();
-   
-    if(rootNode != NULL and otherEVM->rootNode == NULL)
-        return cloneEVM();
-
-    if(rootNode == NULL and otherEVM->rootNode == NULL){
-        nDEVM *xorEVM = new nDEVM();
-        return xorEVM;
-    }
-        
-
-    int dimDepth = getDimDepth();
-    //Se clona el trie del EVM desde donde se llama la operacion mergeXOR.
-    nDEVM *xorEVM = new nDEVM(cloneTrie());
-    
-    double *key = new double[dimDepth];  //ELIMINAR
-
-    //Para no perder referencia al root desde la funcion insertVertex...
-    xorEVM->XORTrie(&(xorEVM->rootNode),&(otherEVM->rootNode),&key,0);
-    return xorEVM;
-}
-
-/*Método para realizar la operación XOR de dos tries.
- * Argumentos:
- * -Nodo raíz del primer arbol trie.
- * -Nodo raíz del segundo arbol trie.
- * -Dimensión.
-*/
-trieNode * nDEVM::XORTrie(trieNode **otherTrie,int dim){
-    trieNode *resultTrie = NULL;
-    //Se clona el primer trie.
-    resultTrie = cloneTrie();
-    double *key = new double[dim];  //ELIMINAR
-    //Se realiza la inserción de los elementos del segundo trie en el clon del primero.
-    XORTrie(&resultTrie,otherTrie,&key,0);
-    return resultTrie;
-
-    delete key;
-}
-
-/**
- * Metodo que realiza MergeXOR pero el resultado se escribe en el primer TRIE
- * @param thisTrie: Primer TRIE, el resultado sera guardado en este.
- * @param otherTrie: Segundo TRIE...
- * @param dim: Dimension de los TRIE
- */
-void nDEVM::trieXOR(trieNode **thisTrie,trieNode **otherTrie,int dim){
-    double *key = new double[dim];  //ELIMINAR
-    //Se realiza la inserción de los elementos del segundo trie en el clon del primero.
-    XORTrie(thisTrie,otherTrie,&key,0);
-
-    delete key;
-}
-
-/*Método Principal Recursivo para realizar la operación XOR de dos tries.
- * Argumentos:
- * -Nodo raíz del primer arbol trie.
- * -Nodo raíz del segundo arbol trie.
- * -Apuntador doble del vector para almacenar los elementos.
- * -Dimensión.
-*/
-void nDEVM::XORTrie(trieNode **resultTrie,trieNode **currentNode,double **key,int dim){
-    if((*currentNode) == NULL){//Si el arbol esta vacio
-        //cout<<vectorToString(key,dim)<<'\n';
-        insertVertex(resultTrie,(*key),dim);
-        return;
-    }
-
-    (*key)[dim] = (*currentNode)->value;
-
-    XORTrie(resultTrie,&(*currentNode)->nextDim,key,dim+1);
-
-    if((*currentNode)->nextTrieNode != NULL)//Explorar en la dimension actual
-        XORTrie(resultTrie,&(*currentNode)->nextTrieNode,key,dim);
+    TrieTree *resultTrie = trieTree->mergeXOR(otherEVM->trieTree);
+    nDEVM *resultEVM = new nDEVM(resultTrie);
+    return resultEVM;
 }
 
 /*Método para vaciar un archivo .raw a un trie.
@@ -824,6 +209,7 @@ void nDEVM::rawFileToEVM(string fileName,int x1,int x2,int x3){
     }else
         cout << "No se abrio correctamente el archivo: "<< fileName << "\n";
     
+    cout << "Se finalizo la lectura del archivo: "<< fileName << "\n";
     delete newKey;
 }
 
@@ -910,8 +296,12 @@ void nDEVM::populateVoxel(double **voxelInput,int dim,int currentDim,int offset)
  * -Nodo Raiz.
 */
 void nDEVM::EVMFile(int index){
+    EVMFile("",index);
+}
+
+void nDEVM::EVMFile(string suffix, int index){
     double * testKey = new double[4];   //Eliminar
-    string fileName = "EVMFiles/EVMFile_"+to_string(index)+".evm";
+    string fileName = "EVMFiles/EVMFile_"+suffix+to_string(index)+".evm";
     
     ofstream outputFile( fileName );
     if ( ! outputFile.is_open() ){    
@@ -919,7 +309,7 @@ void nDEVM::EVMFile(int index){
         return;
     } 
     outputFile<<"XYZ"<<'\n'<<'3'<<'\n';
-    EVMFile(&outputFile,rootNode,&testKey,0);
+    EVMFile(&outputFile,trieTree->rootNode,&testKey,0);
     outputFile.close();
     delete testKey;
 }
@@ -980,26 +370,8 @@ string nDEVM::vectorToString2(double **vector,int size){
  * -El (n-1)D EVM del couplet.
  */
 void nDEVM::putCouplet(nDEVM * couplet){
-    trieNode * prevNode = NULL;
-    putCouplet(&prevNode,&rootNode,couplet->rootNode);
-}
-
-/*
- *Metodo Principal para agregar un Couplet perpendicular a la dimension x1 en la posicion dada:
- * Argumentos:
- * -El EVM del couplet.
- */
-void nDEVM::putCouplet(trieNode** prevNode,trieNode **currentNode,trieNode *coupletRoot){
-    if((*currentNode) == NULL){
-        if((*prevNode) != NULL)//AL menos hay un nodo en el Trie
-            (*prevNode)->nextTrieNode = coupletRoot;
-        else//El trie esta vacio
-            *currentNode = coupletRoot;
-            
-        return;
-    }
-    
-    putCouplet(currentNode,&((*currentNode)->nextTrieNode),coupletRoot);
+    trieTree->putCouplet2(couplet->trieTree);
+//    putCouplet(&prevNode,&rootNode,couplet->rootNode);
 }
 
 /*
@@ -1008,8 +380,7 @@ void nDEVM::putCouplet(trieNode** prevNode,trieNode **currentNode,trieNode *coup
  * -El (n-1)D EVM del couplet.
  */
 void nDEVM::putSection(nDEVM * section){
-    trieNode * prevNode = NULL;
-    putCouplet(&prevNode,&rootNode,section->rootNode);
+    trieTree->putCouplet2(section->trieTree);
 }
 
 /**
@@ -1020,12 +391,8 @@ void nDEVM::putSection(nDEVM * section){
  */
 nDEVM* nDEVM::readCouplet(){
     //SI SE ELIMINA EL EVM RETORNADO, SE ELIMINARA DEL EVM ORIGINAL
-    if(!endEVM()){
-        nDEVM* coupletEVM = new nDEVM((*coupletIndex)->nextDim);
-        coupletIndex = &((*coupletIndex)->nextTrieNode);
-        return coupletEVM;
-    }else
-        return NULL;
+    nDEVM *coupletEVM = new nDEVM(trieTree->readCouplet());
+    return coupletEVM;
 }
 
 /**
@@ -1045,10 +412,7 @@ nDEVM* nDEVM::readSection(){
  * Boolean
  */
 bool nDEVM::endEVM(){
-    if(*coupletIndex == NULL)
-        return true;
-    else
-        return false;
+    return trieTree->endTrie();
 }
 
 /**
@@ -1058,13 +422,7 @@ bool nDEVM::endEVM(){
  * @return 
  */
 void nDEVM::setCoord(double coord){
-    //CLONE?????
-    //trieNode* coupletTrie = cloneTrie();
-    trieNode* coupletRoot = new trieNode;
-    coupletRoot->value = coord;
-    coupletRoot->nextTrieNode = NULL;
-    coupletRoot->nextDim = rootNode;
-    rootNode = coupletRoot;
+    trieTree->setCoord(coord);
 }
 
 /**
@@ -1073,7 +431,7 @@ void nDEVM::setCoord(double coord){
  * @return 
  */
 double nDEVM::getCoord(){
-    return rootNode->value;
+    return trieTree->getCoord();
 }
 
 /**
@@ -1121,7 +479,7 @@ void nDEVM::EVMSectionSequence(nDEVM** sectionSequence){
             (*sectionSequence)->putSection(prevSection);
         }
         
-        //currentSection->EVMFile(i);
+//        currentSection->EVMFile("Section",i);
         //cout<<endl;
         
         // Siguiente Iteración
@@ -1131,6 +489,7 @@ void nDEVM::EVMSectionSequence(nDEVM** sectionSequence){
     }
     currentSection->setCoord(i - 1);
     (*sectionSequence)->putSection(currentSection);
+    (*sectionSequence)->resetCoupletIndex();
     resetCoupletIndex();
 }
 
@@ -1154,7 +513,7 @@ void nDEVM::EVMCoupletSequence(nDEVM** coupletSequence){
         currentCouplet->setCoord(i);
         (*coupletSequence)->putCouplet(currentCouplet);
 
-        //currentSection->EVMFile(i);
+//        currentSection->EVMFile("Couplet",i);
         //cout<<endl;
         
         if(endEVM()){
@@ -1168,6 +527,7 @@ void nDEVM::EVMCoupletSequence(nDEVM** coupletSequence){
         currentSection = readSection();
         i++;
     }
+    (*coupletSequence)->resetCoupletIndex();
     resetCoupletIndex();
 }
 
@@ -1175,21 +535,8 @@ void nDEVM::EVMCoupletSequence(nDEVM** coupletSequence){
  * Metodo que devuelve la profundidad dimensional de un trie.
  * @return 
  */
-int nDEVM::getDimDepth(){
-    return getDimDepth(rootNode,0);
-}
-
-/**
- * Metodo que devuelve la profundidad dimensional de un trie.
- * @param currentNode
- * @param dim
- * @return 
- */
-int nDEVM::getDimDepth(trieNode* currentNode,int dim){
-    if(currentNode == NULL)
-        return dim;
-    
-    return getDimDepth(currentNode->nextDim,dim+1);
+int nDEVM::dimDepth(){
+    return trieTree->dimDepth();
 }
 
 /**
@@ -1260,7 +607,7 @@ nDEVM* nDEVM::booleanOperation(nDEVM *p, nDEVM *q, string op, int n){
     while(!(p->endEVM())){
 //        cout<<"I was Here...\n";
         if(putCoupletByOp(op,1)){
-            coord = (*(p->coupletIndex))->value;
+            coord = (*(p->trieTree->coupletIndex))->value;
             couplet = (p->readCouplet())->cloneEVM();
             couplet->setCoord(coord);
             result->putCouplet(couplet);
@@ -1271,7 +618,7 @@ nDEVM* nDEVM::booleanOperation(nDEVM *p, nDEVM *q, string op, int n){
     while(!(q->endEVM())){
 //        cout<<"I was Here...\n";
         if(putCoupletByOp(op,2)){
-            coord = (*(q->coupletIndex))->value;
+            coord = (*(q->trieTree->coupletIndex))->value;
             couplet = (q->readCouplet())->cloneEVM();
             couplet->setCoord(coord);
             result->putCouplet(couplet);
@@ -1280,6 +627,7 @@ nDEVM* nDEVM::booleanOperation(nDEVM *p, nDEVM *q, string op, int n){
     }
     p->resetCoupletIndex();
     q->resetCoupletIndex();
+    result->resetCoupletIndex();
     delete pSection;
     delete qSection;
     delete rCurrentSection;
@@ -1287,22 +635,22 @@ nDEVM* nDEVM::booleanOperation(nDEVM *p, nDEVM *q, string op, int n){
 }
 
 void nDEVM::nextObject(nDEVM *p, nDEVM *q,double *coord,bool *fromP, bool *fromQ){
-    if((*(p->coupletIndex))->value < (*(q->coupletIndex))->value){
-        *coord = (*(p->coupletIndex))->value;
+    if((*(p->trieTree->coupletIndex))->value < (*(q->trieTree->coupletIndex))->value){
+        *coord = (*(p->trieTree->coupletIndex))->value;
         *fromP = true;
         *fromQ = false;
         return;
     }
 
-    if((*(q->coupletIndex))->value < (*(p->coupletIndex))->value){
-        *coord = (*(q->coupletIndex))->value;
+    if((*(q->trieTree->coupletIndex))->value < (*(p->trieTree->coupletIndex))->value){
+        *coord = (*(q->trieTree->coupletIndex))->value;
         *fromQ = true;
         *fromP = false;
         return;
     }
 
-    if((*(p->coupletIndex))->value == (*(q->coupletIndex))->value){
-        *coord = (*(p->coupletIndex))->value;
+    if((*(p->trieTree->coupletIndex))->value == (*(q->trieTree->coupletIndex))->value){
+        *coord = (*(p->trieTree->coupletIndex))->value;
         *fromQ = true;
         *fromP = true;
         return;
@@ -1327,1031 +675,6 @@ nDEVM* nDEVM::booleanOperation(nDEVM *section1, nDEVM *section2, string op){
     }
 }
 
-nDEVM* nDEVM::unionOperation(nDEVM* section1, nDEVM* section2){
-    // Casos en el que uno o ambos EVMs estan vacios
-    if(section1->isEmpty() and !section2->isEmpty()){
-        return section2->cloneEVM();
-    }
-    
-    if(section2->isEmpty() and !section1->isEmpty()){
-        return section1->cloneEVM();
-    }
-    
-    if(section1->isEmpty() and section2->isEmpty()){
-        return new nDEVM();
-    }
-    
-    // Variante de la solucion para la operacion union
-    nDEVM *result = new nDEVM();
-    trieNode *subSection1 = section1->getRootNode(), *subSection2 = section2->getRootNode();
-    trieNode **prevResult, **currentResult = &result->rootNode;
-
-    // Para el caso de la UNION se considera a result vacio inicialmente   
-    // Mientras ninguno de los dos llegue al final
-    while(subSection1 != NULL and subSection2 != NULL){
-        if(subSection1->value <= subSection2->value){
-            unionOperation(*currentResult,subSection1,&result);
-            //Pasar al siguiente segmento
-            subSection1 = subSection1->nextTrieNode->nextTrieNode;
-        }else{
-            unionOperation(*currentResult,subSection2,&result);
-            //Pasar al siguiente segmento
-            subSection2 = subSection2->nextTrieNode->nextTrieNode;
-        }
-        
-        if((*currentResult)->nextTrieNode->nextTrieNode != NULL){
-            prevResult = &((*currentResult)->nextTrieNode->nextTrieNode);
-            currentResult = &((*currentResult)->nextTrieNode->nextTrieNode);
-        }
-    }
-   
-    if(subSection1 != NULL){
-        while(subSection1 != NULL){
-            //Se realiza la union con el ultimo segmento del trie resultante
-            unionOperation(*currentResult,subSection1,&result);
-            subSection1 = subSection1->nextTrieNode->nextTrieNode;
-
-            if((*currentResult)->nextTrieNode->nextTrieNode != NULL){
-                prevResult = &((*currentResult)->nextTrieNode->nextTrieNode);
-                currentResult = &((*currentResult)->nextTrieNode->nextTrieNode);
-            }
-        }
-    }
-    
-    if(subSection2 != NULL){
-        while(subSection2 != NULL){
-            //Se realiza la union con el ultimo segmento del trie resultante
-            unionOperation(*currentResult,subSection2,&result);
-            subSection2 = subSection2->nextTrieNode->nextTrieNode;
-
-            if((*currentResult)->nextTrieNode->nextTrieNode != NULL){
-                prevResult = &((*currentResult)->nextTrieNode->nextTrieNode);
-                currentResult = &((*currentResult)->nextTrieNode->nextTrieNode);
-            }
-        }
-    }
-    
-//    cout<<"UnionTrieResult: \n";
-//    result->printTrie();
-    
-    return result;
-}
-
-/**
- * Metodo que realiza la operacion Union entre dos secciones 1D, este es el caso base. 
- * Las secciones 1D de entrada consisten en un par de vértices, que acotan una línea.
- * @param section1: apuntador al nodo inicial de la primer seccion 1D, el nodo 
- * final se conoce como section1->nextTrieNode.
- * @param section2: apuntador al nodo inicial de la segunda seccion 1D, el nodo 
- * final se conoce  como section2->nextTrieNode.
- * @return 
- */
-void nDEVM::unionOperation(trieNode* section1, trieNode* section2,nDEVM **result){
-    // Despues de la primera iteracion, el primer argumento correpondera a un segmento del EVM resultante
-    // Los vertices estan ordenados de menor a mayor.
-    double vertex[1];
-    double a,b,c,d;
-    
-    // Validaciones para el caso de que uno o ambos sean nulos
-    if(section1 == NULL and section2 == NULL){
-//        cout<<"Caso 0.1: Ambos Nulos...\n";
-        return;
-    }
-    
-    if(section1 != NULL and section2 == NULL){
-//        cout<<"Caso 0.2: Section1 Nulo...\n";
-        vertex[0] = section1->value;
-        (*result)->insertVertex(vertex,1);
-        vertex[0] = section1->nextTrieNode->value;
-        (*result)->insertVertex(vertex,1);
-        return;
-    }
-        
-    if(section1 == NULL and section2 != NULL){
-//        cout<<"Caso 0.3: Section2 Nulo...\n";
-        vertex[0] = section2->value;
-        (*result)->insertVertex(vertex,1);
-        vertex[0] = section2->nextTrieNode->value;
-        (*result)->insertVertex(vertex,1);
-        return;
-    }
-
-    // Para una situacion normal
-    // Tomando a--b del EVM resultante
-    a = section1->value, b = section1->nextTrieNode->value; // Arista a---b
-    c = section2->value, d = section2->nextTrieNode->value; // Arista c---d
-    
-    // Caso 1: las aristas son disjuntas
-    // Aparentemente solo se presentara el caso: a--b c--d
-    if(b < c or d < a){
-//        cout<<"Caso 1: las aristas son disjuntas\n";
-        vertex[0] = a;
-        (*result)->condInsertVertex(vertex,1);
-        vertex[0] = b;
-        (*result)->condInsertVertex(vertex,1);
-        vertex[0] = c;
-        (*result)->condInsertVertex(vertex,1);
-        vertex[0] = d;
-        (*result)->condInsertVertex(vertex,1);
-        return;
-    }
-    
-    // Caso 2.1: las aristas son contiguas;  Caso 5.1: Superposicion a--(b,c)--d
-    if(a < c and b >= c and b < d){
-//        cout<<"Caso 2.1: las aristas son contiguas;  Caso 5.1: Superposicion a--(b,c)--d\n";
-        // Eliminar si no es la primera iteracion
-        vertex[0] = b;
-        (*result)->removeVertex(vertex);
-        
-        vertex[0] = a;
-        (*result)->condInsertVertex(vertex,1);
-
-        vertex[0] = d;
-        (*result)->condInsertVertex(vertex,1);
-        return;
-    }
-    
-    // Caso 2.2: las aristas son contiguas;  Caso 5.2: Superposicion c--(d,a)--b
-    if(c < a and d >= a and d < b){
-        // Aparentemente no pasara
-        // Eliminar si no es la primera iteracion
-//        cout<<"Caso 2.2: las aristas son contiguas;  Caso 5.2: Superposicion c--(d,a)--b\n";
-        vertex[0] = a;
-        (*result)->removeVertex(vertex);
-        
-        vertex[0] = c;
-        (*result)->condInsertVertex(vertex,1);
-        vertex[0] = b;
-        (*result)->condInsertVertex(vertex,1);
-        return;
-    }
-       
-    // Caso 3: Las aristas coinciden
-    // Caso 4.1: Inclusion
-    // * La arista 2 esta adentro de la arista 1.
-    if(a <= c and d <= b){
-//        cout<<"Caso 3: Las aristas coinciden;  Caso 4.1: Inclusion\n";
-        vertex[0] = a;
-        (*result)->condInsertVertex(vertex,1);
-        vertex[0] = b;
-        (*result)->condInsertVertex(vertex,1);
-        return;
-    }
-
-    // Caso 4.2: Inlusion en el otro sentido
-    if(c <= a and b <= d){
-        // Aparentemente no pasara
-//        cout<<"Caso 4.2: Inlusion en el otro sentido\n";
-        vertex[0] = a;
-        (*result)->removeVertex(vertex);
-        vertex[0] = b;
-        (*result)->removeVertex(vertex);
-
-        vertex[0] = c;
-        (*result)->condInsertVertex(vertex,1);
-        vertex[0] = d;
-        (*result)->condInsertVertex(vertex,1);
-        return;
-    }
-}
-
-nDEVM* nDEVM::intersectionOperation(nDEVM* section1, nDEVM* section2){
-    // Casos en el que uno o ambos EVMs estan vacios
-    if(section1->isEmpty() or section2->isEmpty()){
-        return new nDEVM();
-    }
-        
-    // Variante de la solucion para la operacion union
-    trieNode *resultTrie = NULL;
-    trieNode *subSection1 = section1->getRootNode(), *subSection2 = section2->getRootNode();
-    // Manejo de los segmentos que se van formando al realizar la operación: a--b c--d
-    trieNode **currentSegment = &resultTrie, *opResult;
-
-    while(subSection1 != NULL and subSection2 != NULL){
-        if(subSection1->value <= subSection2->value){
-            intersectionOperation(subSection1,subSection2,&opResult);
-            
-            // Solo si huno una interseccion con el segundo argumento
-            if(opResult != NULL){
-                mergeSegments(&currentSegment,opResult);
-
-                // verificar si hay interseccion del segmento actual de subSection1 
-                // con el siguiente segmento de subSection2
-                if(subSection2->nextTrieNode->nextTrieNode != NULL and subSection1->nextTrieNode->value > subSection2->nextTrieNode->nextTrieNode->value){
-                    //Moverse al siguiente segmento en subSection2
-                    subSection2 = subSection2->nextTrieNode->nextTrieNode;
-                }else{
-                    // verificar si hay interseccion del segmento actual de subSection2 
-                    // con el siguiente segmento de subSection1
-                    if(subSection1->nextTrieNode->nextTrieNode != NULL and subSection2->nextTrieNode->value > subSection1->nextTrieNode->nextTrieNode->value){
-                        //Moverse al siguiente segmento en subSection1
-                        subSection1 = subSection1->nextTrieNode->nextTrieNode;
-                    }else{
-                        subSection2 = subSection2->nextTrieNode->nextTrieNode;
-                        subSection1 = subSection1->nextTrieNode->nextTrieNode;
-                    }
-                }
-            }else{
-//                subSection2 = subSection2->nextTrieNode->nextTrieNode;
-                subSection1 = subSection1->nextTrieNode->nextTrieNode;
-            }
-        }else{
-            intersectionOperation(subSection2,subSection1,&opResult);
-
-            // Solo si huno una interseccion con el segundo argumento
-            if(opResult != NULL){
-                mergeSegments(&currentSegment,opResult);
-
-                // verificar si hay interseccion del segmento actual de subSection2
-                // con el siguiente segmento de subSection1
-                if(subSection1->nextTrieNode->nextTrieNode != NULL and subSection2->nextTrieNode->value > subSection1->nextTrieNode->nextTrieNode->value){
-                    //Moverse al siguiente segmento en subSection1
-                    subSection1 = subSection1->nextTrieNode->nextTrieNode;
-                }else{
-                    // verificar si hay interseccion del segmento actual de subSection1
-                    // con el siguiente segmento de subSection2
-                    if(subSection2->nextTrieNode->nextTrieNode != NULL and subSection1->nextTrieNode->value > subSection2->nextTrieNode->nextTrieNode->value){
-                        //Moverse al siguiente segmento en subSection2
-                        subSection2 = subSection2->nextTrieNode->nextTrieNode;
-                    }else{
-                        subSection1 = subSection1->nextTrieNode->nextTrieNode;
-                        subSection2 = subSection2->nextTrieNode->nextTrieNode;
-                    }
-                }
-            }else{
-                subSection2 = subSection2->nextTrieNode->nextTrieNode;
-//                subSection1 = subSection1->nextTrieNode->nextTrieNode;            
-            }
-        }
-    }
-    // Cuando se llega al final de alguno o ambos, ya no es necesario hacer operación alguna
-   
-//    cout<<"UnionTrieResult: \n";
-//    result->printTrie();
-    nDEVM *result = new nDEVM(resultTrie);
-    
-    return result;
-}
-
-void nDEVM::mergeSegments(trieNode ***currentSegment, trieNode *otherSegment){
-    // Si es el nodo raiz
-    if(otherSegment == NULL)
-        return;
-    
-    if(**currentSegment == NULL){
-        **currentSegment = otherSegment;
-        while((**currentSegment)->nextTrieNode->nextTrieNode != NULL ){
-            *currentSegment = &((**currentSegment)->nextTrieNode->nextTrieNode);
-        }
-    }else{
-        (**currentSegment)->nextTrieNode->nextTrieNode = otherSegment;
-        *currentSegment = &((**currentSegment)->nextTrieNode->nextTrieNode);
-        while((**currentSegment)->nextTrieNode->nextTrieNode != NULL ){
-            *currentSegment = &((**currentSegment)->nextTrieNode->nextTrieNode);
-        }
-    }
-}
-
-void nDEVM::intersectionOperation(trieNode* section1, trieNode* section2,trieNode **result){
-    // Los vertices estan ordenados de menor a mayor.
-    double a,b,c,d;
-    
-    // Validaciones para el caso de que uno o ambos sean nulos
-    if(section1 == NULL or section2 == NULL){
-//        cout<<"Caso 0.1: Ambos Nulos...\n";
-        *result = NULL;
-        return;
-    }
-    
-    // Para una situacion normal
-    // Tomando a--b del EVM resultante (primer argumento)
-    a = section1->value, b = section1->nextTrieNode->value; // Arista a---b
-    c = section2->value, d = section2->nextTrieNode->value; // Arista c---d
-    
-    // Caso 1: las aristas son disjuntas
-    // Aparentemente solo se presentara el caso: a--b c--d
-    if(b <= c){
-//        cout<<"Caso 1: las aristas son disjuntas\n";
-        *result = NULL;
-        return;
-    }
-    
-    // Las aristas coinciden
-    if(a == c  and b == d){
-//        cout<<"Caso 2: las aristas coinciden\n";
-        trieNode *firstTrie = new trieNode;
-        firstTrie->value = a;
-        firstTrie->nextDim = NULL;
-        
-        trieNode *secondTrie = new trieNode;
-        secondTrie->value = b;
-        secondTrie->nextDim = NULL;
-        secondTrie->nextTrieNode = NULL;
-
-        firstTrie->nextTrieNode = secondTrie;
-
-        *result = firstTrie;
-        return;
-    }
-    
-    // Las aristas se incluyen
-    if(a <= c  and d <= b){
-//        cout<<"Caso 3: las aristas se incluyen\n";
-        trieNode *firstTrie = new trieNode;
-        firstTrie->value = c;
-        firstTrie->nextDim = NULL;
-        
-        trieNode *secondTrie = new trieNode;
-        secondTrie->value = d;
-        secondTrie->nextDim = NULL;
-        secondTrie->nextTrieNode = NULL;
-
-        firstTrie->nextTrieNode = secondTrie;
-
-        *result = firstTrie;
-        return;
-    }
-
-    // Superposición
-    if(a <= c  and b <= d){
-//        cout<<"Caso 4: Superposicion\n";
-        trieNode *firstTrie = new trieNode;
-        firstTrie->value = c;
-        firstTrie->nextDim = NULL;
-        
-        trieNode *secondTrie = new trieNode;
-        secondTrie->value = b;
-        secondTrie->nextDim = NULL;
-        secondTrie->nextTrieNode = NULL;
-
-        firstTrie->nextTrieNode = secondTrie;
-
-        *result = firstTrie;
-
-        return;
-    }
-}
-
-nDEVM* nDEVM::differenceOperation(nDEVM* section1, nDEVM* section2){
-    // A - B
-    if(!section1->isEmpty() and section2->isEmpty()){
-        return section1->cloneEVM();
-    }
-        
-    if(section1->isEmpty() and section2->isEmpty()){
-        return new nDEVM();
-    }
-    
-    // Variante de la solucion para la operacion union
-    trieNode *resultTrie = NULL;
-    trieNode *subSection1 = section1->getRootNode(), *subSection2 = section2->getRootNode();
-    trieNode **currentSegment= &resultTrie,*opResult = NULL;
-
-    // Para el caso de la UNION se considera a result vacio inicialmente   
-    // Mientras ninguno de los dos llegue al final
-    while(subSection1 != NULL and subSection2 != NULL){
-        differenceOperation(&subSection1,&subSection2,&opResult);
-        mergeSegments(&currentSegment,opResult);
-    }
-    
-    while(subSection1 != NULL){
-        trieNode *firstTrie = new trieNode;
-        firstTrie->value = (subSection1)->value;
-        firstTrie->nextDim = NULL;
-
-        trieNode *secondTrie = new trieNode;
-        secondTrie->value = (subSection1)->nextTrieNode->value;
-        secondTrie->nextDim = NULL;
-        secondTrie->nextTrieNode = NULL;
-
-        firstTrie->nextTrieNode = secondTrie;
-        opResult = firstTrie;
-        subSection1 = ((subSection1)->nextTrieNode->nextTrieNode);
-        mergeSegments(&currentSegment,opResult);
-    }
-//    cout<<"UnionTrieResult: \n";
-//    result->printTrie();
-    
-    nDEVM *result = new nDEVM(resultTrie);
-    
-    return result;
-}
-
-void nDEVM::differenceOperation(trieNode** section1, trieNode** section2,trieNode **result){
-    
-    if((*section1) == NULL){
-        *result = NULL;
-        return;
-    }
-    
-    if((*section1) != NULL and *section2 == NULL){
-//        cout<<"Caso 0.1: Ambos Nulos...\n";
-        
-        trieNode *firstTrie = new trieNode;
-        firstTrie->value = (*section1)->value;
-        firstTrie->nextDim = NULL;
-
-        trieNode *secondTrie = new trieNode;
-        secondTrie->value = (*section1)->nextTrieNode->value;
-        secondTrie->nextDim = NULL;
-        secondTrie->nextTrieNode = NULL;
-
-        firstTrie->nextTrieNode = secondTrie;
-        *result = firstTrie;
-        *section1 = ((*section1)->nextTrieNode->nextTrieNode);
-        return;
-    }
-    
-    // Disjuntos A--B C--D
-    if((*section1)->nextTrieNode->value <= (*section2)->value){
-        trieNode *firstTrie = new trieNode;
-        firstTrie->value = (*section1)->value;
-        firstTrie->nextDim = NULL;
-
-        trieNode *secondTrie = new trieNode;
-        secondTrie->value = (*section1)->nextTrieNode->value;
-        secondTrie->nextDim = NULL;
-        secondTrie->nextTrieNode = NULL;
-
-        firstTrie->nextTrieNode = secondTrie;
-        *result = firstTrie;
-        *section1 = ((*section1)->nextTrieNode->nextTrieNode);
-        return;
-    }
-    
-    // Disjuntos C--D A--B
-    if((*section1)->value >= (*section2)->nextTrieNode->value){
-        *section2 = ((*section2)->nextTrieNode->nextTrieNode);
-        
-        // Buscar una interseccion
-        while(*section2 != NULL){
-            // C--A--D--B
-            if((*section2)->value <= (*section1)->value and (*section2)->nextTrieNode->value > (*section1)->value){
-                break;
-            }
-
-            // (A,C)--(B,D)
-            if((*section2)->value >= (*section1)->value and (*section2)->value < (*section1)->nextTrieNode->value){
-                break;
-            }
-            
-            // Se llego al caso A--B C--D
-            if((*section2)->value >= (*section1)->nextTrieNode->value){
-                break;
-            }
-            
-            *section2 = ((*section2)->nextTrieNode->nextTrieNode);
-        }
-        
-        differenceOperation(section1, section2,result);
-        return;
-    }
-    
-    // Coincidentes (AC)--(BD)
-    if((*section1)->value == (*section2)->value and (*section1)->nextTrieNode->value == (*section2)->nextTrieNode->value){
-        *result = NULL;
-        *section1 = ((*section1)->nextTrieNode->nextTrieNode);
-        *section2 = ((*section2)->nextTrieNode->nextTrieNode);
-        return;
-    }
-    
-    // Inclusivos 1 A<C AND D<B
-    if((*section1)->value < (*section2)->value and (*section2)->nextTrieNode->value < (*section1)->nextTrieNode->value){
-        //cout<<"Inclusivos 1 A<C AND D<B\n";
-        //A
-        trieNode *firstTrie = new trieNode;
-        firstTrie->value = (*section1)->value;
-        firstTrie->nextDim = NULL;
-        //C
-        trieNode *secondTrie = new trieNode;
-        secondTrie->value = (*section2)->value;
-        secondTrie->nextDim = NULL;
-        secondTrie->nextTrieNode = NULL;
-
-        firstTrie->nextTrieNode = secondTrie;
-        
-        //D
-        trieNode *thirdTrie = new trieNode;
-        thirdTrie->value = (*section2)->nextTrieNode->value;
-        thirdTrie->nextDim = NULL;
-        //B
-        trieNode *fourthTrie = new trieNode;
-        fourthTrie->value = (*section1)->nextTrieNode->value;
-        fourthTrie->nextDim = NULL;
-        fourthTrie->nextTrieNode = NULL;
-
-        thirdTrie->nextTrieNode = fourthTrie;
-        
-        //secondTrie->nextTrieNode = thirdTrie;
-        *section2 = ((*section2)->nextTrieNode->nextTrieNode);
-        trieNode *tempResult = NULL;
-        trieNode *tempSection1 = thirdTrie;
-        differenceOperation(&tempSection1, section2,&tempResult);
-        
-        if(tempResult != NULL){
-            deleteTrie(thirdTrie);
-            secondTrie->nextTrieNode = tempResult;
-        }else{
-            secondTrie->nextTrieNode = thirdTrie;
-        }
-        
-        *result = firstTrie;
-        *section1 = ((*section1)->nextTrieNode->nextTrieNode);
-        return;
-    }
- 
-    // Inclusivos 2 A==C AND D<B
-    if((*section1)->value == (*section2)->value and (*section2)->nextTrieNode->value < (*section1)->nextTrieNode->value){
-        //D
-        trieNode *firstTrie = new trieNode;
-        firstTrie->value = (*section2)->nextTrieNode->value;
-        firstTrie->nextDim = NULL;
-        //B
-        trieNode *secondTrie = new trieNode;
-        secondTrie->value = (*section1)->nextTrieNode->value;
-        secondTrie->nextDim = NULL;
-        secondTrie->nextTrieNode = NULL;
-
-        firstTrie->nextTrieNode = secondTrie;
-        
-        //*result = firstTrie;
-        *section2 = ((*section2)->nextTrieNode->nextTrieNode);
-        trieNode *tempResult = NULL;
-        trieNode *tempSection1 = firstTrie;
-        differenceOperation(&tempSection1, section2,&tempResult);
-        
-        if(tempResult != NULL){
-            deleteTrie(firstTrie);
-            *result = tempResult;
-        }else{
-            *result = firstTrie;
-        }
-
-        *section1 = ((*section1)->nextTrieNode->nextTrieNode);
-        return;
-    }
-
-    // Inclusivos 3 A<C AND D==B
-    if((*section1)->value < (*section2)->value and (*section2)->nextTrieNode->value == (*section1)->nextTrieNode->value){
-        //A
-        trieNode *firstTrie = new trieNode;
-        firstTrie->value = (*section1)->value;
-        firstTrie->nextDim = NULL;
-        //C
-        trieNode *secondTrie = new trieNode;
-        secondTrie->value = (*section2)->value;
-        secondTrie->nextDim = NULL;
-        secondTrie->nextTrieNode = NULL;
-
-        firstTrie->nextTrieNode = secondTrie;
-        
-        *result = firstTrie;
-        *section2 = ((*section2)->nextTrieNode->nextTrieNode);
-        *section1 = ((*section1)->nextTrieNode->nextTrieNode);
-//        trieNode *aux = firstTrie;        
-//        differenceOperation(&aux, section2,&((*result)->nextTrieNode->nextTrieNode));
-        return;
-    }
-
-    // Inclusivos Otro sentido C<=A AND D>=B
-    if((*section2)->value <= (*section1)->value and (*section2)->nextTrieNode->value >= (*section1)->nextTrieNode->value){
-        *result = NULL;
-        *section1 = ((*section1)->nextTrieNode->nextTrieNode);
-        return;
-    }
-
-    // Superpuestos A<C AND B<D
-    if((*section1)->value < (*section2)->value and (*section1)->nextTrieNode->value < (*section2)->nextTrieNode->value){
-        //A
-        trieNode *firstTrie = new trieNode;
-        firstTrie->value = (*section1)->value;
-        firstTrie->nextDim = NULL;
-        //C
-        trieNode *secondTrie = new trieNode;
-        secondTrie->value = (*section2)->value;
-        secondTrie->nextDim = NULL;
-        secondTrie->nextTrieNode = NULL;
-
-        firstTrie->nextTrieNode = secondTrie;
-        
-        *result = firstTrie;
-        *section1 = ((*section1)->nextTrieNode->nextTrieNode);
-        return;
-    }
-
-    // Superpuestos Otro sentido C<A AND D<B
-    if((*section2)->value < (*section1)->value and (*section2)->nextTrieNode->value < (*section1)->nextTrieNode->value){
-        //D
-        trieNode *firstTrie = new trieNode;
-        firstTrie->value = (*section2)->nextTrieNode->value;
-        firstTrie->nextDim = NULL;
-        //C
-        trieNode *secondTrie = new trieNode;
-        secondTrie->value = (*section1)->nextTrieNode->value;
-        secondTrie->nextDim = NULL;
-        secondTrie->nextTrieNode = NULL;
-
-        firstTrie->nextTrieNode = secondTrie;
-        
-        //*result = firstTrie;
-        *section2 = ((*section2)->nextTrieNode->nextTrieNode);
-        trieNode *tempResult = NULL;
-        trieNode *tempSection1 = firstTrie;
-        differenceOperation(&tempSection1, section2,&tempResult);
-        
-        if(tempResult != NULL){
-            deleteTrie(firstTrie);
-            *result = tempResult;
-        }else{
-            *result = firstTrie;
-        }
-
-        *section1 = ((*section1)->nextTrieNode->nextTrieNode);
-        return;
-    }
-}
-
-nDEVM* nDEVM::xorOperation(nDEVM* section1, nDEVM* section2){
-    // A xor B
-    if(!section1->isEmpty() and section2->isEmpty()){
-        return section1->cloneEVM();
-    }
-        
-    if(section1->isEmpty() and !section2->isEmpty()){
-        return section2->cloneEVM();
-    }
-    
-    trieNode *resultTrie = NULL, **currentSegment,*opResult = NULL;
-    trieNode *subSection1 = section1->getRootNode(), *subSection2 = section2->getRootNode();
-    currentSegment= &resultTrie;
-    
-    // Para el caso de la UNION se considera a result vacio inicialmente   
-    // Mientras ninguno de los dos llegue al final
-    xorOperation(subSection1,subSection2,&opResult);
-    mergeSegments(&currentSegment,opResult);
-    while(subSection1 != NULL and subSection2 != NULL){
-        // Si Hay interseccion el nodo final del resultado
-        if(subSection1->nextTrieNode->nextTrieNode == NULL)
-            subSection1 = subSection1->nextTrieNode->nextTrieNode;
-        else
-            if((*currentSegment) != NULL and 
-                    subSection1->nextTrieNode->nextTrieNode->value <= (*currentSegment)->nextTrieNode->value){
-                subSection1 = subSection1->nextTrieNode->nextTrieNode;
-                xorOperation(*currentSegment,subSection1,&opResult);
-                deleteTrie(*currentSegment);
-                *currentSegment = NULL;
-                mergeSegments(&currentSegment,opResult);
-            }else{
-                if(subSection2->nextTrieNode->nextTrieNode == NULL)
-                    subSection2 = subSection2->nextTrieNode->nextTrieNode;
-                else
-                    if((*currentSegment) != NULL and 
-                            subSection2->nextTrieNode->nextTrieNode->value <= (*currentSegment)->nextTrieNode->value){
-                        subSection2 = subSection2->nextTrieNode->nextTrieNode;
-                        xorOperation(*currentSegment,subSection2,&opResult);
-                        deleteTrie(*currentSegment);
-                        *currentSegment = NULL;
-                        mergeSegments(&currentSegment,opResult);
-                    }else{
-                        subSection1 = subSection1->nextTrieNode->nextTrieNode;
-                        xorOperation(*currentSegment,subSection1,&opResult);
-                        deleteTrie(*currentSegment);
-                        *currentSegment = NULL;
-                        mergeSegments(&currentSegment,opResult);
-
-                        subSection2 = subSection2->nextTrieNode->nextTrieNode;
-                        xorOperation(*currentSegment,subSection2,&opResult);
-                        deleteTrie(*currentSegment);
-                        *currentSegment = NULL;
-                        mergeSegments(&currentSegment,opResult);
-                    }
-            }
-    }
-    
-    while(subSection1 != NULL){
-        subSection1 = subSection1->nextTrieNode->nextTrieNode;
-        xorOperation(*currentSegment,subSection1,&opResult);
-        deleteTrie(*currentSegment);
-        *currentSegment = NULL;
-        mergeSegments(&currentSegment,opResult);
-    }
-
-    while(subSection2 != NULL){
-        subSection2 = subSection2->nextTrieNode->nextTrieNode;
-        xorOperation(*currentSegment,subSection2,&opResult);
-        deleteTrie(*currentSegment);
-        *currentSegment = NULL;
-        mergeSegments(&currentSegment,opResult);
-    }
-//    cout<<"UnionTrieResult: \n";
-//    result->printTrie();
-    
-    return new nDEVM(resultTrie);
-}
-
-void nDEVM::xorOperation(trieNode* section1, trieNode* section2,trieNode **result){
-    
-    if(section1 != NULL and section2 == NULL){
-        *result = cloneSegment(section1);
-        return;
-    }
-    
-    if(section1 == NULL and section2 != NULL){
-        *result = cloneSegment(section2);
-        return;
-    }
-
-    if(section1 == NULL and section2 == NULL){
-        *result = NULL;
-        return;
-    }
-
-    // Disjuntos A--B C--D
-    if(section1->nextTrieNode->value < section2->value){
-//        cout<<"Disjuntos A--B C--D\n";
-        *result = cloneSegment(section1);        
-        (*result)->nextTrieNode->nextTrieNode = cloneSegment(section2);
-        return;
-    }
-
-    // Disjuntos C--D A--B
-    if(section2->nextTrieNode->value < section1->value){
-//        cout<<"Disjuntos C--D A--B\n";
-        *result = cloneSegment(section2);        
-        (*result)->nextTrieNode->nextTrieNode = cloneSegment(section1);
-        return;
-    }
-
-    //Contiguos A--BC--D
-    if(section1->nextTrieNode->value == section2->value){
-//        cout<<"Contiguos A--BC--D\n";
-        //A
-        trieNode *firstNode= new trieNode;
-        firstNode->value = section1->value;
-        firstNode->nextDim = NULL;
-        //D
-        trieNode *secondNode = new trieNode;
-        secondNode->value = section2->nextTrieNode->value;
-        secondNode->nextDim = NULL;
-        secondNode->nextTrieNode = NULL;
-
-        firstNode->nextTrieNode = secondNode;
-
-        *result = firstNode;        
-        return;
-    }
-
-    //Contiguos C--DA--B
-    if(section2->nextTrieNode->value == section1->value){
-//        cout<<"Contiguos C--DA--B\n";
-        //C
-        trieNode *firstNode= new trieNode;
-        firstNode->value = section2->value;
-        firstNode->nextDim = NULL;
-        //B
-        trieNode *secondNode = new trieNode;
-        secondNode->value = section1->nextTrieNode->value;
-        secondNode->nextDim = NULL;
-        secondNode->nextTrieNode = NULL;
-
-        firstNode->nextTrieNode = secondNode;
-        *result = firstNode;        
-        return;
-    }
-
-    
-    // Coincidentes (AC)--(BD)
-    if(section1->value == section2->value and section1->nextTrieNode->value == section2->nextTrieNode->value){
-//        cout<<"Coincidentes (AC)--(BD)\n";
-        *result = NULL;
-        return;
-    }
-    
-    //Inclusivos A--C--D--B
-    // Inclusivos 1 A<C AND D<B
-    if(section1->value < section2->value and section2->nextTrieNode->value < section1->nextTrieNode->value){
-//        cout<<"Inclusivos A--C--D--B 1 A<C AND D<B\n";
-        //A
-        trieNode *firstNode = new trieNode;
-        firstNode->value = section1->value;
-        firstNode->nextDim = NULL;
-        //C
-        trieNode *secondNode = new trieNode;
-        secondNode->value = section2->value;
-        secondNode->nextDim = NULL;
-        secondNode->nextTrieNode = NULL;
-
-        firstNode->nextTrieNode = secondNode;
-        
-        //D
-        trieNode *thirdNode = new trieNode;
-        thirdNode->value = section2->nextTrieNode->value;
-        thirdNode->nextDim = NULL;
-        //B
-        trieNode *fourthNode = new trieNode;
-        fourthNode->value = section1->nextTrieNode->value;
-        fourthNode->nextDim = NULL;
-        fourthNode->nextTrieNode = NULL;
-
-        thirdNode->nextTrieNode = fourthNode;
-        secondNode->nextTrieNode = thirdNode;
-        *result = firstNode;
-        return;
-    }
- 
-    //Inclusivos A--C--D--B
-    // Inclusivos 2 A==C AND D<B
-    if(section1->value == section2->value and section2->nextTrieNode->value < section1->nextTrieNode->value){
-//        cout<<"Inclusivos A--C--D--B 2 A==C AND D<B\n";
-        //D
-        trieNode *firstNode = new trieNode;
-        firstNode->value = section2->nextTrieNode->value;
-        firstNode->nextDim = NULL;
-        //B
-        trieNode *secondNode = new trieNode;
-        secondNode->value = section1->nextTrieNode->value;
-        secondNode->nextDim = NULL;
-        secondNode->nextTrieNode = NULL;
-
-        firstNode->nextTrieNode = secondNode;
-        
-        *result = firstNode;
-        return;
-    }
-    
-    //Inclusivos A--C--D--B
-    // Inclusivos 3 A<C AND D==B
-    if(section1->value < section2->value and section2->nextTrieNode->value == section1->nextTrieNode->value){
-//        cout<<"Inclusivos A--C--D--B 3 A<C AND D==B\n";
-        //A
-        trieNode *firstNode = new trieNode;
-        firstNode->value = section1->value;
-        firstNode->nextDim = NULL;
-        //C
-        trieNode *secondNode = new trieNode;
-        secondNode->value = section2->value;
-        secondNode->nextDim = NULL;
-        secondNode->nextTrieNode = NULL;
-
-        firstNode->nextTrieNode = secondNode;
-        
-        *result = firstNode;
-        return;
-    }
-
-    //Inclusivos 2 C--A--B--D
-    // Inclusivos 1 C<A AND B<D
-    if(section2->value < section1->value and section1->nextTrieNode->value < section2->nextTrieNode->value){
-//        cout<<"Inclusivos C--A--B--D 1 C<A AND B<D\n";
-        //c
-        trieNode *firstNode = new trieNode;
-        firstNode->value = section2->value;
-        firstNode->nextDim = NULL;
-        //A
-        trieNode *secondNode = new trieNode;
-        secondNode->value = section1->value;
-        secondNode->nextDim = NULL;
-        secondNode->nextTrieNode = NULL;
-
-        firstNode->nextTrieNode = secondNode;
-        
-        //B
-        trieNode *thirdNode = new trieNode;
-        thirdNode->value = section1->nextTrieNode->value;
-        thirdNode->nextDim = NULL;
-        //D
-        trieNode *fourthNode = new trieNode;
-        fourthNode->value = section2->nextTrieNode->value;
-        fourthNode->nextDim = NULL;
-        fourthNode->nextTrieNode = NULL;
-
-        thirdNode->nextTrieNode = fourthNode;
-        secondNode->nextTrieNode = thirdNode;
-
-        *result = firstNode;
-        return;
-    }
- 
-    //Inclusivos 2 C--A--B--D
-    // Inclusivos 2 C==A AND B<D
-    if(section1->value == section2->value and section1->nextTrieNode->value < section2->nextTrieNode->value){
-//        cout<<"Inclusivos C--A--B--D 2 C==A AND B<D\n";
-        //B
-        trieNode *firstNode = new trieNode;
-        firstNode->value = section1->nextTrieNode->value;
-        firstNode->nextDim = NULL;
-        //D
-        trieNode *secondNode = new trieNode;
-        secondNode->value = section2->nextTrieNode->value;
-        secondNode->nextDim = NULL;
-        secondNode->nextTrieNode = NULL;
-
-        firstNode->nextTrieNode = secondNode;
-        
-        *result = firstNode;
-        return;
-    }
-    
-    //Inclusivos 2 C--A--B--D
-    // Inclusivos 3 C<A AND B==D
-    if(section2->value < section1->value and section2->nextTrieNode->value == section1->nextTrieNode->value){
-//        cout<<"Inclusivos C--A--B--D 3 C<A AND B==D\n";
-        //C
-        trieNode *firstNode = new trieNode;
-        firstNode->value = section2->value;
-        firstNode->nextDim = NULL;
-        //A
-        trieNode *secondNode = new trieNode;
-        secondNode->value = section1->value;
-        secondNode->nextDim = NULL;
-        secondNode->nextTrieNode = NULL;
-
-        firstNode->nextTrieNode = secondNode;
-        
-        *result = firstNode;
-        return;
-    }
-
-    //Superpuestos A--C--B--D
-    if(section1->value < section2->value and section1->nextTrieNode->value < section2->nextTrieNode->value){
-//        cout<<"Superpuestos A--C--B--D\n";
-        //A
-        trieNode *firstNode = new trieNode;
-        firstNode->value = section1->value;
-        firstNode->nextDim = NULL;
-        //C
-        trieNode *secondNode = new trieNode;
-        secondNode->value = section2->value;
-        secondNode->nextDim = NULL;
-        secondNode->nextTrieNode = NULL;
-
-        firstNode->nextTrieNode = secondNode;
-        
-        //B
-        trieNode *thirdNode = new trieNode;
-        thirdNode->value = section1->nextTrieNode->value;
-        thirdNode->nextDim = NULL;
-        //D
-        trieNode *fourthNode = new trieNode;
-        fourthNode->value = section2->nextTrieNode->value;
-        fourthNode->nextDim = NULL;
-        fourthNode->nextTrieNode = NULL;
-
-        thirdNode->nextTrieNode = fourthNode;
-        secondNode->nextTrieNode = thirdNode;
-        
-        *result = firstNode;
-        return;
-    }    
-
-    //Superpuestos 2 C--A--D--B
-    if(section2->value < section1->value and section2->nextTrieNode->value < section1->nextTrieNode->value){
-//        cout<<"Superpuestos 2 C--A--D--B\n";
-        //C
-        trieNode *firstNode = new trieNode;
-        firstNode->value = section2->value;
-        firstNode->nextDim = NULL;
-        //A
-        trieNode *secondNode = new trieNode;
-        secondNode->value = section1->value;
-        secondNode->nextDim = NULL;
-        secondNode->nextTrieNode = NULL;
-
-        firstNode->nextTrieNode = secondNode;
-        
-        //D
-        trieNode *thirdNode = new trieNode;
-        thirdNode->value = section2->nextTrieNode->value;
-        thirdNode->nextDim = NULL;
-        //B
-        trieNode *fourthNode = new trieNode;
-        fourthNode->value = section1->nextTrieNode->value;
-        fourthNode->nextDim = NULL;
-        fourthNode->nextTrieNode = NULL;
-
-        thirdNode->nextTrieNode = fourthNode;
-        secondNode->nextTrieNode = thirdNode;
-        
-        *result = firstNode;
-        return;
-    }    
-}
-
-trieNode *nDEVM::cloneSegment(trieNode *segment){
-        trieNode *firstTrie = new trieNode;
-        firstTrie->value = segment->value;
-        firstTrie->nextDim = NULL;
-
-        trieNode *secondTrie = new trieNode;
-        secondTrie->value = segment->nextTrieNode->value;
-        secondTrie->nextDim = NULL;
-        secondTrie->nextTrieNode = NULL;
-
-        firstTrie->nextTrieNode = secondTrie;
-        
-        return firstTrie;
-}
-
 bool nDEVM::putCoupletByOp(string op,int argPosition){
     if(op.compare("union") == 0){
         return true;
@@ -2372,7 +695,221 @@ bool nDEVM::putCoupletByOp(string op,int argPosition){
     return false;
 }
 
-void nDEVM::condInsertVertex(double * inputKey,int length){
-    if(!existsVertex(inputKey,length))
-        insertVertex(inputKey, length);
+
+nDEVM* nDEVM::unionOperation(nDEVM* section1, nDEVM* section2){
+    // Casos en el que uno o ambos EVMs estan vacios
+    if(section1->isEmpty() and !section2->isEmpty()){
+        return section2->cloneEVM();
+    }
+    
+    if(section2->isEmpty() and !section1->isEmpty()){
+        return section1->cloneEVM();
+    }
+    
+    if(section1->isEmpty() and section2->isEmpty()){
+        return new nDEVM();
+    }
+    
+    TrieTree *resultTrie = new TrieTree();
+    resultTrie = resultTrie->unionOperation(section1->trieTree,section2->trieTree);
+    nDEVM *resultEVM = new nDEVM(resultTrie);
+    return resultEVM;
 }
+
+nDEVM* nDEVM::intersectionOperation(nDEVM* section1, nDEVM* section2){
+    // Casos en el que uno o ambos EVMs estan vacios
+    if(section1->isEmpty() or section2->isEmpty()){
+        return new nDEVM();
+    }
+        
+    TrieTree *resultTrie = new TrieTree();
+    resultTrie = resultTrie->intersectionOperation(section1->trieTree,section2->trieTree);
+
+    nDEVM *result = new nDEVM(resultTrie);
+    
+    return result;
+}
+
+nDEVM* nDEVM::differenceOperation(nDEVM* section1, nDEVM* section2){
+    // A - B
+    if(!section1->isEmpty() and section2->isEmpty()){
+        return section1->cloneEVM();
+    }
+        
+    if(section1->isEmpty() and section2->isEmpty()){
+        return new nDEVM();
+    }
+    
+    TrieTree *resultTrie = new TrieTree();
+    resultTrie = resultTrie->differenceOperation(section1->trieTree,section2->trieTree);
+    
+    nDEVM *result = new nDEVM(resultTrie);
+    
+    return result;
+}
+
+nDEVM* nDEVM::xorOperation(nDEVM* section1, nDEVM* section2){
+    // A xor B
+    if(!section1->isEmpty() and section2->isEmpty()){
+        return section1->cloneEVM();
+    }
+        
+    if(section1->isEmpty() and !section2->isEmpty()){
+        return section2->cloneEVM();
+    }
+
+    TrieTree *resultTrie = new TrieTree();
+    resultTrie = resultTrie->xorOperation(section1->trieTree,section2->trieTree);
+    
+    nDEVM *result = new nDEVM(resultTrie);
+    return result;
+}
+
+//double nDEVM::content(){
+//    int dimDepth = getDimDepth();
+//    return content(this, dimDepth);
+//}
+//
+//double nDEVM::content(nDEVM *p, int n){
+//    double cont = 0, coordC1,coordC2;
+//    nDEVM *couplet1, *couplet2;
+//    nDEVM *section;
+//    
+//    if(n == 1){
+//        return p->length();
+//    }
+//    
+//    couplet1 = new nDEVM();
+//    couplet2 = new nDEVM();
+//    section = new nDEVM();
+//    
+//    coordC1 = p->coupletCoord();
+//    couplet1 = p->readCouplet();
+//    
+//    while( !(p->endEVM()) ){
+//        coordC2 = p->coupletCoord();
+//        couplet2 = p->readCouplet();
+//        section = getSection(section,couplet1);
+//        
+//        cont = cont + content(section,n-1)*(coordC2 - coordC1);
+//        coordC1 = coordC2;
+//        couplet1 = couplet2;
+//    }
+//    p->resetCoupletIndex();
+//    return cont;
+//}
+//
+//double nDEVM::boundaryContent(){
+//    int dimDepth = getDimDepth();
+//    return boundaryContent(this,dimDepth);
+//}
+//
+//double nDEVM::boundaryContent(nDEVM *p, int n){
+//    double cont = 0, coordC1,coordC2;
+//    nDEVM *couplet1, *couplet2;
+//    nDEVM *section;
+//    
+//    if(n == 2){
+//        // - Solo para 2DEVMs
+//        return p->perimeter();
+//    }
+//    
+//    couplet1 = new nDEVM();
+//    couplet2 = new nDEVM();
+//    section = new nDEVM();
+//    
+//    coordC1 = p->coupletCoord();
+//    couplet1 = p->readCouplet();
+//    
+//    while( !(p->endEVM()) ){
+//        coordC2 = p->coupletCoord();
+//        couplet2 = p->readCouplet();
+//        section = getSection(section,couplet1);
+//        
+//        cont = cont + content(couplet1,n-1) + boundaryContent(section,n-1)*(coordC2 - coordC1);
+//        coordC1 = coordC2;
+//        couplet1 = couplet2;
+//    }
+//    cont = cont + content(couplet1,n-1);
+//    p->resetCoupletIndex();
+//    return cont;
+//}
+//
+//double nDEVM::length(){
+//    double l = 0;
+//    trieNode *segment;
+//
+//    if(isEmpty())
+//        return 0;
+//    
+//    segment = rootNode;    
+//    l += (segment->nextTrieNode->value - segment->value );
+//    
+//    while(segment->nextTrieNode->nextTrieNode != NULL){
+//
+//        segment = segment->nextTrieNode->nextTrieNode;    
+//        l += (segment->nextTrieNode->value - segment->value );
+//    }
+//    return l;
+//}
+//
+///**
+// * Solo para 2DEVMs
+// * @return 
+// */
+//double nDEVM::perimeter(){
+//    double p = 0;
+//    // - explorar el EVM de donde sellamo la funcion
+//    nDEVM *couplet;
+//    nDEVM *q = new nDEVM();
+//    double *otherInputs = new double[2];
+//    trieNode *segment;
+//    while(!endEVM()){
+//        // - coordenada en x1 ahora se pasa a la segunda dimensión en ordenamiento
+//        otherInputs[1] = coupletCoord();
+//        
+//        // - obtener la longitud del couplet 1D ordenado eobre x2
+//        couplet = readCouplet();
+//        p += couplet->length();
+//        
+//        // - explorar el segmento del couplet actual, el cual esta ordenado sobre x2
+//        segment = couplet->rootNode;
+//        // - pasar los vertices de los segmentos como la coordenada x1
+//        otherInputs[0] = segment->value;
+//        q->insertVertex(otherInputs,2);
+//        otherInputs[0] = segment->nextTrieNode->value;
+//        q->insertVertex(otherInputs,2);
+//        while( segment->nextTrieNode->nextTrieNode != NULL ){
+//            // - pasar los vertices de los segmentos como la coordenada x1
+//            segment = segment->nextTrieNode->nextTrieNode;
+//            otherInputs[0] = segment->value;
+//            q->insertVertex(otherInputs,2);
+//            otherInputs[0] = segment->nextTrieNode->value;
+//            q->insertVertex(otherInputs,2);
+//        }
+//    }
+//    
+//    // - obtener las longitudes de los couplets pero con la primerdomensión x2
+//    while( !(q ->endEVM()) ){        
+//        couplet = q->readCouplet();
+//        p += couplet->length();
+//    }    
+//    return p;
+//}
+//
+//double nDEVM::discreteCompactness(){
+//    int EVMContent = content();
+//    double minContactArea,maxContactArea,boundaryCont,contactArea, DC;
+//    
+//    minContactArea=(EVMContent-1);
+//    maxContactArea=3*(EVMContent - pow( pow(EVMContent,(double)1/3) , 2));
+//    
+//    boundaryCont = boundaryContent();
+//    
+//    contactArea = (6*EVMContent - boundaryCont)/2;
+//    DC = (contactArea - minContactArea)/(maxContactArea - minContactArea);
+//    
+//    cout<<"Content: "<<EVMContent<<", BoundaryContent: "<<boundaryCont<<", ContactArea: "<<contactArea<<", DiscreteCompactness: "<<DC<<"\n";
+//    
+//    return DC;
+//}

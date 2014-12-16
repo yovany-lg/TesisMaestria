@@ -4,8 +4,8 @@
     <logicalFolder name="HeaderFiles"
                    displayName="Header Files"
                    projectFiles="true">
+      <itemPath>TrieTree.h</itemPath>
       <itemPath>nDEVM.h</itemPath>
-      <itemPath>trieTree.h</itemPath>
     </logicalFolder>
     <logicalFolder name="ResourceFiles"
                    displayName="Resource Files"
@@ -14,9 +14,9 @@
     <logicalFolder name="SourceFiles"
                    displayName="Source Files"
                    projectFiles="true">
+      <itemPath>TrieTree.cpp</itemPath>
       <itemPath>main.cpp</itemPath>
       <itemPath>nDEVM.cpp</itemPath>
-      <itemPath>trieTree.cpp</itemPath>
     </logicalFolder>
     <logicalFolder name="TestFiles"
                    displayName="Test Files"
@@ -43,15 +43,15 @@
           <standard>8</standard>
         </ccTool>
       </compileType>
+      <item path="TrieTree.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="TrieTree.h" ex="false" tool="3" flavor2="0">
+      </item>
       <item path="main.cpp" ex="false" tool="1" flavor2="0">
       </item>
       <item path="nDEVM.cpp" ex="false" tool="1" flavor2="0">
       </item>
       <item path="nDEVM.h" ex="false" tool="3" flavor2="0">
-      </item>
-      <item path="trieTree.cpp" ex="false" tool="1" flavor2="0">
-      </item>
-      <item path="trieTree.h" ex="false" tool="3" flavor2="0">
       </item>
     </conf>
     <conf name="Release" type="1">
@@ -74,15 +74,15 @@
           <developmentMode>5</developmentMode>
         </asmTool>
       </compileType>
+      <item path="TrieTree.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="TrieTree.h" ex="false" tool="3" flavor2="0">
+      </item>
       <item path="main.cpp" ex="false" tool="1" flavor2="0">
       </item>
       <item path="nDEVM.cpp" ex="false" tool="1" flavor2="0">
       </item>
       <item path="nDEVM.h" ex="false" tool="3" flavor2="0">
-      </item>
-      <item path="trieTree.cpp" ex="false" tool="1" flavor2="0">
-      </item>
-      <item path="trieTree.h" ex="false" tool="3" flavor2="0">
       </item>
     </conf>
   </confs>
