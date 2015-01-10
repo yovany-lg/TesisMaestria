@@ -14,6 +14,8 @@
 
 #include "TrieTree.h"
 
+#include "BMP.h"
+
 template <typename T> std::string to_string(T value)
 {
 	std::ostringstream os ;
@@ -417,31 +419,21 @@ bool TrieTree::existsVertex(trieNode **currentNode,double * inputKey,int length,
     }
 }
 
-TrieTree* TrieTree::mergeXOR(TrieTree* otherTrie){
-    //Se considera que esta operacion se realizara con EVMs de la misma dimension.
-    if(rootNode == NULL and otherTrie->rootNode != NULL)
-        return otherTrie->clone();
-   
-    if(rootNode != NULL and otherTrie->rootNode == NULL)
-        return clone();
-
-    if(rootNode == NULL and otherTrie->rootNode == NULL){
-        TrieTree *xorTrie= new TrieTree();
-        return xorTrie;
-    }
-    
-    return XOR(otherTrie);
-
-//    int dimDepth = getDimDepth();
-//    //Se clona el trie del EVM desde donde se llama la operacion mergeXOR.
-//    TrieTree *xorTrie = clone();
-//    
-//    double *key = new double[dimDepth];  //ELIMINAR
+//TrieTree* TrieTree::mergeXOR(TrieTree* otherTrie){
+//    //Se considera que esta operacion se realizara con EVMs de la misma dimension.
+//    if(rootNode == NULL and otherTrie->rootNode != NULL)
+//        return otherTrie->clone();
+//   
+//    if(rootNode != NULL and otherTrie->rootNode == NULL)
+//        return clone();
 //
-//    //Para no perder referencia al root desde la funcion insertVertex...
-//    xorTrie->XOR(&otherTrie,&key,0);
-//    return xorTrie;
-}
+//    if(rootNode == NULL and otherTrie->rootNode == NULL){
+//        TrieTree *xorTrie= new TrieTree();
+//        return xorTrie;
+//    }
+//    
+//    return XOR(otherTrie);
+//}
 
 TrieTree * TrieTree::XOR(TrieTree *otherTrie){
     int dim = dimDepth();
@@ -1625,4 +1617,35 @@ string TrieTree::vectorToString2(double **vector,int size){
         output+=to_string(s);
     }
     return output;
+}
+
+void TrieTree::loadImage(string fileName){
+    BMP bmpImage(fileName.c_str());
+    
+    double *pixelRGB = new double[3];
+    double *pixelInfo = new double[5]; // - [X,Y,R,G,B]
+    
+    for(int i = 0; i < bmpImage.header.height; i++)
+    {
+        for(int j = 0; j < bmpImage.header.width*3; j+= 3)
+        {
+            bmpImage.getPixelRGB(j,i,&pixelRGB);
+            pixelInfo[0] = (int)(j/3);
+            pixelInfo[1] = i;
+            pixelInfo[2] = pixelRGB[0];
+            pixelInfo[3] = pixelRGB[1];
+            pixelInfo[4] = pixelRGB[2];
+            insertVertex(pixelInfo,5);
+//            if(j < 350){
+//                if(pixelRGB[0] > 0 and pixelRGB[1] > 0 and pixelRGB[2] > 0)
+//                    cout<<' ';
+//                else
+//                    cout<<'*';
+//            }
+        }
+//        cout<<endl;
+    }
+    
+    delete pixelRGB;
+    delete pixelInfo;
 }

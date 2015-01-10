@@ -12,18 +12,10 @@
 #ifndef NDEVM_H
 #define	NDEVM_H
 
-//struct trieNode{
-//    double value;  //Valor de la dimension actual
-//    trieNode *nextDim;
-//    trieNode *nextTrieNode;
-//};
-
 using namespace std;
 
 class nDEVM {
 private:
-//    trieNode *rootNode;
-//    trieNode **coupletIndex;
     TrieTree *trieTree;
 public:
     nDEVM();
@@ -134,6 +126,9 @@ public:
     double boundaryContent(nDEVM *p, int n);
     double perimeter();
     double discreteCompactness();
+    
+    // - Cargar Videos Imagenes
+    void loadImageFile(string fileName);
 };
 
 #endif	/* TRIETREE_H */

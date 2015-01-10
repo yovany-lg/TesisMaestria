@@ -29,6 +29,7 @@ string vectorToStringD(double **vector,int size);
 bool booleanOperation(string op,unsigned char value1, unsigned char value2);
 void testSequences();
 void testOperations();
+void testImageLoad();
 
 typedef unsigned long long timestamp_t;
 
@@ -113,8 +114,15 @@ int main(int argc, char** argv) {
 //    evm1->deleteEVM();
 
     // Test de Operaciones Booleanas
-    testOperations();
+//    testOperations();
+    // - Test para cargar imagenes
+    testImageLoad();
     return 0;
+}
+
+void testImageLoad(){
+    nDEVM *evm = new nDEVM();
+    evm->loadImageFile("Images/1663.bmp");
 }
 
 void testSequences(){

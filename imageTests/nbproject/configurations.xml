@@ -5,8 +5,6 @@
                    displayName="Header Files"
                    projectFiles="true">
       <itemPath>BMP.h</itemPath>
-      <itemPath>TrieTree.h</itemPath>
-      <itemPath>nDEVM.h</itemPath>
     </logicalFolder>
     <logicalFolder name="ResourceFiles"
                    displayName="Resource Files"
@@ -16,9 +14,7 @@
                    displayName="Source Files"
                    projectFiles="true">
       <itemPath>BMP.cpp</itemPath>
-      <itemPath>TrieTree.cpp</itemPath>
       <itemPath>main.cpp</itemPath>
-      <itemPath>nDEVM.cpp</itemPath>
     </logicalFolder>
     <logicalFolder name="TestFiles"
                    displayName="Test Files"
@@ -41,23 +37,12 @@
         <rebuildPropChanged>false</rebuildPropChanged>
       </toolsSet>
       <compileType>
-        <ccTool>
-          <standard>8</standard>
-        </ccTool>
       </compileType>
       <item path="BMP.cpp" ex="false" tool="1" flavor2="0">
       </item>
       <item path="BMP.h" ex="false" tool="3" flavor2="0">
       </item>
-      <item path="TrieTree.cpp" ex="false" tool="1" flavor2="0">
-      </item>
-      <item path="TrieTree.h" ex="false" tool="3" flavor2="0">
-      </item>
       <item path="main.cpp" ex="false" tool="1" flavor2="0">
-      </item>
-      <item path="nDEVM.cpp" ex="false" tool="1" flavor2="0">
-      </item>
-      <item path="nDEVM.h" ex="false" tool="3" flavor2="0">
       </item>
     </conf>
     <conf name="Release" type="1">
@@ -84,15 +69,7 @@
       </item>
       <item path="BMP.h" ex="false" tool="3" flavor2="0">
       </item>
-      <item path="TrieTree.cpp" ex="false" tool="1" flavor2="0">
-      </item>
-      <item path="TrieTree.h" ex="false" tool="3" flavor2="0">
-      </item>
       <item path="main.cpp" ex="false" tool="1" flavor2="0">
-      </item>
-      <item path="nDEVM.cpp" ex="false" tool="1" flavor2="0">
-      </item>
-      <item path="nDEVM.h" ex="false" tool="3" flavor2="0">
       </item>
     </conf>
   </confs>

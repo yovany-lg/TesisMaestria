@@ -78,6 +78,9 @@ public:
     int dimDepth(trieNode* currentNode,int dim);
     string vectorToString(double **vector,int size);
     string vectorToString2(double **vector,int size);
+    
+    // - Cargar Videos e Imagenes
+    void loadImage(string fileName);
 private:
 };
 

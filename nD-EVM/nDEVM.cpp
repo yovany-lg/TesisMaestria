@@ -90,12 +90,11 @@ bool nDEVM::compareEVM(nDEVM *otherEVM){
  * @return Se retorna un valor booleano (true, false).
  */
 bool nDEVM::compareByCouplets(nDEVM *otherEVM){
-    bool compare1, compare2, totalCompare;
+    bool totalCompare;
     nDEVM* currentCouplet1 = new nDEVM();
     nDEVM* currentCouplet2 = new nDEVM();
     
     while(!(endEVM()) and !(otherEVM->endEVM())){
-        compare1 = compare2 = true;
         currentCouplet1 = readCouplet();
         currentCouplet2 = otherEVM->readCouplet();
         totalCompare = currentCouplet1->compareEVM(currentCouplet2);
@@ -159,7 +158,19 @@ bool nDEVM::existsVertex(double * inputKey,int length){
  * @return El un nuevo EVM obtenido al operar los dos EVMs.
  */
 nDEVM* nDEVM::mergeXOR(nDEVM* otherEVM){
-    TrieTree *resultTrie = trieTree->mergeXOR(otherEVM->trieTree);
+    //Se considera que esta operacion se realizara con EVMs de la misma dimension.
+    if(isEmpty() and !(otherEVM->isEmpty()))
+        return otherEVM->cloneEVM();
+   
+    if(!isEmpty() and otherEVM->isEmpty())
+        return cloneEVM();
+
+    if(isEmpty() and otherEVM->isEmpty()){
+        nDEVM *xorEVM = new nDEVM();
+        return xorEVM;
+    }
+    
+    TrieTree *resultTrie = trieTree->XOR(otherEVM->trieTree);
     nDEVM *resultEVM = new nDEVM(resultTrie);
     return resultEVM;
 }
@@ -913,3 +924,11 @@ nDEVM* nDEVM::xorOperation(nDEVM* section1, nDEVM* section2){
 //    
 //    return DC;
 //}
+
+void nDEVM::loadImageFile(string fileName){
+    TrieTree *imageTrie = new TrieTree();
+    
+    imageTrie->loadImage(fileName);
+//    int size = imageTrie->size();
+    return;
+}
