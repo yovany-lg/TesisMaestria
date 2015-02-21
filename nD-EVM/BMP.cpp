@@ -38,7 +38,6 @@ BMP::BMP(const char *fileName) {
         fread(&header.vresolution,      1, sizeof(DWORD), pFile);		
         fread(&header.numberOfColours,  1, sizeof(DWORD), pFile);		
         fread(&header.importantColours, 1, sizeof(DWORD), pFile);	
-
         // Si el archivo no es de 8bpp, termino la ejecución
 //        if(header.bitsPerPixel != 8){
 //            fclose(pFile);
@@ -78,7 +77,7 @@ BMP::BMP(const char *fileName) {
                 pImageData[pixelIndex+1] = data[j+1];
                 pImageData[pixelIndex+2] = data[j];
 
-    //            cout <<data[j] <<data[j+1]<<data[j+2];
+//                cout <<"R: "<<(int)data[j] <<",G: "<<(int)data[j+1]<<",B: "<<(int)data[j+2]<<endl;
                 //Validar si es un pixel vacío o relleno
 //                if(j < 350){
 //                    if(pImageData[pixelIndex] > 0 and pImageData[pixelIndex+1] > 0 and pImageData[pixelIndex+2] > 0)
@@ -105,6 +104,7 @@ BMP::BMP(const char *fileName) {
         fclose(pFile);
         
         // - Para verificar contenido
+        printHeader();
 //        for(int i = 0; i < 1000; i++){
 //            cout<<pImageData[i];
 //        }
@@ -266,12 +266,12 @@ void BMP::printDotImage(string filename){
     }
 }
 
-void BMP::getPixelRGB(int x,int y, double **rgb){
+void BMP::getPixelRGB(int x,int y, unsigned char **rgb){
     BYTE R,G,B;
     R = pImageData[y*(header.width*3) + x];
     G = pImageData[y*(header.width*3) + x + 1];
     B = pImageData[y*(header.width*3) + x + 2];
-    (*rgb)[0] = (double)R;
-    (*rgb)[1] = (double)G;
-    (*rgb)[2] = (double)B;
+    (*rgb)[0] = R;
+    (*rgb)[1] = G;
+    (*rgb)[2] = B;
 }

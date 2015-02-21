@@ -52,7 +52,7 @@ public:
 //    trieNode *getSubTrie2(double key);
 //    trieNode *getSubTrie2(trieNode **currentNode,double key);
 
-    nDEVM* mergeXOR(nDEVM *secondTrie);
+    nDEVM* mergeXOR(nDEVM *otherEVM);
 //    trieNode *XORTrie(trieNode **secondTrie,int dim);
 //    void XORTrie(trieNode **resultTrie,trieNode **currentNode,double **key,int dim);
 //    void trieXOR(trieNode **thisTrie,trieNode **otherTrie,int dim);
@@ -62,6 +62,7 @@ public:
     void populate3DVoxel(double **inputKey);
     void populate2DVoxel(double **inputKey);
     void populateVoxel(double **inputKey,int dim,int currentDim,int offset);
+    void populateVoxel(double **inputKey,int dim,int currentDim);
 //    void populateVoxel2(double **inputKey,int dim,int currentDim);
 
     void EVMFile(int index);
@@ -129,6 +130,9 @@ public:
     
     // - Cargar Videos Imagenes
     void loadImageFile(string fileName);
+    void loadImage(string fileName);
+    void generateAnimation(string framePrefix, int initFrame,int endFrame);
+    void frameSequence();
 };
 
 #endif	/* TRIETREE_H */

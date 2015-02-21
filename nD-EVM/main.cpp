@@ -30,6 +30,7 @@ bool booleanOperation(string op,unsigned char value1, unsigned char value2);
 void testSequences();
 void testOperations();
 void testImageLoad();
+void testAnimationLoad();
 
 typedef unsigned long long timestamp_t;
 
@@ -115,14 +116,25 @@ int main(int argc, char** argv) {
 
     // Test de Operaciones Booleanas
 //    testOperations();
+
     // - Test para cargar imagenes
-    testImageLoad();
+//    testI0mageLoad();
+    testAnimationLoad();
     return 0;
+}
+
+void testAnimationLoad(){
+    nDEVM *evm = new nDEVM();
+    evm->generateAnimation("Sequences/JackJack/",1590,1780);
+    evm->frameSequence();
+    return;
+//    evm->EVMFile("frame",0);
 }
 
 void testImageLoad(){
     nDEVM *evm = new nDEVM();
-    evm->loadImageFile("Images/1663.bmp");
+    evm->loadImageFile("Sequences/JackJack/1673.bmp");
+    evm->EVMFile("frame",0);
 }
 
 void testSequences(){

@@ -69,7 +69,7 @@ public:
     void printDotImage(string filename);
     BYTE* getImageData();
     
-    void getPixelRGB(int x,int y, double **rgb);
+    void getPixelRGB(int x,int y, unsigned char **rgb);
 private:
     Color *pPalette;
     BYTE *pImageData;

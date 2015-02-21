@@ -11,6 +11,7 @@
 #include <iostream>
 #include <fstream>
 #include <cmath>
+#include <bitset>
 
 #include "TrieTree.h"
 
@@ -1617,35 +1618,4 @@ string TrieTree::vectorToString2(double **vector,int size){
         output+=to_string(s);
     }
     return output;
-}
-
-void TrieTree::loadImage(string fileName){
-    BMP bmpImage(fileName.c_str());
-    
-    double *pixelRGB = new double[3];
-    double *pixelInfo = new double[5]; // - [X,Y,R,G,B]
-    
-    for(int i = 0; i < bmpImage.header.height; i++)
-    {
-        for(int j = 0; j < bmpImage.header.width*3; j+= 3)
-        {
-            bmpImage.getPixelRGB(j,i,&pixelRGB);
-            pixelInfo[0] = (int)(j/3);
-            pixelInfo[1] = i;
-            pixelInfo[2] = pixelRGB[0];
-            pixelInfo[3] = pixelRGB[1];
-            pixelInfo[4] = pixelRGB[2];
-            insertVertex(pixelInfo,5);
-//            if(j < 350){
-//                if(pixelRGB[0] > 0 and pixelRGB[1] > 0 and pixelRGB[2] > 0)
-//                    cout<<' ';
-//                else
-//                    cout<<'*';
-//            }
-        }
-//        cout<<endl;
-    }
-    
-    delete pixelRGB;
-    delete pixelInfo;
 }

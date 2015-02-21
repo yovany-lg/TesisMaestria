@@ -80,7 +80,7 @@ public:
     string vectorToString2(double **vector,int size);
     
     // - Cargar Videos e Imagenes
-    void loadImage(string fileName);
+//    void loadImage(string fileName);
 private:
 };
 

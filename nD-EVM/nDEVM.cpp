@@ -11,6 +11,7 @@
 #include <iostream>
 #include <fstream>
 #include <cmath>
+#include "BMP.h"
 
 #include "nDEVM.h"
 
@@ -302,6 +303,24 @@ void nDEVM::populateVoxel(double **voxelInput,int dim,int currentDim,int offset)
     (*voxelInput)[currentDim+offset] = (*voxelInput)[currentDim+offset]-1;
 }
 
+/**
+ * Generar e insertar un Voxel
+ * @param voxelInput: las primeras posiciones son las coordenadas del voxel, la ultima posicion es el contenido del voxel
+ * @param dim: La dimension del voxel
+ * @param currentDim: La dimension actual
+ */
+void nDEVM::populateVoxel(double **voxelInput,int dim,int currentDim){
+    if(!(currentDim < dim)){
+        insertVertex(*voxelInput,dim+1);
+//        cout<<vectorToString(voxelInput,dim+1)<<endl;
+        return;
+    }
+    populateVoxel(voxelInput,dim,currentDim+1);
+    (*voxelInput)[currentDim] = (*voxelInput)[currentDim]+1;
+    populateVoxel(voxelInput,dim,currentDim+1);
+    (*voxelInput)[currentDim] = (*voxelInput)[currentDim]-1;
+}
+
 /*Método para vaciar un arbol trie en un archivo de texto .evm
  * Argumentos:
  * -Nodo Raiz.
@@ -312,7 +331,7 @@ void nDEVM::EVMFile(int index){
 
 void nDEVM::EVMFile(string suffix, int index){
     double * testKey = new double[4];   //Eliminar
-    string fileName = "EVMFiles/EVMFile_"+suffix+to_string(index)+".evm";
+    string fileName = "EVMFiles/EVM_"+suffix+to_string(index)+".evm";
     
     ofstream outputFile( fileName );
     if ( ! outputFile.is_open() ){    
@@ -521,6 +540,7 @@ void nDEVM::EVMCoupletSequence(nDEVM** coupletSequence){
         //currentCouplet->printTrie();
         
         // Procesamiento
+//        currentCouplet->EVMFile("Couplet",i);
         currentCouplet->setCoord(i);
         (*coupletSequence)->putCouplet(currentCouplet);
 
@@ -926,9 +946,131 @@ nDEVM* nDEVM::xorOperation(nDEVM* section1, nDEVM* section2){
 //}
 
 void nDEVM::loadImageFile(string fileName){
-    TrieTree *imageTrie = new TrieTree();
-    
-    imageTrie->loadImage(fileName);
+    loadImage(fileName);
 //    int size = imageTrie->size();
     return;
+}
+
+void nDEVM::loadImage(string fileName){
+   BMP bmpImage(fileName.c_str());
+    
+    unsigned char *pixelRGB = new unsigned char[3];
+//    double *pixelInfo = new double[5]; // - [X,Y,R,G,B]
+    double *pixelInfo = new double[3]; // - [X,Y,RGB]
+    unsigned int bgr;
+    
+    cout<<"Begin to load Frame..."<<endl;
+    for(int i = 0; i < bmpImage.header.height; i++){
+        pixelInfo[1] = i;
+        for(int j = 0; j < bmpImage.header.width*3; j+= 3){
+            bgr = 0;
+            bmpImage.getPixelRGB(j,i,&pixelRGB);
+            pixelInfo[0] = (int)(j/3);
+            
+            // - Red
+//            cout<<"RGB: "<<bitset<8>(pixelRGB[0])<<' '<<bitset<8>(pixelRGB[1])<<' '<<bitset<8>(pixelRGB[2])<<endl;
+            bgr |= pixelRGB[0];
+            bgr = bgr << 8;
+//            cout<<"R<32>: "<<bitset<32>(bgr)<<endl;
+            // - Green
+            bgr |= pixelRGB[1];
+            bgr = bgr << 8;
+            // - Blue
+            bgr |= pixelRGB[2];
+            
+//            cout<<"x: "<<pixelInfo[0]<<"y: "<<pixelInfo[1]<<endl;
+            pixelInfo[2] = 0;
+            populateVoxel(&pixelInfo,2,0);
+//            pixelInfo[2] = pixelRGB[0];
+//            pixelInfo[3] = pixelRGB[1];
+//            pixelInfo[4] = pixelRGB[2];
+            // - Almacenando solo la parte Roja, Para GrayScale se tiene el mismo valor para cada color
+            pixelInfo[2] = (double)pixelRGB[0]+1;
+            populateVoxel(&pixelInfo,2,0);
+            
+//            if(j < 350){
+//                if(pixelRGB[0] > 0 and pixelRGB[1] > 0 and pixelRGB[2] > 0)
+//                    cout<<' ';
+//                else
+//                    cout<<'*';
+//            }
+        }
+//        cout<<endl;
+    }
+    cout<<"Frame loaded..."<<endl;
+    delete pixelRGB;
+    delete pixelInfo;
+}
+
+
+/**
+ * Metodo para generar una animacion a partir de una secuencia de Frames. Que son una
+ * secuencia de imagenes *.bmp.
+ * @param framePrefix
+ * @param initFrame
+ * @param endFrame
+ */
+void nDEVM::generateAnimation(string framePrefix, int initFrame,int endFrame){
+    // - Se guarda la animacion sobre el objeto desde que se llama
+    nDEVM *currentFrame, *prevFrame,*finalFrame;
+    double time;
+    prevFrame = new nDEVM();
+    string frameName;
+    
+    for(int i = initFrame; i <= endFrame; i++){
+        currentFrame = new nDEVM();
+        time = i;
+
+        frameName = framePrefix + to_string(i)+".bmp";
+        cout<<"Loading: "<<frameName<<endl;
+        
+        currentFrame->loadImageFile(frameName);
+        currentFrame->EVMFile("frameOri",time); 
+        finalFrame = currentFrame->mergeXOR(prevFrame);
+        finalFrame->EVMFile("frameSection",time); 
+        finalFrame->setCoord(time);
+                
+        putSection(finalFrame);
+
+        delete prevFrame;
+        prevFrame = currentFrame;
+    }
+    currentFrame->EVMFile("frameSection",time+1); 
+    currentFrame->setCoord(time+1);
+    putSection(currentFrame);
+    resetCoupletIndex();
+}
+
+void nDEVM::frameSequence(){
+    nDEVM* currentFrame = new nDEVM();
+//    nDEVM* prevSection = new nDEVM();
+    nDEVM* currentSection = readSection();
+    int i = 0;
+    while(!endEVM()){
+        currentFrame = getSection(currentFrame,currentSection);
+        //cout<<"Couplet "<<i<<": "<<endl;
+        //currentCouplet->printTrie();
+        
+        // Procesamiento
+        currentFrame->EVMFile("frameSeq",i);
+//        currentCouplet->setCoord(i);
+//        (*coupletSequence)->putCouplet(currentCouplet);
+
+//        currentSection->EVMFile("Couplet",i);
+        //cout<<endl;
+        
+//        if(endEVM()){
+//            currentFrame = currentSection->cloneEVM();
+//            currentFrame->EVMFile("frameSeq",i);
+////            currentCouplet->setCoord(i+1);
+////            (*coupletSequence)->putCouplet(currentCouplet);
+//            break;
+//        }
+        // Siguiente Iteración
+//        prevSection = currentSection;
+        currentSection = readSection();
+        i++;
+    }
+//    (*coupletSequence)->resetCoupletIndex();
+    resetCoupletIndex();
 }
