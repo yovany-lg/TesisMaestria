@@ -21,12 +21,12 @@
 void test2D(int size);
 string vectorToString(int **vector,int size);
 void hvUnion2D(int **hv1,int **hv2, int **result,int size,ofstream *resultFile);
-nDEVM *hvEVM(int **hv, int size, int dim);
+nDEVM<double> *hvEVM(int **hv, int size, int dim);
 bool test3D(int size, int testIndex);
 bool test2D(int size, int testIndex);
 bool test(int size,int dim,string operation, int testIndex,ofstream *executionTime);
 void test(string operation, int dim,int voxelSize,int iterations);
-void hvGeneration(string operation,double **voxelInput,int size,nDEVM **hvEVM1,nDEVM **hvEVM2, nDEVM **hvResult,
+void hvGeneration(string operation,double **voxelInput,int size,nDEVM<double> **hvEVM1,nDEVM<double> **hvEVM2, nDEVM<double> **hvResult,
         ofstream *hv1File,ofstream *hv2File,ofstream *hvResultFile, int dim,int currentDim);
 string vectorToStringD(double **vector,int size);
 bool booleanOperation(string op,unsigned char value1, unsigned char value2);
@@ -46,12 +46,12 @@ static timestamp_t get_timestamp(){
   return  now.tv_usec + (timestamp_t)now.tv_sec * 1000000;
 }
 
-template <typename T> std::string to_string(T value)
-{
-	std::ostringstream os ;
-	os << value ;
-	return os.str() ;
-}
+//template <typename T> std::string to_string(T value)
+//{
+//	std::ostringstream os ;
+//	os << value ;
+//	return os.str() ;
+//}
 
 using namespace std;
 
@@ -62,10 +62,10 @@ using namespace std;
 int main(int argc, char** argv) {   
 //    testSequences();
     
-//    nDEVM *evm2 = new nDEVM();
+//    nDEVM<double> *evm2 = new nDEVM<double>();
 //    string fileName2 = "rawFiles/olaf.raw";
 //    evm2->rawFileToEVM(fileName2,128,128,128);
-//    nDEVM *temp = evm2->couplet(2);
+//    nDEVM<double> *temp = evm2->couplet(2);
 //    temp->discreteCompactness();
     //cout<< "Contenido: "<<temp->content()<<", Área de la frontera: "<<temp->boundaryContent()<<"\n";
 //    
@@ -74,7 +74,7 @@ int main(int argc, char** argv) {
     
     // Pruebas Basicas de operaciones booleanas
     
-//    nDEVM * evm1 = new nDEVM();
+//    nDEVM<double> * evm1 = new nDEVM<double>();
 //    double inputKey [] = {0};
 //    evm1->insertVertex(inputKey,1);
 //    double inputKey2 [] = {5};
@@ -90,7 +90,7 @@ int main(int argc, char** argv) {
 //    double inputKey6 [] = {12};
 //    evm1->insertVertex(inputKey6,1);    
     
-//    nDEVM * evm2 = new nDEVM();
+//    nDEVM<double> * evm2 = new nDEVM<double>();
 //    inputKey [0] = 3;
 //    evm2->insertVertex(inputKey,1);
 //    inputKey2 [0] = 7;
@@ -103,7 +103,7 @@ int main(int argc, char** argv) {
 //    
 //    evm2->booleanOperation(evm1,"xor",1)->printTrie();
 
-//    nDEVM * evm1 = new nDEVM();
+//    nDEVM<double> * evm1 = new nDEVM<double>();
 //    double inputKey [] = {1,1,1,2};
 //    evm1->insertVertex(inputKey,4);
 //    double inputKey2 [] = {1,1,1,3};
@@ -139,8 +139,8 @@ int main(int argc, char** argv) {
 //    som->dataSetClustering();
 
     // - Test para cargar imagenes
-//    testI0mageLoad();
-//    testAnimationLoad();
+//    testImageLoad();
+    testAnimationLoad();
     testLoadEVMSeq();
 
     // - Test Savings
@@ -149,7 +149,7 @@ int main(int argc, char** argv) {
 }
 
 void testSaving(){
-    nDEVM *evm1 = new nDEVM();
+    nDEVM<double> *evm1 = new nDEVM<double>();
     double inputKey [] = {1,1,1,2};
     evm1->insertVertex(inputKey,4);
     double inputKey2 [] = {1,1,1,3};
@@ -164,7 +164,7 @@ void testSaving(){
     evm1->insertVertex(inputKey6,4);
 
     evm1->saveEVM("binEVM",-1);
-    nDEVM * evm2 = new nDEVM();
+    nDEVM<double> * evm2 = new nDEVM<double>();
     evm2->readEVM("binEVM");
     
     cout<<"EVM Write/Read compare: "<<evm1->compareEVM(evm2)<<endl;
@@ -176,37 +176,37 @@ void testSaving(){
 void testUnion(){
     // Pruebas para verificar la secuencia de secciones y de couplets
     
-    nDEVM *evm1 = new nDEVM();
+    nDEVM<int> *evm1 = new nDEVM<int>();
     string fileName1 = "rawFiles/olaf.raw";
     evm1->rawFileToEVM(fileName1,128,128,128);
     
-    nDEVM *evm2 = new nDEVM();
+    nDEVM<int> *evm2 = new nDEVM<int>();
     string fileName2 = "rawFiles/olaf45.raw";
     evm2->rawFileToEVM(fileName2,128,128,128);
     
-    nDEVM* evmOp = evm1->booleanOperation(evm2,"intersection",4);
+    nDEVM<int>* evmOp = evm1->booleanOperation(evm2,"union",4);
     
-    nDEVM* evm3 = evmOp->EVMCoupletSequence();
+    nDEVM<int>* evm3 = evmOp->EVMCoupletSequence();
     cout<<endl<<"Couplet Sequence obtained..."<<endl;
     //evm3->printTrie();
 }
 
 void testAnimationLoad(){
-    nDEVM *evm = new nDEVM();
-    evm->generateAnimation("Sequences/JackJack/",1590,1700);
+    nDEVM<unsigned int> *evm = new nDEVM<unsigned int>();
+    evm->generateAnimation("Sequences/JackJack/",1590,1591);
     evm->frameSequence();
     return;
 //    evm->EVMFile("frame",0);
 }
 
 void testLoadEVMSeq(){
-    nDEVM *frame = new nDEVM();
+    nDEVM<unsigned int> *frame = new nDEVM<unsigned int>();
     frame->readEVM("frameCouplet1590");
     frame->EVMFile("frame",1590);
 }
 
 void testImageLoad(){
-    nDEVM *evm = new nDEVM();
+    nDEVM<double> *evm = new nDEVM<double>();
     evm->loadImageFile("Sequences/JackJack/1673.bmp");
     evm->EVMFile("frame",0);
 }
@@ -214,16 +214,16 @@ void testImageLoad(){
 void testSequences(){
     // Pruebas para verificar la secuencia de secciones y de couplets
     
-    nDEVM *evm1 = new nDEVM();
+    nDEVM<int> *evm1 = new nDEVM<int>();
     string fileName2 = "rawFiles/VL-vismale-(128x256x256)-(1.5,1,1).raw";
     evm1->rawFileToEVM(fileName2,128,256,256);
     
-    nDEVM* evm2 = evm1->EVMSectionSequence();
+    nDEVM<int>* evm2 = evm1->EVMSectionSequence();
 
     cout<<endl<<"Section Sequence Obtained..."<<endl;
     //evm2->printTrie();
     
-    nDEVM* evm3 = evm2->EVMCoupletSequence();
+    nDEVM<int>* evm3 = evm2->EVMCoupletSequence();
     cout<<endl<<"Couplet Sequence obtained..."<<endl;
     //evm3->printTrie();
     
@@ -245,7 +245,7 @@ void testOperations(){
 
     // -- Content Tests
 
-//    nDEVM *loadedFile = new nDEVM();
+//    nDEVM<double> *loadedFile = new nDEVM<double>();
 //    loadedFile->loadnDRawFile("Tests/3DTest/hv2File0.raw",10,3);
 //    cout<<"Contenido: "<<loadedFile->content()<<"\n";
 }
@@ -279,13 +279,13 @@ void test(string operation, int dim,int voxelSize,int iterations){
  * @return 
  */
 bool test(int size,int dim,string operation, int testIndex,ofstream *executionTime){
-    nDEVM *hvEVM1,*hvEVM2,*hvResult,*evmResult;
+    nDEVM<double> *hvEVM1,*hvEVM2,*hvResult,*evmResult;
     bool compare;
     double *voxelInput = new double [dim];
     
-    hvEVM1 = new nDEVM();
-    hvEVM2 = new nDEVM();
-    hvResult = new nDEVM();
+    hvEVM1 = new nDEVM<double>();
+    hvEVM2 = new nDEVM<double>();
+    hvResult = new nDEVM<double>();
     operation[0] = toupper(operation[0]);
     ofstream hv1File("Tests/"+to_string(dim)+"DTest/hv1File"+to_string(testIndex)+".raw",ios_base::out | ios_base::binary);
     ofstream hv2File("Tests/"+to_string(dim)+"DTest/hv2File"+to_string(testIndex)+".raw",ios_base::out | ios_base::binary);
@@ -330,7 +330,7 @@ bool test(int size,int dim,string operation, int testIndex,ofstream *executionTi
 //    if(compare){
 //        cout<<"Comparacion de operacion "+operation+"; HyperVoxelizaciones VS EVMs: True"<<endl;
 //
-//        nDEVM *loadedFile = new nDEVM();
+//        nDEVM<double> *loadedFile = new nDEVM<double>();
 //        loadedFile->loadnDRawFile("Tests/"+to_string(dim)+"DTest/hv"+operation+to_string(testIndex)+".raw",size,dim);
 //        cout<<"Comparación del EVM formado con el archivo binario resultante y el EVM resultante:  "<<loadedFile->compareEVM(hvResult)<<endl;
 //        return true;
@@ -348,7 +348,7 @@ bool test(int size,int dim,string operation, int testIndex,ofstream *executionTi
 //    }
 }
 
-void hvGeneration(string operation,double **voxelInput,int size,nDEVM **hvEVM1,nDEVM **hvEVM2, nDEVM **hvResult,
+void hvGeneration(string operation,double **voxelInput,int size,nDEVM<double> **hvEVM1,nDEVM<double> **hvEVM2, nDEVM<double> **hvResult,
         ofstream *hv1File,ofstream *hv2File,ofstream *hvResultFile, int dim,int currentDim){
     
     if(currentDim == 0){
