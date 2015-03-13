@@ -1596,6 +1596,74 @@ int TrieTree::dimDepth(trieNode* currentNode,int dim){
     return dimDepth(currentNode->nextDim,dim+1);
 }
 
+void TrieTree::saveTrie(string fileName){
+    fileName = "EVMFiles/"+ fileName + ".evm";
+    ofstream outputFile( fileName.c_str(),ios_base::out|ios_base::binary );
+    if ( ! outputFile.is_open() ){    
+        cout << "El archivo no se pudo abrir!" << '\n';    
+        return;
+    } 
+    
+    // - Write Header
+    int dim = dimDepth();
+    string head = to_string(dim)+"D-EVM";
+    const char * header = head.c_str();
+//    cout<<sizeof(header)<<endl;
+    outputFile.write((char *)header,6); // - 6 bytes
+    
+    double * testKey = new double[dim];
+//    cout<<sizeof(testKey)<<endl;
+    
+    if(!isEmpty())
+        saveTrie(rootNode,&testKey,0,&outputFile);
+    
+    delete testKey;
+    outputFile.close();
+}
+
+void TrieTree::saveTrie(trieNode *currentNode,double **key, int dim,ofstream *outputFile){
+    if((currentNode) == NULL){
+//        cout<<"Dim: "<<(sizeof(double))<<endl;    // - 8 bytes for double type
+        outputFile->write((char *) *key,(sizeof(double))*dim);
+//        cout << vectorToString(key,dim)<<endl;
+        return;
+    }
+
+    (*key)[dim] = (currentNode)->value;
+    saveTrie((currentNode)->nextDim, key, dim+1,outputFile);
+
+    if((currentNode)->nextTrieNode != NULL){
+        saveTrie((currentNode)->nextTrieNode, key, dim,outputFile);
+    }
+}
+
+void TrieTree::readTrie(string fileName){
+    fileName = "EVMFiles/"+fileName+".evm";
+    ifstream fileInput;
+    fileInput.open(fileName.c_str(), ios_base::in |ios_base::binary); // binary file
+    if (! fileInput.is_open()){
+        cout<<"El archivo: "<<fileName<<" no pudo abrirse..."<<endl;
+        return;
+    }
+    
+    char buffer[6];
+//    cout<<"tamano del buffer: "<<sizeof(buffer)<<endl;
+    if(fileInput.read((char *)(buffer), sizeof(buffer))){
+        cout<<buffer<<endl;   // - Header
+    }
+    
+    int dim = buffer[0] - '0';
+    double * testKey = new double[dim];
+    
+    while(fileInput.read((char *)(testKey), (sizeof(double))*dim )){
+//        cout << vectorToString(&testKey,dim)<<endl; 
+        insertVertex(testKey,dim);
+    }
+        
+    fileInput.close();
+}
+
+
 string TrieTree::vectorToString(double **vector,int size){
     string output="(  ";
     for(int i =0;i<size;i++)
@@ -1619,3 +1687,4 @@ string TrieTree::vectorToString2(double **vector,int size){
     }
     return output;
 }
+

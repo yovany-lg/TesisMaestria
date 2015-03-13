@@ -76,6 +76,10 @@ public:
     void size(trieNode *currentNode,double *size);
     int dimDepth();
     int dimDepth(trieNode* currentNode,int dim);
+    void saveTrie(string fileName);
+    void saveTrie(trieNode *currentNode,double **key, int dim,ofstream *outputFile);
+    void readTrie(string fileName);
+    
     string vectorToString(double **vector,int size);
     string vectorToString2(double **vector,int size);
     

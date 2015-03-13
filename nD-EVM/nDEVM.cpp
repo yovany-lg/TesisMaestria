@@ -509,7 +509,7 @@ void nDEVM::EVMSectionSequence(nDEVM** sectionSequence){
             (*sectionSequence)->putSection(prevSection);
         }
         
-//        currentSection->EVMFile("Section",i);
+        currentSection->EVMFile("Section",i);
         //cout<<endl;
         
         // Siguiente Iteración
@@ -540,7 +540,7 @@ void nDEVM::EVMCoupletSequence(nDEVM** coupletSequence){
         //currentCouplet->printTrie();
         
         // Procesamiento
-//        currentCouplet->EVMFile("Couplet",i);
+        currentCouplet->EVMFile("Couplet",i);
         currentCouplet->setCoord(i);
         (*coupletSequence)->putCouplet(currentCouplet);
 
@@ -704,6 +704,8 @@ nDEVM* nDEVM::booleanOperation(nDEVM *section1, nDEVM *section2, string op){
     if(op.compare("xor") == 0){
         return xorOperation(section1,section2);
     }
+    cout<<"La operacion: "<<op<<", no existe...";
+    exit(-1);
 }
 
 bool nDEVM::putCoupletByOp(string op,int argPosition){
@@ -1012,8 +1014,8 @@ void nDEVM::loadImage(string fileName){
  */
 void nDEVM::generateAnimation(string framePrefix, int initFrame,int endFrame){
     // - Se guarda la animacion sobre el objeto desde que se llama
-    nDEVM *currentFrame, *prevFrame,*finalFrame;
-    double time;
+    nDEVM *currentFrame, *prevFrame,*diffFrame;
+    int time;
     prevFrame = new nDEVM();
     string frameName;
     
@@ -1025,19 +1027,19 @@ void nDEVM::generateAnimation(string framePrefix, int initFrame,int endFrame){
         cout<<"Loading: "<<frameName<<endl;
         
         currentFrame->loadImageFile(frameName);
-        currentFrame->EVMFile("frameOri",time); 
-        finalFrame = currentFrame->mergeXOR(prevFrame);
-        finalFrame->EVMFile("frameSection",time); 
-        finalFrame->setCoord(time);
+//        currentFrame->EVMFile("frameOri",time); 
+        diffFrame = currentFrame->mergeXOR(prevFrame);
+        diffFrame->saveEVM("frameCouplet",time); 
+//        diffFrame->setCoord(time);
                 
-        putSection(finalFrame);
+//        putSection(diffFrame);
 
         delete prevFrame;
         prevFrame = currentFrame;
     }
-    currentFrame->EVMFile("frameSection",time+1); 
-    currentFrame->setCoord(time+1);
-    putSection(currentFrame);
+    currentFrame->saveEVM("frameCouplet",time+1); 
+//    currentFrame->setCoord(time+1);
+//    putSection(currentFrame);
     resetCoupletIndex();
 }
 
@@ -1073,4 +1075,16 @@ void nDEVM::frameSequence(){
     }
 //    (*coupletSequence)->resetCoupletIndex();
     resetCoupletIndex();
+}
+
+void nDEVM::saveEVM(string fileName,int index){
+    if(index < 0){
+        trieTree->saveTrie(fileName);
+    }else{
+        trieTree->saveTrie(fileName+to_string(index));
+    }
+}
+
+void nDEVM::readEVM(string fileName){
+    trieTree->readTrie(fileName);
 }

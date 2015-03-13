@@ -5,6 +5,8 @@
                    displayName="Header Files"
                    projectFiles="true">
       <itemPath>BMP.h</itemPath>
+      <itemPath>DataSet.h</itemPath>
+      <itemPath>SOM.h</itemPath>
       <itemPath>TrieTree.h</itemPath>
       <itemPath>nDEVM.h</itemPath>
     </logicalFolder>
@@ -16,6 +18,8 @@
                    displayName="Source Files"
                    projectFiles="true">
       <itemPath>BMP.cpp</itemPath>
+      <itemPath>DataSet.cpp</itemPath>
+      <itemPath>SOM.cpp</itemPath>
       <itemPath>TrieTree.cpp</itemPath>
       <itemPath>main.cpp</itemPath>
       <itemPath>nDEVM.cpp</itemPath>
@@ -48,6 +52,14 @@
       <item path="BMP.cpp" ex="false" tool="1" flavor2="0">
       </item>
       <item path="BMP.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="DataSet.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="DataSet.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="SOM.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="SOM.h" ex="false" tool="3" flavor2="0">
       </item>
       <item path="TrieTree.cpp" ex="false" tool="1" flavor2="0">
       </item>
@@ -83,6 +95,14 @@
       <item path="BMP.cpp" ex="false" tool="1" flavor2="0">
       </item>
       <item path="BMP.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="DataSet.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="DataSet.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="SOM.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="SOM.h" ex="false" tool="3" flavor2="0">
       </item>
       <item path="TrieTree.cpp" ex="false" tool="1" flavor2="0">
       </item>

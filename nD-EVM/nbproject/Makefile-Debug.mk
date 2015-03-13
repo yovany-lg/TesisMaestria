@@ -21,7 +21,7 @@ FC=gfortran
 AS=as
 
 # Macros
-CND_PLATFORM=MinGW-Windows
+CND_PLATFORM=Cygwin-Windows
 CND_DLIB_EXT=dll
 CND_CONF=Debug
 CND_DISTDIR=dist
@@ -36,6 +36,8 @@ OBJECTDIR=${CND_BUILDDIR}/${CND_CONF}/${CND_PLATFORM}
 # Object Files
 OBJECTFILES= \
 	${OBJECTDIR}/BMP.o \
+	${OBJECTDIR}/DataSet.o \
+	${OBJECTDIR}/SOM.o \
 	${OBJECTDIR}/TrieTree.o \
 	${OBJECTDIR}/main.o \
 	${OBJECTDIR}/nDEVM.o
@@ -69,6 +71,16 @@ ${OBJECTDIR}/BMP.o: BMP.cpp
 	${MKDIR} -p ${OBJECTDIR}
 	${RM} "$@.d"
 	$(COMPILE.cc) -g -std=c++11 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/BMP.o BMP.cpp
+
+${OBJECTDIR}/DataSet.o: DataSet.cpp 
+	${MKDIR} -p ${OBJECTDIR}
+	${RM} "$@.d"
+	$(COMPILE.cc) -g -std=c++11 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/DataSet.o DataSet.cpp
+
+${OBJECTDIR}/SOM.o: SOM.cpp 
+	${MKDIR} -p ${OBJECTDIR}
+	${RM} "$@.d"
+	$(COMPILE.cc) -g -std=c++11 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/SOM.o SOM.cpp
 
 ${OBJECTDIR}/TrieTree.o: TrieTree.cpp 
 	${MKDIR} -p ${OBJECTDIR}

@@ -133,6 +133,9 @@ public:
     void loadImage(string fileName);
     void generateAnimation(string framePrefix, int initFrame,int endFrame);
     void frameSequence();
+    
+    void saveEVM(string fileName,int index);
+    void readEVM(string fileName);
 };
 
 #endif	/* TRIETREE_H */

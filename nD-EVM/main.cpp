@@ -13,6 +13,9 @@
 #include <sys/time.h>
 #include <time.h>       /* clock_t, clock, CLOCKS_PER_SEC */
 
+#include "DataSet.h"
+#include "SOM.h"
+
 #include "nDEVM.h"
 
 void test2D(int size);
@@ -31,6 +34,9 @@ void testSequences();
 void testOperations();
 void testImageLoad();
 void testAnimationLoad();
+void testUnion();
+void testSaving();
+void testLoadEVMSeq();
 
 typedef unsigned long long timestamp_t;
 
@@ -116,19 +122,87 @@ int main(int argc, char** argv) {
 
     // Test de Operaciones Booleanas
 //    testOperations();
+    
+    // - Prueba de secuencias de Couplets y Secciones
+//    testSequences();
+//    testUnion();
+    
+    // - Test SOM
+//    DataSet *dataSet = new DataSet(4,0);
+//    string fileName = "DataSets/Iris.csv";
+//    dataSet->loadFile(fileName);
+//    dataSet->normalize();   // - Agregar guardar archivo normalizado
+//    
+//    SOM *som = new SOM(dataSet,4,3);
+//    som->initialize();
+//    som->sampling();
+//    som->dataSetClustering();
 
     // - Test para cargar imagenes
 //    testI0mageLoad();
-    testAnimationLoad();
+//    testAnimationLoad();
+    testLoadEVMSeq();
+
+    // - Test Savings
+//    testSaving();
     return 0;
+}
+
+void testSaving(){
+    nDEVM *evm1 = new nDEVM();
+    double inputKey [] = {1,1,1,2};
+    evm1->insertVertex(inputKey,4);
+    double inputKey2 [] = {1,1,1,3};
+    evm1->insertVertex(inputKey2,4);    
+    double inputKey3 [] = {1,3,2,0};
+    evm1->insertVertex(inputKey3,4);
+    double inputKey4 [] = {2,2,1,0};
+    evm1->insertVertex(inputKey4,4);
+    double inputKey5 [] = {3,0,0,3};
+    evm1->insertVertex(inputKey5,4);
+    double inputKey6 [] = {3,1,0,2};
+    evm1->insertVertex(inputKey6,4);
+
+    evm1->saveEVM("binEVM",-1);
+    nDEVM * evm2 = new nDEVM();
+    evm2->readEVM("binEVM");
+    
+    cout<<"EVM Write/Read compare: "<<evm1->compareEVM(evm2)<<endl;
+}
+
+/**
+ * Test para la operacion union de objetos OLAF
+ */
+void testUnion(){
+    // Pruebas para verificar la secuencia de secciones y de couplets
+    
+    nDEVM *evm1 = new nDEVM();
+    string fileName1 = "rawFiles/olaf.raw";
+    evm1->rawFileToEVM(fileName1,128,128,128);
+    
+    nDEVM *evm2 = new nDEVM();
+    string fileName2 = "rawFiles/olaf45.raw";
+    evm2->rawFileToEVM(fileName2,128,128,128);
+    
+    nDEVM* evmOp = evm1->booleanOperation(evm2,"intersection",4);
+    
+    nDEVM* evm3 = evmOp->EVMCoupletSequence();
+    cout<<endl<<"Couplet Sequence obtained..."<<endl;
+    //evm3->printTrie();
 }
 
 void testAnimationLoad(){
     nDEVM *evm = new nDEVM();
-    evm->generateAnimation("Sequences/JackJack/",1590,1780);
+    evm->generateAnimation("Sequences/JackJack/",1590,1700);
     evm->frameSequence();
     return;
 //    evm->EVMFile("frame",0);
+}
+
+void testLoadEVMSeq(){
+    nDEVM *frame = new nDEVM();
+    frame->readEVM("frameCouplet1590");
+    frame->EVMFile("frame",1590);
 }
 
 void testImageLoad(){
@@ -141,7 +215,7 @@ void testSequences(){
     // Pruebas para verificar la secuencia de secciones y de couplets
     
     nDEVM *evm1 = new nDEVM();
-    string fileName2 = "rawFiles/VL-baby-(256x256x98)-(1,1,2).raw";
+    string fileName2 = "rawFiles/VL-vismale-(128x256x256)-(1.5,1,1).raw";
     evm1->rawFileToEVM(fileName2,128,256,256);
     
     nDEVM* evm2 = evm1->EVMSectionSequence();
@@ -154,8 +228,7 @@ void testSequences(){
     //evm3->printTrie();
     
     cout<<"Comparacion del EVM de la secuencia de couplets y el EVM original: "
-            <<evm1->compareByCouplets(evm3)<<endl;
-    
+            <<evm1->compareByCouplets(evm3)<<endl;    
 }
 
 void testOperations(){
