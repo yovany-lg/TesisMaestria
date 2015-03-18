@@ -23,8 +23,8 @@ using namespace std;
 template<typename valueType>
 class nDEVM {
 private:
-    TrieTree<valueType> *trieTree;
 public:
+    TrieTree<valueType> *trieTree;
     nDEVM();
     nDEVM(TrieTree<valueType> *trie);
     nDEVM(const nDEVM& orig);
@@ -139,7 +139,15 @@ public:
     void loadImageFile(string fileName);
     void loadImage(string fileName);
     void generateAnimation(string framePrefix, int initFrame,int endFrame);
-    void frameSequence();
+    void frameSequence(string framePrefix, int initFrame,int endFrame);
+    void maskInit(int xLength, int yLength, int timeLength,
+        int colorComponents, int colorCompSize);
+    void populateMask(valueType **voxelInput,int maskDim,int currentDim,
+        valueType ** maskLengths);
+    void maskIntersection(nDEVM* mask,int initCouplet, 
+        int endCouplet);
+    void animNextObject(valueType iCouplet, nDEVM *mask,valueType *coord,
+        bool *fromP, bool *fromQ);
     
     void saveEVM(string fileName,int index);
     void readEVM(string fileName);
@@ -1184,7 +1192,8 @@ void nDEVM<valueType>::loadImage(string fileName){
 
 /**
  * Metodo para generar una animacion a partir de una secuencia de Frames. Que son una
- * secuencia de imagenes *.bmp.
+ * secuencia de imagenes *.bmp. Genera un conjunto de archivos *.evm binarios con 
+ * los Couplets de la animacion.
  * @param framePrefix
  * @param initFrame
  * @param endFrame
@@ -1206,7 +1215,8 @@ void nDEVM<valueType>::generateAnimation(string framePrefix, int initFrame,int e
         
         currentFrame->loadImageFile(frameName);
 //        currentFrame->EVMFile("frameOri",time); 
-        diffFrame = currentFrame->mergeXOR(prevFrame);
+        // Obtener diferencias entre Frames (Secciones)...
+        diffFrame = getCouplet(prevFrame,currentFrame);
         diffFrame->saveEVM("frameCouplet",time); 
 //        diffFrame->setCoord(time);
                 
@@ -1215,47 +1225,38 @@ void nDEVM<valueType>::generateAnimation(string framePrefix, int initFrame,int e
         delete prevFrame;
         prevFrame = currentFrame;
     }
-    currentFrame->saveEVM("frameCouplet",time+1); 
+    prevFrame->saveEVM("frameCouplet",time+1); 
 //    currentFrame->setCoord(time+1);
 //    putSection(currentFrame);
     resetCoupletIndex();
 }
 
+/**
+ * Obtiene la secuencia original de frames...
+ * @param framePrefix
+ * @param initCouplet
+ * @param endCouplet
+ */
 template<typename valueType> 
-void nDEVM<valueType>::frameSequence(){
+void nDEVM<valueType>::frameSequence(string framePrefix, int initCouplet,int endCouplet){
     nDEVM* currentFrame = new nDEVM();
-//    nDEVM* prevSection = new nDEVM();
-    nDEVM* currentSection = readSection();
-    int i = 0;
-    while(!endEVM()){
-        currentFrame = getSection(currentFrame,currentSection);
-        //cout<<"Couplet "<<i<<": "<<endl;
-        //currentCouplet->printTrie();
-        
-        // Procesamiento
-        currentFrame->EVMFile("frameSeq",i);
-//        currentCouplet->setCoord(i);
-//        (*coupletSequence)->putCouplet(currentCouplet);
 
-//        currentSection->EVMFile("Couplet",i);
-        //cout<<endl;
-        
-//        if(endEVM()){
-//            currentFrame = currentSection->cloneEVM();
-//            currentFrame->EVMFile("frameSeq",i);
-////            currentCouplet->setCoord(i+1);
-////            (*coupletSequence)->putCouplet(currentCouplet);
-//            break;
-//        }
-        // Siguiente Iteración
-//        prevSection = currentSection;
-        currentSection = readSection();
-        i++;
+    for(int i = initCouplet; i < endCouplet; i++){
+        nDEVM* currentCouplet = new nDEVM();
+        currentCouplet->readEVM(framePrefix + to_string(i));
+        currentFrame = getSection(currentFrame,currentCouplet);
+        currentFrame->saveEVM("frame",i);
+        delete currentCouplet;
     }
-//    (*coupletSequence)->resetCoupletIndex();
-    resetCoupletIndex();
+    
+//    resetCoupletIndex();
 }
 
+/**
+ * Metodo para guardar EVMs en archivos binarios *.evm
+ * @param fileName
+ * @param index
+ */
 template<typename valueType> 
 void nDEVM<valueType>::saveEVM(string fileName,int index){
     if(index < 0){
@@ -1268,4 +1269,138 @@ void nDEVM<valueType>::saveEVM(string fileName,int index){
 template<typename valueType> 
 void nDEVM<valueType>::readEVM(string fileName){
     trieTree->readTrie(fileName);
+}
+
+/**
+ * Inicializacion de la mascara para segmentacion de video.
+ * @param xLength
+ * @param yLength
+ * @param timeLength
+ * @param colorComponents
+ * @param colorCompSize, Tamaño en bytes de cada componente de color. En generar se usa 1 byte.
+ */
+template<typename valueType>
+void nDEVM<valueType>::maskInit(int xLength, int yLength, int timeLength,
+        int colorComponents, int colorCompSize){
+    valueType colorCompMax = pow(2,colorCompSize*8);
+    valueType * maskVoxel = new valueType[3+colorComponents];
+    valueType * maskLengths = new valueType[3+colorComponents];
+    
+    maskVoxel[0] = 0;
+    maskLengths[0] = timeLength;
+    
+    maskVoxel[1] = 0;
+    maskLengths[1] = xLength;
+    
+    maskVoxel[2] = 0;
+    maskLengths[2] = yLength;
+    
+    for(int i = 0; i < colorComponents; i++){
+        maskVoxel[3+i] = 0;
+        maskLengths[3+i] = colorCompMax;
+    }
+    populateMask(&maskVoxel,3+colorComponents,0,&maskLengths);
+}
+
+template<typename valueType> 
+void nDEVM<valueType>::populateMask(valueType **maskVoxel,int maskDim,int currentDim,
+        valueType ** maskLengths){
+    if(!(currentDim < maskDim)){
+        insertVertex(*maskVoxel,maskDim);
+//        cout<<vectorToString(maskVoxel,maskDim)<<endl;
+        return;
+    }
+    populateMask(maskVoxel,maskDim,currentDim+1,maskLengths);
+    (*maskVoxel)[currentDim] = (*maskVoxel)[currentDim] + (*maskLengths)[currentDim];
+    populateMask(maskVoxel,maskDim,currentDim+1,maskLengths);
+    (*maskVoxel)[currentDim] = (*maskVoxel)[currentDim] - (*maskLengths)[currentDim];
+}
+
+template<typename valueType> 
+void nDEVM<valueType>::maskIntersection(nDEVM* mask,int initCouplet, 
+        int endCouplet){
+    int iCouplet = 0, iCoupletMax = endCouplet - initCouplet;
+    
+    nDEVM *animSection,*animPrevSection, *maskSection,*maskPrevSection, *couplet;
+    nDEVM *result, *rPrevSection, *rCurrentSection;
+    bool fromAnim, fromMask;
+    valueType coord;
+
+    nDEVM* currentFrame = new nDEVM();
+    int dim = mask->dimDepth();
+
+    animSection = new nDEVM();
+    maskSection = new nDEVM();
+    rCurrentSection = new nDEVM();
+//    result = new nDEVM();
+
+    while(iCouplet < iCoupletMax and !(mask->endEVM())){
+        // - Version modificada de nextObject
+        animNextObject(iCouplet,mask,&coord,&fromAnim,&fromMask);
+        
+        if(fromAnim){
+            couplet = new nDEVM();
+            couplet->readEVM("frameCouplet" + to_string(initCouplet+iCouplet));
+            animPrevSection = animSection;
+            animSection = getSection(animSection,couplet);
+    //        currentFrame->saveEVM("frame",i);
+            delete couplet;   
+            delete animPrevSection;
+        }
+        
+        if(fromMask){
+            couplet = mask->readCouplet();
+            maskPrevSection = maskSection;
+            maskSection = getSection(maskSection,couplet);
+            delete maskPrevSection;
+        }
+        
+        rPrevSection = rCurrentSection;
+        rCurrentSection = booleanOperation(animSection, maskSection,"intersection",dim-1);
+
+        couplet = getCouplet(rPrevSection,rCurrentSection);
+        
+        if(!couplet->isEmpty()){
+            couplet->setCoord(coord);
+
+//            result->putCouplet(couplet);
+            // El resultado se guarda en el nDEVM actual...
+            putCouplet(couplet);
+        }
+        
+        delete rPrevSection;    //Liberar Memoria
+        iCouplet++;
+    }
+    mask->resetCoupletIndex();
+//    result->resetCoupletIndex();
+    resetCoupletIndex();
+    delete animSection;
+    delete maskSection;
+    delete rCurrentSection;
+//    return result;
+}
+
+template<typename valueType> 
+void nDEVM<valueType>::animNextObject(valueType iCouplet, nDEVM *mask,valueType *coord,
+        bool *fromP, bool *fromQ){
+    if(iCouplet < (*(mask->trieTree->coupletIndex))->value){
+        *coord = iCouplet;
+        *fromP = true;
+        *fromQ = false;
+        return;
+    }
+
+    if((*(mask->trieTree->coupletIndex))->value < iCouplet){
+        *coord = (*(mask->trieTree->coupletIndex))->value;
+        *fromQ = true;
+        *fromP = false;
+        return;
+    }
+
+    if(iCouplet == (*(mask->trieTree->coupletIndex))->value){
+        *coord = iCouplet;
+        *fromQ = true;
+        *fromP = true;
+        return;
+    }
 }

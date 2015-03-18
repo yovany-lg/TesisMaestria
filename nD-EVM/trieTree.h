@@ -641,7 +641,7 @@ void TrieTree<valueType>::setCoord(valueType coord){
 
 template<typename valueType> 
 valueType TrieTree<valueType>::getCoord(){
-    return rootNode->value;
+    return (*coupletIndex)->value;
 }
 
 template<typename valueType> 
@@ -1788,6 +1788,8 @@ void TrieTree<valueType>::readTrie(string fileName){
         cout<<"El archivo: "<<fileName<<" no pudo abrirse..."<<endl;
         return;
     }
+    
+    cout<<"Leyendo el archivo: "<<fileName<<endl;
     
     char buffer[6];
 //    cout<<"tamano del buffer: "<<sizeof(buffer)<<endl;

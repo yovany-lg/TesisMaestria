@@ -37,6 +37,8 @@ void testAnimationLoad();
 void testUnion();
 void testSaving();
 void testLoadEVMSeq();
+void testImages();
+void maskTest();
 
 typedef unsigned long long timestamp_t;
 
@@ -140,12 +142,45 @@ int main(int argc, char** argv) {
 
     // - Test para cargar imagenes
 //    testImageLoad();
-    testAnimationLoad();
-    testLoadEVMSeq();
+    
+    // - Test para cargar videos
+//    testAnimationLoad();
+//    testLoadEVMSeq();
 
     // - Test Savings
 //    testSaving();
+    
+    // - Mask Tests
+    maskTest();
     return 0;
+}
+
+void maskTest(){
+    nDEVM<unsigned int> *animMask =  new nDEVM<unsigned int>();
+    nDEVM<unsigned int> *mask = new nDEVM<unsigned int>();
+    nDEVM<unsigned int> *couplet;
+    mask->maskInit(100,100,5,1,1);
+    
+    int i = 0;
+    
+    while(!mask->endEVM()){
+        cout<<"Couplet: "<<mask->getCoord()<<endl;
+        couplet = mask->readCouplet();
+        couplet->printEVM();
+    }
+    mask->resetCoupletIndex();
+    
+//    animMask->maskIntersection(mask,1590,1631);
+//        
+//    i = 0;
+//    while(!animMask->endEVM()){
+//        couplet = animMask->readCouplet();
+//        couplet->printEVM();
+//        couplet->EVMFile("coupletMask",i);
+//        i++;
+//    }
+//    animMask->resetCoupletIndex();
+    
 }
 
 void testSaving(){
@@ -193,16 +228,19 @@ void testUnion(){
 
 void testAnimationLoad(){
     nDEVM<unsigned int> *evm = new nDEVM<unsigned int>();
-    evm->generateAnimation("Sequences/JackJack/",1590,1591);
-    evm->frameSequence();
+    evm->generateAnimation("Sequences/JackJack/frame",1590,1630);
+//    evm->frameSequence("frameCouplet",1549,2001);
     return;
 //    evm->EVMFile("frame",0);
 }
 
 void testLoadEVMSeq(){
-    nDEVM<unsigned int> *frame = new nDEVM<unsigned int>();
-    frame->readEVM("frameCouplet1590");
-    frame->EVMFile("frame",1590);
+    for(int i = 1549; i <= 2000; i++){
+        nDEVM<unsigned int> *frame = new nDEVM<unsigned int>();
+        frame->readEVM("frame"+to_string(i));
+        frame->EVMFile("frame",i);
+        delete frame;
+    }
 }
 
 void testImageLoad(){
