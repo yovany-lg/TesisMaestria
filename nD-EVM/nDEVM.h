@@ -25,6 +25,10 @@ class nDEVM {
 private:
 public:
     TrieTree<valueType> *trieTree;
+    valueType animMax[3];
+    valueType maskMax[3];
+    valueType maskMin[3];
+    
     nDEVM();
     nDEVM(TrieTree<valueType> *trie);
     nDEVM(const nDEVM& orig);
@@ -102,7 +106,7 @@ public:
     int getDimDepth(trieNode<valueType> * currentNode,int dim);
 
 //-- Operaciones regularizadas
-    nDEVM* booleanOperation(nDEVM* evm2,string op, int n);
+    nDEVM* booleanOperation(nDEVM* evm2,string op);
     nDEVM* booleanOperation(nDEVM *evm1, nDEVM* evm2, string op, int n);
     nDEVM* booleanOperation(nDEVM *section1, nDEVM *section2, string op);
     void nextObject(nDEVM *p, nDEVM *q,valueType *coord,bool *fromP, bool *fromQ);
@@ -138,16 +142,20 @@ public:
     // - Cargar Videos Imagenes
     void loadImageFile(string fileName);
     void loadImage(string fileName);
-    void generateAnimation(string framePrefix, int initFrame,int endFrame);
-    void frameSequence(string framePrefix, int initFrame,int endFrame);
+    void generateAnimation(string framePrefix, valueType initFrame,
+        valueType endFrame);
+    void frameSequence(int initFrame,int endFrame);
     void maskInit(int xLength, int yLength, int timeLength,
         int colorComponents, int colorCompSize);
     void populateMask(valueType **voxelInput,int maskDim,int currentDim,
         valueType ** maskLengths);
-    void maskIntersection(nDEVM* mask,int initCouplet, 
-        int endCouplet);
+    nDEVM<valueType> * maskIntersection(nDEVM* mask,int initCouplet,int endCouplet);
     void animNextObject(valueType iCouplet, nDEVM *mask,valueType *coord,
         bool *fromP, bool *fromQ);
+    void EVMTraslation(int dim,valueType shift);
+    void maskDimReset(int dim);
+    nDEVM<valueType> * maskAnimConv(nDEVM * mask,int initCouplet,int endCouplet,
+        valueType _xMax,valueType _yMax);
     
     void saveEVM(string fileName,int index);
     void readEVM(string fileName);
@@ -752,8 +760,9 @@ int nDEVM<valueType>::dimDepth(){
  * @return 
  */
 template<typename valueType> 
-nDEVM<valueType>* nDEVM<valueType>::booleanOperation(nDEVM* evm2, string op, int n){
-    return booleanOperation(this,evm2,op,n);
+nDEVM<valueType>* nDEVM<valueType>::booleanOperation(nDEVM* evm2, string op){
+    int dim = dimDepth();
+    return booleanOperation(this,evm2,op,dim);
 }
 
 template<typename valueType> 
@@ -1197,10 +1206,13 @@ void nDEVM<valueType>::loadImage(string fileName){
  * @param framePrefix
  * @param initFrame
  * @param endFrame
+ * @param _xMax
+ * @param _yMax
  */
 template<typename valueType> 
-void nDEVM<valueType>::generateAnimation(string framePrefix, int initFrame,int endFrame){
-    // - Se guarda la animacion sobre el objeto desde que se llama
+void nDEVM<valueType>::generateAnimation(string framePrefix, valueType initFrame,
+        valueType endFrame){
+    // - Se guarda la animacion sobre el objeto desde que se llama    
     nDEVM *currentFrame, *prevFrame,*diffFrame;
     int time;
     prevFrame = new nDEVM();
@@ -1214,20 +1226,14 @@ void nDEVM<valueType>::generateAnimation(string framePrefix, int initFrame,int e
         cout<<"Loading: "<<frameName<<endl;
         
         currentFrame->loadImageFile(frameName);
-//        currentFrame->EVMFile("frameOri",time); 
-        // Obtener diferencias entre Frames (Secciones)...
         diffFrame = getCouplet(prevFrame,currentFrame);
         diffFrame->saveEVM("frameCouplet",time); 
-//        diffFrame->setCoord(time);
-                
-//        putSection(diffFrame);
 
         delete prevFrame;
         prevFrame = currentFrame;
     }
     prevFrame->saveEVM("frameCouplet",time+1); 
-//    currentFrame->setCoord(time+1);
-//    putSection(currentFrame);
+    delete prevFrame;
     resetCoupletIndex();
 }
 
@@ -1238,14 +1244,18 @@ void nDEVM<valueType>::generateAnimation(string framePrefix, int initFrame,int e
  * @param endCouplet
  */
 template<typename valueType> 
-void nDEVM<valueType>::frameSequence(string framePrefix, int initCouplet,int endCouplet){
-    nDEVM* currentFrame = new nDEVM();
+void nDEVM<valueType>::frameSequence(int initCouplet,int endCouplet){
+    nDEVM<valueType> * currentSection= new nDEVM();
+    nDEVM<valueType> * prevSection;
 
     for(int i = initCouplet; i < endCouplet; i++){
-        nDEVM* currentCouplet = new nDEVM();
-        currentCouplet->readEVM(framePrefix + to_string(i));
-        currentFrame = getSection(currentFrame,currentCouplet);
-        currentFrame->saveEVM("frame",i);
+        nDEVM<valueType> * currentCouplet = new nDEVM();
+        currentCouplet->readEVM("frameCouplet" + to_string(i));
+        prevSection = currentSection;
+        currentSection = getSection(prevSection,currentCouplet);
+        currentSection->saveEVM("frame",i);
+        
+        delete prevSection;
         delete currentCouplet;
     }
     
@@ -1282,6 +1292,13 @@ void nDEVM<valueType>::readEVM(string fileName){
 template<typename valueType>
 void nDEVM<valueType>::maskInit(int xLength, int yLength, int timeLength,
         int colorComponents, int colorCompSize){
+    maskMin[0] = 0;
+    maskMax[0] = timeLength;
+    maskMin[1] = 0;
+    maskMax[1] = xLength;
+    maskMin[2] = 0;
+    maskMax[2] = yLength;
+    
     valueType colorCompMax = pow(2,colorCompSize*8);
     valueType * maskVoxel = new valueType[3+colorComponents];
     valueType * maskLengths = new valueType[3+colorComponents];
@@ -1317,8 +1334,7 @@ void nDEVM<valueType>::populateMask(valueType **maskVoxel,int maskDim,int curren
 }
 
 template<typename valueType> 
-void nDEVM<valueType>::maskIntersection(nDEVM* mask,int initCouplet, 
-        int endCouplet){
+nDEVM<valueType> * nDEVM<valueType>::maskIntersection(nDEVM* mask,int initCouplet,int endCouplet){
     int iCouplet = 0, iCoupletMax = endCouplet - initCouplet;
     
     nDEVM *animSection,*animPrevSection, *maskSection,*maskPrevSection, *couplet;
@@ -1332,7 +1348,8 @@ void nDEVM<valueType>::maskIntersection(nDEVM* mask,int initCouplet,
     animSection = new nDEVM();
     maskSection = new nDEVM();
     rCurrentSection = new nDEVM();
-//    result = new nDEVM();
+    
+    result = new nDEVM();
 
     while(iCouplet < iCoupletMax and !(mask->endEVM())){
         // - Version modificada de nextObject
@@ -1365,19 +1382,19 @@ void nDEVM<valueType>::maskIntersection(nDEVM* mask,int initCouplet,
 
 //            result->putCouplet(couplet);
             // El resultado se guarda en el nDEVM actual...
-            putCouplet(couplet);
+            result->putCouplet(couplet);
         }
         
         delete rPrevSection;    //Liberar Memoria
         iCouplet++;
     }
     mask->resetCoupletIndex();
-//    result->resetCoupletIndex();
+    result->resetCoupletIndex();
     resetCoupletIndex();
     delete animSection;
     delete maskSection;
     delete rCurrentSection;
-//    return result;
+    return result;
 }
 
 template<typename valueType> 
@@ -1403,4 +1420,79 @@ void nDEVM<valueType>::animNextObject(valueType iCouplet, nDEVM *mask,valueType 
         *fromP = true;
         return;
     }
+}
+
+/**
+ * Traslacion del nDEVM actual en una dimension y un desplazamiento especificos.
+ * Solo se considerandesplazamientos en t,x,y.
+ * @param dim
+ * @param shift
+ */
+template<typename valueType>
+void nDEVM<valueType>::EVMTraslation(int dim,valueType shift){
+    trieTree->TrieTranslation(dim,shift);
+    maskMax[dim-1] += shift;
+    maskMin[dim-1] += shift;
+}
+
+
+template<typename valueType>
+void nDEVM<valueType>::maskDimReset(int dim){
+    trieTree->TrieTranslation(dim,-maskMin[dim-1]);
+    maskMax[dim-1] -= maskMin[dim-1];
+    maskMin[dim-1] -= maskMin[dim-1];
+}
+
+template<typename valueType>
+nDEVM<valueType> * nDEVM<valueType>::maskAnimConv(nDEVM * mask,int initCouplet,int endCouplet,
+        valueType _xMax,valueType _yMax){
+    animMax[0] = endCouplet - initCouplet;
+    animMax[1] = _xMax;
+    animMax[2] = _yMax;
+    
+    nDEVM<valueType> *animPrevResult = new nDEVM<valueType>();
+    nDEVM<valueType> *animResult=  new nDEVM<valueType>();
+    nDEVM<valueType> *prevResult = new nDEVM<valueType>();
+    nDEVM<valueType> *currentResult = new nDEVM<valueType>();
+    
+//    int i = 0;
+    
+    // - Recorrido en y
+    while(mask->maskMax[2] <= _yMax){
+        cout<<"Mask yMin: "<<mask->maskMin[2]<<", yMax: "<<mask->maskMax[2]<<endl;
+        // - Recorrido en x
+        while(mask->maskMax[1] <= _xMax){
+            cout<<"Mask xMin: "<<mask->maskMin[1]<<", xMax: "<<mask->maskMax[1]<<endl;
+            prevResult = currentResult;
+            currentResult = maskIntersection(mask,initCouplet,endCouplet);
+            delete prevResult;
+            
+            animPrevResult = animResult;
+            animResult = animResult->booleanOperation(currentResult,"union");
+            delete animPrevResult;
+
+            mask->EVMTraslation(2,26);
+        }
+        mask->maskDimReset(2);
+        mask->EVMTraslation(3,27);
+    }
+
+    int i = 0;
+    nDEVM<valueType> *couplet;
+    nDEVM<valueType> *currentSection,*prevSection;
+    currentSection= new nDEVM<valueType>();
+    
+    while(!animResult->endEVM()){
+        couplet = animResult->readCouplet();
+        prevSection = currentSection;
+        currentSection = getSection(prevSection,couplet);        
+        currentSection->saveEVM("maskSection",i);
+        
+        delete prevSection;
+        delete couplet;
+        i++;
+    }
+    animResult->resetCoupletIndex();
+    
+    return animResult;
 }

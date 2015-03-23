@@ -100,6 +100,10 @@ public:
     void saveTrie(trieNode<valueType> *currentNode,valueType **key, int dim,ofstream *outputFile);
     void readTrie(string fileName);
     
+    void TrieTranslation(int dim,valueType shift);
+    void TrieTranslation(trieNode<valueType> **currentNode,int currentDim,
+        int dim,valueType shift);
+    
     string vectorToString(valueType **vector,int size);
     string vectorToString2(valueType **vector,int size);
     
@@ -1835,3 +1839,29 @@ string TrieTree<valueType>::vectorToString2(valueType **vector,int size){
     return output;
 }
 
+/**
+ * Traslacion del Trie en una dimension y desplazamiento especificos.
+ * @param dim
+ * @param shift
+ */
+template<typename valueType> 
+void TrieTree<valueType>::TrieTranslation(int dim,valueType shift){
+    TrieTranslation(&rootNode,0,dim,shift);
+}
+
+template<typename valueType> 
+void TrieTree<valueType>::TrieTranslation(trieNode<valueType> **currentNode,int currentDim,
+        int dim,valueType shift){
+    if(currentDim == (dim-1)){
+        (*currentNode)->value += shift;
+        if((*currentNode)->nextTrieNode != NULL){
+            TrieTranslation(&((*currentNode)->nextTrieNode), currentDim, dim,shift);
+        }
+        return;
+    }
+
+    TrieTranslation(&((*currentNode)->nextDim),currentDim+1,dim,shift);
+    if((*currentNode)->nextTrieNode != NULL){
+        TrieTranslation(&((*currentNode)->nextTrieNode), currentDim, dim,shift);
+    }
+}

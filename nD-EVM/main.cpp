@@ -39,6 +39,7 @@ void testSaving();
 void testLoadEVMSeq();
 void testImages();
 void maskTest();
+void maskFrameComparison();
 
 typedef unsigned long long timestamp_t;
 
@@ -151,35 +152,48 @@ int main(int argc, char** argv) {
 //    testSaving();
     
     // - Mask Tests
-    maskTest();
+//    maskTest();
+    maskFrameComparison();
+    
     return 0;
+}
+
+void maskFrameComparison(){
+    nDEVM<unsigned int> * frame = new nDEVM<unsigned int>();
+    nDEVM<unsigned int> * maskSection = new nDEVM<unsigned int>();
+    
+    frame->readEVM("frame1590");
+    maskSection->readEVM("maskSection0");
+    cout<<"Comparacion de Frame y maskSection: "<<frame->compareEVM(maskSection)<<endl;
+    
 }
 
 void maskTest(){
     nDEVM<unsigned int> *animMask =  new nDEVM<unsigned int>();
     nDEVM<unsigned int> *mask = new nDEVM<unsigned int>();
     nDEVM<unsigned int> *couplet;
-    mask->maskInit(100,100,5,1,1);
-    
-    int i = 0;
-    
-    while(!mask->endEVM()){
-        cout<<"Couplet: "<<mask->getCoord()<<endl;
-        couplet = mask->readCouplet();
-        couplet->printEVM();
-    }
-    mask->resetCoupletIndex();
-    
-//    animMask->maskIntersection(mask,1590,1631);
-//        
-//    i = 0;
-//    while(!animMask->endEVM()){
-//        couplet = animMask->readCouplet();
+//    nDEVM<unsigned int> *result = new nDEVM<unsigned int>();
+    mask->maskInit(100,81,3,1,1);
+
+//    mask->printEVM();
+//    mask->EVMTranslation(3,10);
+//    cout<<"Tralation: "<<endl;
+//    mask->printEVM();
+
+    //    while(!mask->endEVM()){
+//        cout<<"Couplet: "<<mask->getCoord()<<endl;
+//        couplet = mask->readCouplet();
 //        couplet->printEVM();
-//        couplet->EVMFile("coupletMask",i);
-//        i++;
 //    }
-//    animMask->resetCoupletIndex();
+//    mask->resetCoupletIndex();
+    
+//    result = result->maskIntersection(mask,1590,1631,360,243);
+//    animMask = animMask->booleanOperation(result,"union");
+
+//    mask->EVMTranslation(2,50);
+//    result = result->maskIntersection(mask,1590,1631,360,243);
+//    animMask = animMask->booleanOperation(result,"union");
+    animMask = animMask->maskAnimConv(mask,1590,1631,360,243);
     
 }
 
@@ -219,7 +233,7 @@ void testUnion(){
     string fileName2 = "rawFiles/olaf45.raw";
     evm2->rawFileToEVM(fileName2,128,128,128);
     
-    nDEVM<int>* evmOp = evm1->booleanOperation(evm2,"union",4);
+    nDEVM<int>* evmOp = evm1->booleanOperation(evm2,"union");
     
     nDEVM<int>* evm3 = evmOp->EVMCoupletSequence();
     cout<<endl<<"Couplet Sequence obtained..."<<endl;
@@ -228,8 +242,8 @@ void testUnion(){
 
 void testAnimationLoad(){
     nDEVM<unsigned int> *evm = new nDEVM<unsigned int>();
-    evm->generateAnimation("Sequences/JackJack/frame",1590,1630);
-//    evm->frameSequence("frameCouplet",1549,2001);
+//    evm->generateAnimation("Sequences/JackJack/frame",1590,1630);
+    evm->frameSequence(1590,1631);
     return;
 //    evm->EVMFile("frame",0);
 }
@@ -349,7 +363,7 @@ bool test(int size,int dim,string operation, int testIndex,ofstream *executionTi
     hvResultFile.close();
 
     timestamp_t t0 = get_timestamp();
-    evmResult = hvEVM1->booleanOperation(hvEVM2,operation,dim);
+    evmResult = hvEVM1->booleanOperation(hvEVM2,operation);
 
     timestamp_t t1 = get_timestamp();
     double secs = (t1 - t0) / 1000000.0L;
