@@ -138,6 +138,7 @@ public:
     valueType boundaryContent(nDEVM *p, int n);
     valueType perimeter();
     valueType discreteCompactness();
+    nDEVM * dimLeftShift();
     
     // - Cargar Videos Imagenes
     void loadImageFile(string fileName);
@@ -366,9 +367,9 @@ void nDEVM<valueType>::rawFileToEVM(string fileName,int x1,int x2,int x3){
                     if(fileInput.read((char *)( &buffer ), sizeof(buffer)))
                     {
                         value = buffer;
-                        newKey[0] = 0.0;
+                        newKey[0] = (valueType)0;
                         populate3DVoxel(&newKey);   //Corregir: Insertar en un metodo populate4DVoxel
-                        newKey[0] = value+1.0;
+                        newKey[0] = (valueType)(value+1);
                         populate3DVoxel(&newKey);
                     }
                 }
@@ -495,7 +496,7 @@ void nDEVM<valueType>::EVMFile(int index){
 
 template<typename valueType> 
 void nDEVM<valueType>::EVMFile(string suffix, int index){
-    valueType * testKey = new valueType[4];   //Eliminar
+    valueType * testKey = new valueType[3];   //Eliminar
     string fileName = "EVMFiles/EVM_"+suffix+to_string(index)+".evm";
     
     ofstream outputFile( fileName );
@@ -990,40 +991,6 @@ nDEVM<valueType>* nDEVM<valueType>::xorOperation(nDEVM* section1, nDEVM* section
     return result;
 }
 
-//valueType nDEVM<valueType>::content(){
-//    int dimDepth = getDimDepth();
-//    return content(this, dimDepth);
-//}
-//
-//valueType nDEVM<valueType>::content(nDEVM *p, int n){
-//    valueType cont = 0, coordC1,coordC2;
-//    nDEVM *couplet1, *couplet2;
-//    nDEVM *section;
-//    
-//    if(n == 1){
-//        return p->length();
-//    }
-//    
-//    couplet1 = new nDEVM();
-//    couplet2 = new nDEVM();
-//    section = new nDEVM();
-//    
-//    coordC1 = p->coupletCoord();
-//    couplet1 = p->readCouplet();
-//    
-//    while( !(p->endEVM()) ){
-//        coordC2 = p->coupletCoord();
-//        couplet2 = p->readCouplet();
-//        section = getSection(section,couplet1);
-//        
-//        cont = cont + content(section,n-1)*(coordC2 - coordC1);
-//        coordC1 = coordC2;
-//        couplet1 = couplet2;
-//    }
-//    p->resetCoupletIndex();
-//    return cont;
-//}
-//
 //valueType nDEVM<valueType>::boundaryContent(){
 //    int dimDepth = getDimDepth();
 //    return boundaryContent(this,dimDepth);
@@ -1058,24 +1025,6 @@ nDEVM<valueType>* nDEVM<valueType>::xorOperation(nDEVM* section1, nDEVM* section
 //    cont = cont + content(couplet1,n-1);
 //    p->resetCoupletIndex();
 //    return cont;
-//}
-//
-//valueType nDEVM<valueType>::length(){
-//    valueType l = 0;
-//    trieNode *segment;
-//
-//    if(isEmpty())
-//        return 0;
-//    
-//    segment = rootNode;    
-//    l += (segment->nextTrieNode->value - segment->value );
-//    
-//    while(segment->nextTrieNode->nextTrieNode != NULL){
-//
-//        segment = segment->nextTrieNode->nextTrieNode;    
-//        l += (segment->nextTrieNode->value - segment->value );
-//    }
-//    return l;
 //}
 //
 ///**
@@ -1495,4 +1444,57 @@ nDEVM<valueType> * nDEVM<valueType>::maskAnimConv(nDEVM * mask,int initCouplet,i
     animResult->resetCoupletIndex();
     
     return animResult;
+}
+
+template<typename valueType>
+valueType nDEVM<valueType>::content(){
+    int dim = dimDepth();
+    return content(this, dim);
+}
+
+template<typename valueType>
+valueType nDEVM<valueType>::content(nDEVM *p, int n){
+    valueType cont = 0, coordC1,coordC2;
+    nDEVM *couplet1, *couplet2;
+    nDEVM *currentSection,*prevSection;
+    
+    if(n == 1){
+        return p->length();
+    }
+    
+    couplet1 = new nDEVM();
+    couplet2 = new nDEVM();
+    currentSection = new nDEVM();
+    
+    coordC1 = p->getCoord();
+    couplet1 = p->readCouplet();
+    
+    while( !(p->endEVM()) ){
+        coordC2 = p->getCoord();
+        couplet2 = p->readCouplet();
+        prevSection = currentSection;
+        currentSection = getSection(prevSection,couplet1);
+        
+        cont = cont + content(currentSection,n-1)*(coordC2 - coordC1);
+        coordC1 = coordC2;
+        couplet1 = couplet2;
+        
+        delete prevSection;
+    }
+    p->resetCoupletIndex();
+    return cont;
+}
+
+/**
+ * Longitud de un 1D OPP...
+ * @return 
+ */
+template<typename valueType>
+valueType nDEVM<valueType>::length(){
+    return trieTree->length();
+}
+
+template<typename valueType>
+nDEVM * nDEVM<valueType>::dimLeftShift(){
+    
 }

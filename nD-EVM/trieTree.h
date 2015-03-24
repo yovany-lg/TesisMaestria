@@ -71,6 +71,7 @@ public:
     void setCoord(valueType coord);
     valueType getCoord();
     valueType coupletCoord();
+    valueType length();
     
     TrieTree* unionOperation(TrieTree* section1, TrieTree* section2);
     void unionOperation(trieNode<valueType> * section1, trieNode<valueType> * section2,
@@ -1864,4 +1865,27 @@ void TrieTree<valueType>::TrieTranslation(trieNode<valueType> **currentNode,int 
     if((*currentNode)->nextTrieNode != NULL){
         TrieTranslation(&((*currentNode)->nextTrieNode), currentDim, dim,shift);
     }
+}
+
+/**
+ * Longitud de un 1D OPP...
+ * @return 
+ */
+template<typename valueType>
+valueType TrieTree<valueType>::length(){
+    valueType len = 0;
+    trieNode<valueType> *segment;
+
+    if(isEmpty())
+        return 0;
+    
+    segment = rootNode;    
+    len += (segment->nextTrieNode->value - segment->value );
+    
+    while(segment->nextTrieNode->nextTrieNode != NULL){
+
+        segment = segment->nextTrieNode->nextTrieNode;    
+        len += (segment->nextTrieNode->value - segment->value );
+    }
+    return len;
 }

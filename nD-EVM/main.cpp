@@ -40,6 +40,7 @@ void testLoadEVMSeq();
 void testImages();
 void maskTest();
 void maskFrameComparison();
+void contentTest();
 
 typedef unsigned long long timestamp_t;
 
@@ -63,18 +64,6 @@ using namespace std;
  * 
  */
 int main(int argc, char** argv) {   
-//    testSequences();
-    
-//    nDEVM<double> *evm2 = new nDEVM<double>();
-//    string fileName2 = "rawFiles/olaf.raw";
-//    evm2->rawFileToEVM(fileName2,128,128,128);
-//    nDEVM<double> *temp = evm2->couplet(2);
-//    temp->discreteCompactness();
-    //cout<< "Contenido: "<<temp->content()<<", Área de la frontera: "<<temp->boundaryContent()<<"\n";
-//    
-//    evm2->EVMSectionSequence();
-
-    
     // Pruebas Basicas de operaciones booleanas
     
 //    nDEVM<double> * evm1 = new nDEVM<double>();
@@ -153,9 +142,29 @@ int main(int argc, char** argv) {
     
     // - Mask Tests
 //    maskTest();
-    maskFrameComparison();
+//    maskFrameComparison();
     
+    // - Content Tests
+    contentTest();
     return 0;
+}
+
+void contentTest(){
+    nDEVM<unsigned int> *evm2 = new nDEVM<unsigned int>();
+    string fileName2 = "DataSets/Sedans/sedan0.raw";
+    evm2->rawFileToEVM(fileName2,128,128,128);
+    
+    nDEVM<unsigned int> *sectionSeq = evm2->EVMSectionSequence();
+    
+//    evm2->EVMSectionSequence();
+//    evm2->readCouplet();
+    sectionSeq->readCouplet();
+    nDEVM<unsigned int> *temp = sectionSeq->readCouplet();
+    
+    temp->EVMFile("Sedan",0);
+//    temp->discreteCompactness();
+    cout<< "Contenido: "<<temp->content(); //<<", Área de la frontera: "<<temp->boundaryContent()<<"\n";
+    
 }
 
 void maskFrameComparison(){
