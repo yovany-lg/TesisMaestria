@@ -108,6 +108,10 @@ public:
     string vectorToString(valueType **vector,int size);
     string vectorToString2(valueType **vector,int size);
     
+    TrieTree * dimLeftShift();
+    void dimLeftShift(trieNode<valueType> *currentNode,valueType **key, int dim,
+            valueType shiftValue,TrieTree **result);
+    
     // - Cargar Videos e Imagenes
 //    void loadImage(string fileName);
 private:
@@ -1888,4 +1892,40 @@ valueType TrieTree<valueType>::length(){
         len += (segment->nextTrieNode->value - segment->value );
     }
     return len;
+}
+
+template<typename valueType>
+TrieTree<valueType> * TrieTree<valueType>::dimLeftShift(){
+    int dim = dimDepth();
+    valueType * testKey = new valueType[dim];
+    TrieTree<valueType> * result = new TrieTree<valueType>();
+     
+    dimLeftShift(rootNode,&testKey,0,0,&result);
+    
+    delete testKey;
+    
+    return result;
+}
+
+template<typename valueType> 
+void TrieTree<valueType>::dimLeftShift(trieNode<valueType> *currentNode,valueType **key, 
+        int dim,valueType shiftValue,TrieTree **result){
+    if((currentNode) == NULL){   //que el arbol no este vacio
+        (*key)[dim-1] = shiftValue;
+//        cout << vectorToString(key,dim)<<endl;
+        (*result)->insertVertex((*key),dim);
+        return;
+    }
+    
+    if(dim > 0){
+        (*key)[dim-1] = (currentNode)->value;
+    }else{
+        shiftValue = (currentNode)->value;
+    }
+    
+    dimLeftShift((currentNode)->nextDim, key, dim+1,shiftValue,result);
+
+    if((currentNode)->nextTrieNode != NULL){
+        dimLeftShift((currentNode)->nextTrieNode, key, dim,shiftValue,result);
+    }
 }

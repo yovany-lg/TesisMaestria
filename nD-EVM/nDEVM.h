@@ -107,6 +107,7 @@ public:
 
 //-- Operaciones regularizadas
     nDEVM* booleanOperation(nDEVM* evm2,string op);
+    nDEVM<valueType> *booleanOperation(nDEVM* evm2, string op,int dim);
     nDEVM* booleanOperation(nDEVM *evm1, nDEVM* evm2, string op, int n);
     nDEVM* booleanOperation(nDEVM *section1, nDEVM *section2, string op);
     void nextObject(nDEVM *p, nDEVM *q,valueType *coord,bool *fromP, bool *fromQ);
@@ -139,6 +140,9 @@ public:
     valueType perimeter();
     valueType discreteCompactness();
     nDEVM * dimLeftShift();
+    valueType internalContacts();
+    valueType internalContacts(nDEVM * p,int n);
+    valueType totalInternalContacts();
     
     // - Cargar Videos Imagenes
     void loadImageFile(string fileName);
@@ -767,6 +771,11 @@ nDEVM<valueType>* nDEVM<valueType>::booleanOperation(nDEVM* evm2, string op){
 }
 
 template<typename valueType> 
+nDEVM<valueType>* nDEVM<valueType>::booleanOperation(nDEVM* evm2, string op,int dim){
+    return booleanOperation(this,evm2,op,dim);
+}
+
+template<typename valueType> 
 nDEVM<valueType>* nDEVM<valueType>::booleanOperation(nDEVM *p, nDEVM *q, string op, int n){
     nDEVM *pSection,*pPrevSection, *qSection,*qPrevSection, *couplet;
     nDEVM *result, *rPrevSection, *rCurrentSection;
@@ -1291,7 +1300,7 @@ nDEVM<valueType> * nDEVM<valueType>::maskIntersection(nDEVM* mask,int initCouple
     bool fromAnim, fromMask;
     valueType coord;
 
-    nDEVM* currentFrame = new nDEVM();
+//    nDEVM* currentFrame = new nDEVM();
     int dim = mask->dimDepth();
 
     animSection = new nDEVM();
@@ -1458,6 +1467,10 @@ valueType nDEVM<valueType>::content(nDEVM *p, int n){
     nDEVM *couplet1, *couplet2;
     nDEVM *currentSection,*prevSection;
     
+    if( p->isEmpty() ){
+        return 0;
+    }
+    
     if(n == 1){
         return p->length();
     }
@@ -1495,6 +1508,58 @@ valueType nDEVM<valueType>::length(){
 }
 
 template<typename valueType>
-nDEVM * nDEVM<valueType>::dimLeftShift(){
+nDEVM<valueType> * nDEVM<valueType>::dimLeftShift(){
+    nDEVM<valueType> * newEVM = new nDEVM(trieTree->dimLeftShift());
+    return newEVM;
+}
+
+template<typename valueType>
+valueType nDEVM<valueType>::internalContacts(nDEVM * p,int n){
+    nDEVM<valueType> * couplet;
+    nDEVM<valueType> * sectioni,*sectionj;
+    nDEVM<valueType> * sectionInt;
+    valueType c1Coord,c2Coord,nCoords;
+    valueType iContacts = 0;
     
+    sectioni = new nDEVM<valueType>();
+    c1Coord = p->getCoord();
+    couplet = p->readCouplet();
+    
+    while( !(p->endEVM()) ){
+        sectionj = getSection(sectioni,couplet);
+        
+        c2Coord = p->getCoord();
+        nCoords = c2Coord - c1Coord - 1;
+        
+        iContacts = iContacts + nCoords * content(sectionj,n-1);
+        
+        sectionInt = sectioni->booleanOperation(sectionj,"intersection",n-1);
+        iContacts = iContacts + content(sectionInt,n-1);
+        delete sectioni;
+        sectioni = sectionj;
+        c1Coord = c2Coord;
+        couplet = p->readCouplet();
+    }
+    p->resetCoupletIndex();
+    delete sectionj;
+    return iContacts;
+}    
+
+template<typename valueType>
+valueType nDEVM<valueType>::totalInternalContacts(){
+    int dim = dimDepth();
+    valueType Lc = 0;
+    nDEVM<valueType> *prevP;
+    nDEVM<valueType> *p = this;
+    
+    Lc = Lc + internalContacts(p,dim);
+    
+    for(int i = 0; i < (dim-1); i++){
+        p = p->dimLeftShift();
+        delete prevP;
+        Lc = Lc + internalContacts(p,dim);
+        prevP = p;
+    }
+    delete prevP;
+    return Lc;
 }

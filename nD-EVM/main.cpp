@@ -41,6 +41,7 @@ void testImages();
 void maskTest();
 void maskFrameComparison();
 void contentTest();
+void shiftTest();
 
 typedef unsigned long long timestamp_t;
 
@@ -146,12 +147,38 @@ int main(int argc, char** argv) {
     
     // - Content Tests
     contentTest();
+    
+    // - Shift Tests
+//    shiftTest();
     return 0;
+}
+
+void shiftTest(){
+    nDEVM<unsigned int> *mask = new nDEVM<unsigned int>();
+    mask->maskInit(100,81,3,1,1);
+    cout<<"Original EVM: "<<endl;
+    mask->printEVM();
+
+    cout<<"Shifted EVM: "<<endl;    
+    nDEVM<unsigned int> *shift = mask->dimLeftShift();
+    shift->printEVM();
+
+    cout<<"Shifted EVM: "<<endl;    
+    shift = shift->dimLeftShift();
+    shift->printEVM();
+    
+    cout<<"Shifted EVM: "<<endl;    
+    shift = shift->dimLeftShift();
+    shift->printEVM();
+    
+    cout<<"Shifted EVM: "<<endl;    
+    shift = shift->dimLeftShift();
+    shift->printEVM();
 }
 
 void contentTest(){
     nDEVM<unsigned int> *evm2 = new nDEVM<unsigned int>();
-    string fileName2 = "DataSets/Sedans/sedan0.raw";
+    string fileName2 = "DataSets/Sedans/sedan1.raw";
     evm2->rawFileToEVM(fileName2,128,128,128);
     
     nDEVM<unsigned int> *sectionSeq = evm2->EVMSectionSequence();
@@ -161,9 +188,9 @@ void contentTest(){
     sectionSeq->readCouplet();
     nDEVM<unsigned int> *temp = sectionSeq->readCouplet();
     
-    temp->EVMFile("Sedan",0);
+    temp->EVMFile("Sedan",1);
 //    temp->discreteCompactness();
-    cout<< "Contenido: "<<temp->content(); //<<", Área de la frontera: "<<temp->boundaryContent()<<"\n";
+    cout<< "Contenido: "<<temp->content()<<", Total Internal Contacts: "<<temp->totalInternalContacts()<<endl; //<<", Área de la frontera: "<<temp->boundaryContent()<<"\n";
     
 }
 
