@@ -28,6 +28,7 @@ public:
     valueType animMax[3];
     valueType maskMax[3];
     valueType maskMin[3];
+    valueType LcMin = 0, LcMax = 0;
     
     nDEVM();
     nDEVM(TrieTree<valueType> *trie);
@@ -138,7 +139,7 @@ public:
     valueType boundaryContent();
     valueType boundaryContent(nDEVM *p, int n);
     valueType perimeter();
-    valueType discreteCompactness();
+    double discreteCompactness(valueType lMin,valueType lMax);
     nDEVM * dimLeftShift();
     valueType internalContacts();
     valueType internalContacts(nDEVM * p,int n);
@@ -152,6 +153,8 @@ public:
     void frameSequence(int initFrame,int endFrame);
     void maskInit(int xLength, int yLength, int timeLength,
         int colorComponents, int colorCompSize);
+    void minMask(int xLength, int yLength, int timeLength,
+        int colorComponents);
     void populateMask(valueType **voxelInput,int maskDim,int currentDim,
         valueType ** maskLengths);
     nDEVM<valueType> * maskIntersection(nDEVM* mask,int initCouplet,int endCouplet);
@@ -1240,7 +1243,8 @@ void nDEVM<valueType>::readEVM(string fileName){
 }
 
 /**
- * Inicializacion de la mascara para segmentacion de video.
+ * Inicializacion de la mascara para segmentacion de video. Las mascaras contienen 
+ * LcMax y LcMin para el calculo de DC...
  * @param xLength
  * @param yLength
  * @param timeLength
@@ -1275,6 +1279,37 @@ void nDEVM<valueType>::maskInit(int xLength, int yLength, int timeLength,
         maskLengths[3+i] = colorCompMax;
     }
     populateMask(&maskVoxel,3+colorComponents,0,&maskLengths);
+    
+    LcMax = totalInternalContacts();
+    
+    nDEVM<valueType> *otherMask = new nDEVM<valueType>();
+    otherMask->minMask(xLength,yLength,timeLength,colorComponents);
+    LcMin = otherMask->totalInternalContacts();
+    delete otherMask;
+}
+
+template<typename valueType>
+void nDEVM<valueType>::minMask(int xLength, int yLength, int timeLength,
+        int colorComponents){
+//    valueType colorCompMax = pow(2,colorCompSize*8);
+    valueType * maskVoxel = new valueType[3+colorComponents];
+    valueType * maskLengths = new valueType[3+colorComponents];
+    
+    maskVoxel[0] = 0;
+    maskLengths[0] = timeLength;
+    
+    maskVoxel[1] = 0;
+    maskLengths[1] = xLength;
+    
+    maskVoxel[2] = 0;
+    maskLengths[2] = yLength;
+    
+    for(int i = 0; i < colorComponents; i++){
+        maskVoxel[3+i] = 0;
+        maskLengths[3+i] = 1;
+    }
+    populateMask(&maskVoxel,3+colorComponents,0,&maskLengths);
+//    LcMin = content();
 }
 
 template<typename valueType> 
@@ -1415,24 +1450,31 @@ nDEVM<valueType> * nDEVM<valueType>::maskAnimConv(nDEVM * mask,int initCouplet,i
     
 //    int i = 0;
     
-    // - Recorrido en y
-    while(mask->maskMax[2] <= _yMax){
-        cout<<"Mask yMin: "<<mask->maskMin[2]<<", yMax: "<<mask->maskMax[2]<<endl;
-        // - Recorrido en x
-        while(mask->maskMax[1] <= _xMax){
-            cout<<"Mask xMin: "<<mask->maskMin[1]<<", xMax: "<<mask->maskMax[1]<<endl;
-            prevResult = currentResult;
-            currentResult = maskIntersection(mask,initCouplet,endCouplet);
-            delete prevResult;
-            
-            animPrevResult = animResult;
-            animResult = animResult->booleanOperation(currentResult,"union");
-            delete animPrevResult;
+    // Recorrido en T
+    while(mask->maskMax[0] <= animMax[0]){
+        cout<<"Mask tMin: "<<mask->maskMin[0]<<", tMax: "<<mask->maskMax[0]<<endl;
+        // - Recorrido en y
+        while(mask->maskMax[2] <= _yMax){
+            cout<<"Mask yMin: "<<mask->maskMin[2]<<", yMax: "<<mask->maskMax[2]<<endl;
+            // - Recorrido en x
+            while(mask->maskMax[1] <= _xMax){
+                cout<<"Mask xMin: "<<mask->maskMin[1]<<", xMax: "<<mask->maskMax[1]<<endl;
+                prevResult = currentResult;
+                currentResult = maskIntersection(mask,initCouplet,endCouplet);
+                delete prevResult;
 
-            mask->EVMTraslation(2,26);
+                animPrevResult = animResult;
+                animResult = animResult->booleanOperation(currentResult,"union");
+                delete animPrevResult;
+
+                mask->EVMTraslation(2,26);
+            }
+            mask->maskDimReset(2);
+            mask->EVMTraslation(3,27);
         }
         mask->maskDimReset(2);
-        mask->EVMTraslation(3,27);
+        mask->maskDimReset(3);
+        mask->EVMTraslation(1,5);
     }
 
     int i = 0;
@@ -1549,7 +1591,7 @@ template<typename valueType>
 valueType nDEVM<valueType>::totalInternalContacts(){
     int dim = dimDepth();
     valueType Lc = 0;
-    nDEVM<valueType> *prevP;
+    nDEVM<valueType> *prevP = new nDEVM<valueType>();
     nDEVM<valueType> *p = this;
     
     Lc = Lc + internalContacts(p,dim);
@@ -1562,4 +1604,11 @@ valueType nDEVM<valueType>::totalInternalContacts(){
     }
     delete prevP;
     return Lc;
+}
+
+template<typename valueType>
+double nDEVM<valueType>::discreteCompactness(valueType lMin,valueType lMax){
+    valueType Lc = totalInternalContacts();
+    
+    return (double)(Lc - lMin)/(lMax - lMin);
 }

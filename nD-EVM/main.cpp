@@ -143,10 +143,10 @@ int main(int argc, char** argv) {
     
     // - Mask Tests
 //    maskTest();
-//    maskFrameComparison();
+    maskFrameComparison();
     
     // - Content Tests
-    contentTest();
+//    contentTest();
     
     // - Shift Tests
 //    shiftTest();
@@ -198,8 +198,8 @@ void maskFrameComparison(){
     nDEVM<unsigned int> * frame = new nDEVM<unsigned int>();
     nDEVM<unsigned int> * maskSection = new nDEVM<unsigned int>();
     
-    frame->readEVM("frame1590");
-    maskSection->readEVM("maskSection0");
+    frame->readEVM("frame1591");
+    maskSection->readEVM("maskSection1");
     cout<<"Comparacion de Frame y maskSection: "<<frame->compareEVM(maskSection)<<endl;
     
 }
@@ -207,9 +207,9 @@ void maskFrameComparison(){
 void maskTest(){
     nDEVM<unsigned int> *animMask =  new nDEVM<unsigned int>();
     nDEVM<unsigned int> *mask = new nDEVM<unsigned int>();
-    nDEVM<unsigned int> *couplet;
+//    nDEVM<unsigned int> *couplet;
 //    nDEVM<unsigned int> *result = new nDEVM<unsigned int>();
-    mask->maskInit(100,81,3,1,1);
+    mask->maskInit(100,81,5,1,1);
 
 //    mask->printEVM();
 //    mask->EVMTranslation(3,10);
@@ -229,7 +229,7 @@ void maskTest(){
 //    mask->EVMTranslation(2,50);
 //    result = result->maskIntersection(mask,1590,1631,360,243);
 //    animMask = animMask->booleanOperation(result,"union");
-    animMask = animMask->maskAnimConv(mask,1590,1631,360,243);
+    animMask = animMask->maskAnimConv(mask,1590,1601,360,243);
     
 }
 
@@ -278,14 +278,14 @@ void testUnion(){
 
 void testAnimationLoad(){
     nDEVM<unsigned int> *evm = new nDEVM<unsigned int>();
-//    evm->generateAnimation("Sequences/JackJack/frame",1590,1630);
-    evm->frameSequence(1590,1631);
+    evm->generateAnimation("Sequences/JackJack/frame",1590,1600);
+    evm->frameSequence(1590,1601);
     return;
 //    evm->EVMFile("frame",0);
 }
 
 void testLoadEVMSeq(){
-    for(int i = 1549; i <= 2000; i++){
+    for(int i = 1590; i <= 1600; i++){
         nDEVM<unsigned int> *frame = new nDEVM<unsigned int>();
         frame->readEVM("frame"+to_string(i));
         frame->EVMFile("frame",i);
