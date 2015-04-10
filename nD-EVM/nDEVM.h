@@ -134,7 +134,7 @@ public:
     
     // -- Contenido
     valueType content();
-    valueType content(nDEVM *p, int n);    
+    valueType content(nDEVM **p, int n);    
     valueType length();
     valueType boundaryContent();
     valueType boundaryContent(nDEVM *p, int n);
@@ -162,7 +162,7 @@ public:
         bool *fromP, bool *fromQ);
     void EVMTraslation(int dim,valueType shift);
     void maskDimReset(int dim);
-    nDEVM<valueType> * maskAnimConv(nDEVM * mask,int initCouplet,int endCouplet,
+    void maskAnimConv(nDEVM * mask,int initCouplet,int endCouplet,
         valueType _xMax,valueType _yMax);
     
     void saveEVM(string fileName,int index);
@@ -293,6 +293,7 @@ template<typename valueType>
 nDEVM<valueType> * nDEVM<valueType>::cloneEVM(){
     TrieTree<valueType> *copyTrie = trieTree->clone();
     nDEVM *cloneEVM = new nDEVM(copyTrie);
+    copyTrie = NULL;
     return cloneEVM;
 }
 
@@ -332,12 +333,13 @@ nDEVM<valueType>* nDEVM<valueType>::mergeXOR(nDEVM* otherEVM){
         return cloneEVM();
 
     if(isEmpty() and otherEVM->isEmpty()){
-        nDEVM *xorEVM = new nDEVM();
-        return xorEVM;
+//        nDEVM *xorEVM = new nDEVM();
+        return new nDEVM();
     }
     
     TrieTree<valueType> *resultTrie = trieTree->XOR(otherEVM->trieTree);
-    nDEVM *resultEVM = new nDEVM(resultTrie);
+    nDEVM<valueType> *resultEVM = new nDEVM<valueType>(resultTrie);
+    resultTrie = NULL;
     return resultEVM;
 }
 
@@ -388,7 +390,7 @@ void nDEVM<valueType>::rawFileToEVM(string fileName,int x1,int x2,int x3){
         cout << "No se abrio correctamente el archivo: "<< fileName << "\n";
     
     cout << "Se finalizo la lectura del archivo: "<< fileName << "\n";
-    delete newKey;
+    delete [] newKey;
 }
 
 /**
@@ -412,7 +414,7 @@ void nDEVM<valueType>::loadnDRawFile(string fileName,int voxelSize,int dim){
     
     voxelizeRawFile(&newVoxel,&inputFile,voxelSize,dim,dim);
     
-    delete newVoxel;
+    delete [] newVoxel;
     inputFile.close();
 }
 
@@ -514,7 +516,7 @@ void nDEVM<valueType>::EVMFile(string suffix, int index){
     outputFile<<"XYZ"<<'\n'<<'3'<<'\n';
     EVMFile(&outputFile,trieTree->rootNode,&testKey,0);
     outputFile.close();
-    delete testKey;
+    delete [] testKey;
 }
 
 /*Método Principal y Recursivo para vaciar un arbol trie en un archivo de texto .evm
@@ -600,8 +602,8 @@ void nDEVM<valueType>::putSection(nDEVM * section){
 template<typename valueType> 
 nDEVM<valueType>* nDEVM<valueType>::readCouplet(){
     //SI SE ELIMINA EL EVM RETORNADO, SE ELIMINARA DEL EVM ORIGINAL
-    nDEVM *coupletEVM = new nDEVM(trieTree->readCouplet());
-    return coupletEVM;
+//    nDEVM *coupletEVM = new nDEVM(trieTree->readCouplet());
+    return new nDEVM<valueType>(trieTree->readCouplet());
 }
 
 /**
@@ -780,17 +782,17 @@ nDEVM<valueType>* nDEVM<valueType>::booleanOperation(nDEVM* evm2, string op,int 
 
 template<typename valueType> 
 nDEVM<valueType>* nDEVM<valueType>::booleanOperation(nDEVM *p, nDEVM *q, string op, int n){
-    nDEVM *pSection,*pPrevSection, *qSection,*qPrevSection, *couplet;
-    nDEVM *result, *rPrevSection, *rCurrentSection;
+    nDEVM<valueType> *pSection,*pPrevSection, *qSection,*qPrevSection, *couplet;
+    nDEVM<valueType> *result, *rPrevSection, *rCurrentSection;
     bool fromP, fromQ;
     valueType coord;
     if(n == 1){
         return booleanOperation(p,q,op);
     }
-    pSection = new nDEVM();
-    qSection = new nDEVM();
-    rCurrentSection = new nDEVM();
-    result = new nDEVM();
+    pSection = new nDEVM<valueType>();
+    qSection = new nDEVM<valueType>();
+    rCurrentSection = new nDEVM<valueType>();
+    result = new nDEVM<valueType>();
     while(!(p->endEVM()) and !(q->endEVM())){
         nextObject(p,q,&coord,&fromP,&fromQ);
         if(fromP){
@@ -798,6 +800,7 @@ nDEVM<valueType>* nDEVM<valueType>::booleanOperation(nDEVM *p, nDEVM *q, string 
             pPrevSection = pSection;
             pSection = getSection(pSection,couplet);
             delete pPrevSection;    //Liberar Memoria
+            delete couplet;
 
 //            cout<<"section fromP, coord: "<<coord<<"\n";
 //            pSection->printTrie();
@@ -807,6 +810,7 @@ nDEVM<valueType>* nDEVM<valueType>::booleanOperation(nDEVM *p, nDEVM *q, string 
             qPrevSection = qSection;
             qSection = getSection(qSection,couplet);
             delete qPrevSection;    //Liberar Memoria
+            delete couplet;
 
 //            cout<<"section fromQ, coord: "<<coord<<"\n";
 //            qSection->printTrie();
@@ -826,40 +830,59 @@ nDEVM<valueType>* nDEVM<valueType>::booleanOperation(nDEVM *p, nDEVM *q, string 
 //        cout<<"---\n";
         
         if(!couplet->isEmpty()){
+            couplet->trieTree->isCouplet = true;
             couplet->setCoord(coord);
 
             result->putCouplet(couplet);
+            delete couplet;
         }
         
         delete rPrevSection;    //Liberar Memoria
     }
     while(!(p->endEVM())){
+        nDEVM<valueType> *coupletCopy;
 //        cout<<"I was Here...\n";
         if(putCoupletByOp(op,1)){
             coord = (*(p->trieTree->coupletIndex))->value;
-            couplet = (p->readCouplet())->cloneEVM();
-            couplet->setCoord(coord);
-            result->putCouplet(couplet);
+            couplet = p->readCouplet();
+            
+            coupletCopy = couplet->cloneEVM();
+            coupletCopy->trieTree->isCouplet = true;
+            coupletCopy->setCoord(coord);
+            
+            result->putCouplet(coupletCopy);
+            
+            delete couplet;
+            delete coupletCopy;
         }else
             break;
     }
 
     while(!(q->endEVM())){
+        nDEVM<valueType> *coupletCopy;
 //        cout<<"I was Here...\n";
         if(putCoupletByOp(op,2)){
             coord = (*(q->trieTree->coupletIndex))->value;
-            couplet = (q->readCouplet())->cloneEVM();
-            couplet->setCoord(coord);
-            result->putCouplet(couplet);
+            couplet = q->readCouplet();
+
+            coupletCopy = couplet->cloneEVM();
+            coupletCopy->trieTree->isCouplet = true;
+            coupletCopy->setCoord(coord);
+
+            result->putCouplet(coupletCopy);
+            delete couplet;
+            delete coupletCopy;
         }else
             break;
     }
     p->resetCoupletIndex();
     q->resetCoupletIndex();
     result->resetCoupletIndex();
+    
     delete pSection;
     delete qSection;
     delete rCurrentSection;
+    
     return result;
 }
 
@@ -945,9 +968,14 @@ nDEVM<valueType>* nDEVM<valueType>::unionOperation(nDEVM* section1, nDEVM* secti
         return new nDEVM();
     }
     
-    TrieTree<valueType> *resultTrie = new TrieTree<valueType>();
-    resultTrie = resultTrie->unionOperation(section1->trieTree,section2->trieTree);
-    nDEVM *resultEVM = new nDEVM(resultTrie);
+    TrieTree<valueType> *tempTrie = new TrieTree<valueType>();
+    TrieTree<valueType> *resultTrie;
+    resultTrie = tempTrie->unionOperation(section1->trieTree,section2->trieTree);
+    
+    nDEVM<valueType> *resultEVM = new nDEVM<valueType>(resultTrie);
+
+    delete tempTrie;
+
     return resultEVM;
 }
 
@@ -958,10 +986,13 @@ nDEVM<valueType>* nDEVM<valueType>::intersectionOperation(nDEVM* section1, nDEVM
         return new nDEVM();
     }
         
-    TrieTree<valueType> *resultTrie = new TrieTree<valueType>();
-    resultTrie = resultTrie->intersectionOperation(section1->trieTree,section2->trieTree);
-
-    nDEVM *result = new nDEVM(resultTrie);
+    TrieTree<valueType> *tempTrie = new TrieTree<valueType>();
+    TrieTree<valueType> *resultTrie;
+    resultTrie = tempTrie->intersectionOperation(section1->trieTree,section2->trieTree);
+    
+    nDEVM<valueType> *result = new nDEVM<valueType>(resultTrie);
+    
+    delete tempTrie;
     
     return result;
 }
@@ -977,10 +1008,14 @@ nDEVM<valueType>* nDEVM<valueType>::differenceOperation(nDEVM* section1, nDEVM* 
         return new nDEVM();
     }
     
-    TrieTree<valueType> *resultTrie = new TrieTree<valueType>();
-    resultTrie = resultTrie->differenceOperation(section1->trieTree,section2->trieTree);
+    TrieTree<valueType> *tempTrie = new TrieTree<valueType>();
+    TrieTree<valueType> *resultTrie;
+    resultTrie = tempTrie->differenceOperation(section1->trieTree,section2->trieTree);
     
-    nDEVM *result = new nDEVM(resultTrie);
+    nDEVM<valueType> *result = new nDEVM<valueType>(resultTrie);
+
+    delete tempTrie;
+    resultTrie = NULL;
     
     return result;
 }
@@ -996,114 +1031,21 @@ nDEVM<valueType>* nDEVM<valueType>::xorOperation(nDEVM* section1, nDEVM* section
         return section2->cloneEVM();
     }
 
-    TrieTree<valueType> *resultTrie = new TrieTree<valueType>();
-    resultTrie = resultTrie->xorOperation(section1->trieTree,section2->trieTree);
+    TrieTree<valueType> *tempTrie = new TrieTree<valueType>();
+    TrieTree<valueType> *resultTrie;
+    resultTrie = tempTrie->xorOperation(section1->trieTree,section2->trieTree);
     
-    nDEVM *result = new nDEVM(resultTrie);
+    nDEVM<valueType> *result = new nDEVM<valueType>(resultTrie);
+
+    delete tempTrie;
+    resultTrie = NULL;
+
     return result;
 }
-
-//valueType nDEVM<valueType>::boundaryContent(){
-//    int dimDepth = getDimDepth();
-//    return boundaryContent(this,dimDepth);
-//}
-//
-//valueType nDEVM<valueType>::boundaryContent(nDEVM *p, int n){
-//    valueType cont = 0, coordC1,coordC2;
-//    nDEVM *couplet1, *couplet2;
-//    nDEVM *section;
-//    
-//    if(n == 2){
-//        // - Solo para 2DEVMs
-//        return p->perimeter();
-//    }
-//    
-//    couplet1 = new nDEVM();
-//    couplet2 = new nDEVM();
-//    section = new nDEVM();
-//    
-//    coordC1 = p->coupletCoord();
-//    couplet1 = p->readCouplet();
-//    
-//    while( !(p->endEVM()) ){
-//        coordC2 = p->coupletCoord();
-//        couplet2 = p->readCouplet();
-//        section = getSection(section,couplet1);
-//        
-//        cont = cont + content(couplet1,n-1) + boundaryContent(section,n-1)*(coordC2 - coordC1);
-//        coordC1 = coordC2;
-//        couplet1 = couplet2;
-//    }
-//    cont = cont + content(couplet1,n-1);
-//    p->resetCoupletIndex();
-//    return cont;
-//}
-//
-///**
-// * Solo para 2DEVMs
-// * @return 
-// */
-//valueType nDEVM<valueType>::perimeter(){
-//    valueType p = 0;
-//    // - explorar el EVM de donde sellamo la funcion
-//    nDEVM *couplet;
-//    nDEVM *q = new nDEVM();
-//    valueType *otherInputs = new valueType[2];
-//    trieNode *segment;
-//    while(!endEVM()){
-//        // - coordenada en x1 ahora se pasa a la segunda dimensión en ordenamiento
-//        otherInputs[1] = coupletCoord();
-//        
-//        // - obtener la longitud del couplet 1D ordenado eobre x2
-//        couplet = readCouplet();
-//        p += couplet->length();
-//        
-//        // - explorar el segmento del couplet actual, el cual esta ordenado sobre x2
-//        segment = couplet->rootNode;
-//        // - pasar los vertices de los segmentos como la coordenada x1
-//        otherInputs[0] = segment->value;
-//        q->insertVertex(otherInputs,2);
-//        otherInputs[0] = segment->nextTrieNode->value;
-//        q->insertVertex(otherInputs,2);
-//        while( segment->nextTrieNode->nextTrieNode != NULL ){
-//            // - pasar los vertices de los segmentos como la coordenada x1
-//            segment = segment->nextTrieNode->nextTrieNode;
-//            otherInputs[0] = segment->value;
-//            q->insertVertex(otherInputs,2);
-//            otherInputs[0] = segment->nextTrieNode->value;
-//            q->insertVertex(otherInputs,2);
-//        }
-//    }
-//    
-//    // - obtener las longitudes de los couplets pero con la primerdomensión x2
-//    while( !(q ->endEVM()) ){        
-//        couplet = q->readCouplet();
-//        p += couplet->length();
-//    }    
-//    return p;
-//}
-//
-//valueType nDEVM<valueType>::discreteCompactness(){
-//    int EVMContent = content();
-//    valueType minContactArea,maxContactArea,boundaryCont,contactArea, DC;
-//    
-//    minContactArea=(EVMContent-1);
-//    maxContactArea=3*(EVMContent - pow( pow(EVMContent,(valueType)1/3) , 2));
-//    
-//    boundaryCont = boundaryContent();
-//    
-//    contactArea = (6*EVMContent - boundaryCont)/2;
-//    DC = (contactArea - minContactArea)/(maxContactArea - minContactArea);
-//    
-//    cout<<"Content: "<<EVMContent<<", BoundaryContent: "<<boundaryCont<<", ContactArea: "<<contactArea<<", DiscreteCompactness: "<<DC<<"\n";
-//    
-//    return DC;
-//}
 
 template<typename valueType> 
 void nDEVM<valueType>::loadImageFile(string fileName){
     loadImage(fileName);
-//    int size = imageTrie->size();
     return;
 }
 
@@ -1155,8 +1097,9 @@ void nDEVM<valueType>::loadImage(string fileName){
 //        cout<<endl;
     }
     cout<<"Frame loaded..."<<endl;
-    delete pixelRGB;
-    delete pixelInfo;
+    delete [] pixelRGB;
+    delete [] pixelInfo;
+//    delete bmpImage;
 }
 
 
@@ -1174,13 +1117,13 @@ template<typename valueType>
 void nDEVM<valueType>::generateAnimation(string framePrefix, valueType initFrame,
         valueType endFrame){
     // - Se guarda la animacion sobre el objeto desde que se llama    
-    nDEVM *currentFrame, *prevFrame,*diffFrame;
+    nDEVM<valueType> *currentFrame, *prevFrame,*diffFrame;
     int time;
-    prevFrame = new nDEVM();
+    prevFrame = new nDEVM<valueType>();
     string frameName;
     
     for(int i = initFrame; i <= endFrame; i++){
-        currentFrame = new nDEVM();
+        currentFrame = new nDEVM<valueType>();
         time = i;
 
         frameName = framePrefix + to_string(i)+".bmp";
@@ -1195,6 +1138,7 @@ void nDEVM<valueType>::generateAnimation(string framePrefix, valueType initFrame
     }
     prevFrame->saveEVM("frameCouplet",time+1); 
     delete prevFrame;
+    
     resetCoupletIndex();
 }
 
@@ -1206,11 +1150,11 @@ void nDEVM<valueType>::generateAnimation(string framePrefix, valueType initFrame
  */
 template<typename valueType> 
 void nDEVM<valueType>::frameSequence(int initCouplet,int endCouplet){
-    nDEVM<valueType> * currentSection= new nDEVM();
+    nDEVM<valueType> * currentSection= new nDEVM<valueType>();
     nDEVM<valueType> * prevSection;
 
     for(int i = initCouplet; i < endCouplet; i++){
-        nDEVM<valueType> * currentCouplet = new nDEVM();
+        nDEVM<valueType> * currentCouplet = new nDEVM<valueType>();
         currentCouplet->readEVM("frameCouplet" + to_string(i));
         prevSection = currentSection;
         currentSection = getSection(prevSection,currentCouplet);
@@ -1219,8 +1163,7 @@ void nDEVM<valueType>::frameSequence(int initCouplet,int endCouplet){
         delete prevSection;
         delete currentCouplet;
     }
-    
-//    resetCoupletIndex();
+    delete currentSection;
 }
 
 /**
@@ -1285,13 +1228,14 @@ void nDEVM<valueType>::maskInit(int xLength, int yLength, int timeLength,
     nDEVM<valueType> *otherMask = new nDEVM<valueType>();
     otherMask->minMask(xLength,yLength,timeLength,colorComponents);
     LcMin = otherMask->totalInternalContacts();
+    delete [] maskVoxel;
+    delete [] maskLengths;
     delete otherMask;
 }
 
 template<typename valueType>
 void nDEVM<valueType>::minMask(int xLength, int yLength, int timeLength,
         int colorComponents){
-//    valueType colorCompMax = pow(2,colorCompSize*8);
     valueType * maskVoxel = new valueType[3+colorComponents];
     valueType * maskLengths = new valueType[3+colorComponents];
     
@@ -1309,7 +1253,8 @@ void nDEVM<valueType>::minMask(int xLength, int yLength, int timeLength,
         maskLengths[3+i] = 1;
     }
     populateMask(&maskVoxel,3+colorComponents,0,&maskLengths);
-//    LcMin = content();
+    delete [] maskVoxel;
+    delete [] maskLengths;
 }
 
 template<typename valueType> 
@@ -1330,26 +1275,26 @@ template<typename valueType>
 nDEVM<valueType> * nDEVM<valueType>::maskIntersection(nDEVM* mask,int initCouplet,int endCouplet){
     int iCouplet = 0, iCoupletMax = endCouplet - initCouplet;
     
-    nDEVM *animSection,*animPrevSection, *maskSection,*maskPrevSection, *couplet;
-    nDEVM *result, *rPrevSection, *rCurrentSection;
+    nDEVM<valueType> *animSection,*animPrevSection, *maskSection,*maskPrevSection, *couplet;
+    nDEVM<valueType> *result, *rPrevSection, *rCurrentSection;
     bool fromAnim, fromMask;
     valueType coord;
 
 //    nDEVM* currentFrame = new nDEVM();
     int dim = mask->dimDepth();
 
-    animSection = new nDEVM();
-    maskSection = new nDEVM();
-    rCurrentSection = new nDEVM();
+    animSection = new nDEVM<valueType>();
+    maskSection = new nDEVM<valueType>();
+    rCurrentSection = new nDEVM<valueType>();
     
-    result = new nDEVM();
+    result = new nDEVM<valueType>();
 
     while(iCouplet < iCoupletMax and !(mask->endEVM())){
         // - Version modificada de nextObject
         animNextObject(iCouplet,mask,&coord,&fromAnim,&fromMask);
         
         if(fromAnim){
-            couplet = new nDEVM();
+            couplet = new nDEVM<valueType>();
             couplet->readEVM("frameCouplet" + to_string(initCouplet+iCouplet));
             animPrevSection = animSection;
             animSection = getSection(animSection,couplet);
@@ -1362,6 +1307,7 @@ nDEVM<valueType> * nDEVM<valueType>::maskIntersection(nDEVM* mask,int initCouple
             couplet = mask->readCouplet();
             maskPrevSection = maskSection;
             maskSection = getSection(maskSection,couplet);
+            delete couplet;
             delete maskPrevSection;
         }
         
@@ -1371,11 +1317,13 @@ nDEVM<valueType> * nDEVM<valueType>::maskIntersection(nDEVM* mask,int initCouple
         couplet = getCouplet(rPrevSection,rCurrentSection);
         
         if(!couplet->isEmpty()){
+            couplet->trieTree->isCouplet = true;
             couplet->setCoord(coord);
 
 //            result->putCouplet(couplet);
             // El resultado se guarda en el nDEVM actual...
             result->putCouplet(couplet);
+            delete couplet;
         }
         
         delete rPrevSection;    //Liberar Memoria
@@ -1383,10 +1331,12 @@ nDEVM<valueType> * nDEVM<valueType>::maskIntersection(nDEVM* mask,int initCouple
     }
     mask->resetCoupletIndex();
     result->resetCoupletIndex();
-    resetCoupletIndex();
+//    resetCoupletIndex();
+    
     delete animSection;
     delete maskSection;
     delete rCurrentSection;
+    
     return result;
 }
 
@@ -1437,18 +1387,18 @@ void nDEVM<valueType>::maskDimReset(int dim){
 }
 
 template<typename valueType>
-nDEVM<valueType> * nDEVM<valueType>::maskAnimConv(nDEVM * mask,int initCouplet,int endCouplet,
+void nDEVM<valueType>::maskAnimConv(nDEVM * mask,int initCouplet,int endCouplet,
         valueType _xMax,valueType _yMax){
     animMax[0] = endCouplet - initCouplet;
     animMax[1] = _xMax;
     animMax[2] = _yMax;
     
-    nDEVM<valueType> *animPrevResult = new nDEVM<valueType>();
-    nDEVM<valueType> *animResult=  new nDEVM<valueType>();
-    nDEVM<valueType> *prevResult = new nDEVM<valueType>();
+//    nDEVM<valueType> *animPrevResult = new nDEVM<valueType>();
+//    nDEVM<valueType> *animResult=  new nDEVM<valueType>();
+    nDEVM<valueType> *prevResult;// = new nDEVM<valueType>();
     nDEVM<valueType> *currentResult = new nDEVM<valueType>();
     
-//    int i = 0;
+    int i = 0;
     
     // Recorrido en T
     while(mask->maskMax[0] <= animMax[0]){
@@ -1459,15 +1409,23 @@ nDEVM<valueType> * nDEVM<valueType>::maskAnimConv(nDEVM * mask,int initCouplet,i
             // - Recorrido en x
             while(mask->maskMax[1] <= _xMax){
                 cout<<"Mask xMin: "<<mask->maskMin[1]<<", xMax: "<<mask->maskMax[1]<<endl;
+                
                 prevResult = currentResult;
                 currentResult = maskIntersection(mask,initCouplet,endCouplet);
+                
+//                cout<<"subSeq: "<<i<<endl;
+                cout<<"subSeq: "<<i<<", DC: "<<
+                        currentResult->discreteCompactness(mask->LcMin,mask->LcMax)<<endl;
+//                cout<<"subSeq: "<<i<<", Content: "<<
+//                        currentResult->content()<<endl;
+                
                 delete prevResult;
 
-                animPrevResult = animResult;
-                animResult = animResult->booleanOperation(currentResult,"union");
-                delete animPrevResult;
-
+//                animPrevResult = animResult;
+//                animResult = animResult->booleanOperation(currentResult,"union");
+//                delete animPrevResult;
                 mask->EVMTraslation(2,26);
+                i++;
             }
             mask->maskDimReset(2);
             mask->EVMTraslation(3,27);
@@ -1476,67 +1434,77 @@ nDEVM<valueType> * nDEVM<valueType>::maskAnimConv(nDEVM * mask,int initCouplet,i
         mask->maskDimReset(3);
         mask->EVMTraslation(1,5);
     }
+    mask->maskDimReset(1);
+    delete currentResult;
+    currentResult = NULL;
 
-    int i = 0;
-    nDEVM<valueType> *couplet;
-    nDEVM<valueType> *currentSection,*prevSection;
-    currentSection= new nDEVM<valueType>();
-    
-    while(!animResult->endEVM()){
-        couplet = animResult->readCouplet();
-        prevSection = currentSection;
-        currentSection = getSection(prevSection,couplet);        
-        currentSection->saveEVM("maskSection",i);
-        
-        delete prevSection;
-        delete couplet;
-        i++;
-    }
-    animResult->resetCoupletIndex();
-    
-    return animResult;
+//    int i = 0;
+//    nDEVM<valueType> *couplet;
+//    nDEVM<valueType> *currentSection,*prevSection;
+//    currentSection= new nDEVM<valueType>();
+//    
+//    while(!animResult->endEVM()){
+//        couplet = animResult->readCouplet();
+//        prevSection = currentSection;
+//        currentSection = getSection(prevSection,couplet);        
+//        currentSection->saveEVM("maskSection",i);
+//        
+//        delete prevSection;
+//        delete couplet;
+//        i++;
+//    }
+//    animResult->resetCoupletIndex();
+//    
+//    return animResult;
 }
 
 template<typename valueType>
 valueType nDEVM<valueType>::content(){
     int dim = dimDepth();
-    return content(this, dim);
+    nDEVM<valueType> *p = this;
+    return content(&p, dim);
 }
 
 template<typename valueType>
-valueType nDEVM<valueType>::content(nDEVM *p, int n){
+valueType nDEVM<valueType>::content(nDEVM **p, int n){
     valueType cont = 0, coordC1,coordC2;
-    nDEVM *couplet1, *couplet2;
-    nDEVM *currentSection,*prevSection;
+    nDEVM<valueType> *couplet;
+    nDEVM<valueType> *currentSection,*prevSection;
     
-    if( p->isEmpty() ){
+    if( (*p)->isEmpty() ){
         return 0;
     }
     
     if(n == 1){
-        return p->length();
+        return (*p)->length();
     }
     
-    couplet1 = new nDEVM();
-    couplet2 = new nDEVM();
-    currentSection = new nDEVM();
+    prevSection = new nDEVM<valueType>();
     
-    coordC1 = p->getCoord();
-    couplet1 = p->readCouplet();
+    coordC1 = (*p)->getCoord();
+    couplet = (*p)->readCouplet();
     
-    while( !(p->endEVM()) ){
-        coordC2 = p->getCoord();
-        couplet2 = p->readCouplet();
-        prevSection = currentSection;
-        currentSection = getSection(prevSection,couplet1);
+    while( !((*p)->endEVM()) ){
+        coordC2 = (*p)->getCoord();
         
-        cont = cont + content(currentSection,n-1)*(coordC2 - coordC1);
+        currentSection = getSection(prevSection,couplet);
+
+        cont = cont + content(&currentSection,n-1)*(coordC2 - coordC1);
+        
         coordC1 = coordC2;
-        couplet1 = couplet2;
-        
+        delete couplet;
+        couplet = (*p)->readCouplet();
+
         delete prevSection;
+        prevSection = currentSection;
     }
-    p->resetCoupletIndex();
+    delete currentSection;
+    delete couplet;
+//    currentSection = NULL;
+//    couplet = NULL;
+//    currentCouplet = NULL;
+    
+    (*p)->resetCoupletIndex();
     return cont;
 }
 
@@ -1551,39 +1519,46 @@ valueType nDEVM<valueType>::length(){
 
 template<typename valueType>
 nDEVM<valueType> * nDEVM<valueType>::dimLeftShift(){
-    nDEVM<valueType> * newEVM = new nDEVM(trieTree->dimLeftShift());
+    nDEVM<valueType> * newEVM = new nDEVM<valueType>(trieTree->dimLeftShift());
     return newEVM;
 }
 
 template<typename valueType>
 valueType nDEVM<valueType>::internalContacts(nDEVM * p,int n){
     nDEVM<valueType> * couplet;
-    nDEVM<valueType> * sectioni,*sectionj;
+    nDEVM<valueType> * prevSection,*currentSection;
     nDEVM<valueType> * sectionInt;
     valueType c1Coord,c2Coord,nCoords;
     valueType iContacts = 0;
     
-    sectioni = new nDEVM<valueType>();
+    prevSection = new nDEVM<valueType>();
     c1Coord = p->getCoord();
     couplet = p->readCouplet();
     
     while( !(p->endEVM()) ){
-        sectionj = getSection(sectioni,couplet);
+        currentSection = getSection(prevSection,couplet);
         
         c2Coord = p->getCoord();
         nCoords = c2Coord - c1Coord - 1;
         
-        iContacts = iContacts + nCoords * content(sectionj,n-1);
+        iContacts = iContacts + nCoords * content(&currentSection,n-1);
         
-        sectionInt = sectioni->booleanOperation(sectionj,"intersection",n-1);
-        iContacts = iContacts + content(sectionInt,n-1);
-        delete sectioni;
-        sectioni = sectionj;
+        sectionInt = prevSection->booleanOperation(currentSection,"intersection",n-1);
+        iContacts = iContacts + content(&sectionInt,n-1);
+        
+        delete sectionInt;
+        delete prevSection;
+        delete couplet;
+        
+        prevSection = currentSection;
+        
         c1Coord = c2Coord;
         couplet = p->readCouplet();
     }
     p->resetCoupletIndex();
-    delete sectionj;
+    delete currentSection;
+    delete couplet;
+    
     return iContacts;
 }    
 
@@ -1591,18 +1566,21 @@ template<typename valueType>
 valueType nDEVM<valueType>::totalInternalContacts(){
     int dim = dimDepth();
     valueType Lc = 0;
-    nDEVM<valueType> *prevP = new nDEVM<valueType>();
-    nDEVM<valueType> *p = this;
+    nDEVM<valueType> *p;
+    nDEVM<valueType> *prevP;
     
-    Lc = Lc + internalContacts(p,dim);
+    Lc = Lc + internalContacts(this,dim);
     
+    p = dimLeftShift();
+
     for(int i = 0; i < (dim-1); i++){
-        p = p->dimLeftShift();
-        delete prevP;
         Lc = Lc + internalContacts(p,dim);
         prevP = p;
+        p = p->dimLeftShift();
+        
+        delete prevP;
     }
-    delete prevP;
+    delete p;
     return Lc;
 }
 

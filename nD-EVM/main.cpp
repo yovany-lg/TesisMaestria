@@ -142,8 +142,8 @@ int main(int argc, char** argv) {
 //    testSaving();
     
     // - Mask Tests
-//    maskTest();
-    maskFrameComparison();
+    maskTest();
+//    maskFrameComparison();
     
     // - Content Tests
 //    contentTest();
@@ -153,6 +153,9 @@ int main(int argc, char** argv) {
     return 0;
 }
 
+/**
+ * Pruebas del cambio de orden en los ejes...
+ */
 void shiftTest(){
     nDEVM<unsigned int> *mask = new nDEVM<unsigned int>();
     mask->maskInit(100,81,3,1,1);
@@ -176,6 +179,9 @@ void shiftTest(){
     shift->printEVM();
 }
 
+/**
+ * Pruebas del calculo de contenido de un EVM...
+ */
 void contentTest(){
     nDEVM<unsigned int> *evm2 = new nDEVM<unsigned int>();
     string fileName2 = "DataSets/Sedans/sedan1.raw";
@@ -194,6 +200,9 @@ void contentTest(){
     
 }
 
+/**
+ * Comparacion del resultado de la convolucion con la animacion original
+ */
 void maskFrameComparison(){
     nDEVM<unsigned int> * frame = new nDEVM<unsigned int>();
     nDEVM<unsigned int> * maskSection = new nDEVM<unsigned int>();
@@ -204,35 +213,49 @@ void maskFrameComparison(){
     
 }
 
+/**
+ * Inicializacion de la mascara y convolucion con la animacion...
+ */
 void maskTest(){
     nDEVM<unsigned int> *animMask =  new nDEVM<unsigned int>();
     nDEVM<unsigned int> *mask = new nDEVM<unsigned int>();
-//    nDEVM<unsigned int> *couplet;
-//    nDEVM<unsigned int> *result = new nDEVM<unsigned int>();
-    mask->maskInit(100,81,5,1,1);
-
-//    mask->printEVM();
-//    mask->EVMTranslation(3,10);
-//    cout<<"Tralation: "<<endl;
-//    mask->printEVM();
-
-    //    while(!mask->endEVM()){
-//        cout<<"Couplet: "<<mask->getCoord()<<endl;
-//        couplet = mask->readCouplet();
-//        couplet->printEVM();
-//    }
-//    mask->resetCoupletIndex();
+    mask->maskInit(100,100,5,1,1);
     
-//    result = result->maskIntersection(mask,1590,1631,360,243);
-//    animMask = animMask->booleanOperation(result,"union");
-
-//    mask->EVMTranslation(2,50);
-//    result = result->maskIntersection(mask,1590,1631,360,243);
-//    animMask = animMask->booleanOperation(result,"union");
-    animMask = animMask->maskAnimConv(mask,1590,1601,360,243);
+//    mask->EVMTraslation(2,100);
+//    animMask = animMask->maskIntersection(mask,1590,1601);
+//    
+//    int i = 0;
+//    nDEVM<unsigned int> *couplet;
+////    nDEVM<unsigned int> *currentSection,*prevSection;
+////    currentSection= new nDEVM<unsigned int>();
+//    
+//    while(!animMask->endEVM()){
+//        couplet = animMask->readCouplet();
+//        couplet->saveEVM("maskCouplet",i);
+////        prevSection = currentSection;
+////        currentSection = animMask->getSection(prevSection,couplet);        
+////        currentSection->saveEVM("maskSection",i);
+////        
+////        delete prevSection;
+////        delete couplet;
+//        i++;
+//    }
+//    animMask->resetCoupletIndex();
+//    
+//    for(int i = 0; i <= 5; i++){
+//        nDEVM<unsigned int> *frame = new nDEVM<unsigned int>();
+//        frame->readEVM("maskCouplet"+to_string(i));
+//        frame->EVMFile("maskCouplet",i);
+//        delete frame;
+//    }
+    
+    animMask->maskAnimConv(mask,1590,1601,360,243);
     
 }
 
+/**
+ * Almacenamiento del EVM en un archivo binario...
+ */
 void testSaving(){
     nDEVM<double> *evm1 = new nDEVM<double>();
     double inputKey [] = {1,1,1,2};
@@ -276,12 +299,14 @@ void testUnion(){
     //evm3->printTrie();
 }
 
+/**
+ * Cargar una secuencia de frames como una animacion...
+ */
 void testAnimationLoad(){
     nDEVM<unsigned int> *evm = new nDEVM<unsigned int>();
     evm->generateAnimation("Sequences/JackJack/frame",1590,1600);
     evm->frameSequence(1590,1601);
     return;
-//    evm->EVMFile("frame",0);
 }
 
 void testLoadEVMSeq(){

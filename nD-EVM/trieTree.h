@@ -32,6 +32,7 @@ class TrieTree {
 public:
     trieNode<valueType> *rootNode;
     trieNode<valueType> **coupletIndex;
+    bool isCouplet;
 
     TrieTree();
     TrieTree(trieNode<valueType> *node);
@@ -131,12 +132,14 @@ template <typename T> std::string to_string(T value)
 template<typename valueType> 
 TrieTree<valueType>::TrieTree() {
     rootNode = NULL;
+    isCouplet = false;
     resetCoupletIndex();
 }
 
 template<typename valueType> 
 TrieTree<valueType>::TrieTree(trieNode<valueType> *node) {
     rootNode = node;
+    isCouplet = false;
     resetCoupletIndex();
 }
 
@@ -146,7 +149,12 @@ TrieTree<valueType>::TrieTree(const TrieTree& orig) {
 
 template<typename valueType> 
 TrieTree<valueType>::~TrieTree() {
-    deleteTrie();    
+    if(!isCouplet){
+        deleteTrie();
+    }else{
+        rootNode = NULL;
+    }
+//    this = NULL;
 }
 
 template<typename valueType> 
@@ -569,7 +577,7 @@ TrieTree<valueType> * TrieTree<valueType>::XOR(TrieTree *otherTrie){
     //Se realiza la inserción de los elementos del segundo trie en el clon del primero.
     XOR(&xorTrie,&(otherTrie->rootNode),&key,0);
 
-    delete key;
+    delete [] key;
 
     return xorTrie;
 }
@@ -632,6 +640,7 @@ TrieTree<valueType> *TrieTree<valueType>::readCouplet(){
     if(!endTrie()){
         TrieTree *couplet = new TrieTree((*coupletIndex)->nextDim);
         coupletIndex = &((*coupletIndex)->nextTrieNode);
+        couplet->isCouplet = true;
         return couplet;
     }else
         return NULL;
@@ -1678,7 +1687,7 @@ void TrieTree<valueType>::printTrie(){
     valueType * testKey = new valueType[dim];
     printTrie(rootNode,&testKey,0);
     
-    delete testKey;
+    delete [] testKey;
 }
 
 template<typename valueType> 
@@ -1767,7 +1776,7 @@ void TrieTree<valueType>::saveTrie(string fileName){
     if(!isEmpty())
         saveTrie(rootNode,&testKey,0,&outputFile);
     
-    delete testKey;
+    delete [] testKey;
     outputFile.close();
 }
 
@@ -1798,12 +1807,12 @@ void TrieTree<valueType>::readTrie(string fileName){
         return;
     }
     
-    cout<<"Leyendo el archivo: "<<fileName<<endl;
+//    cout<<"Leyendo el archivo: "<<fileName<<endl;
     
     char buffer[6];
 //    cout<<"tamano del buffer: "<<sizeof(buffer)<<endl;
     if(fileInput.read((char *)(buffer), sizeof(buffer))){
-        cout<<buffer<<endl;   // - Header
+//        cout<<buffer<<endl;   // - Header
     }
     
     int dim = buffer[0] - '0';
@@ -1813,7 +1822,7 @@ void TrieTree<valueType>::readTrie(string fileName){
 //        cout << vectorToString(&testKey,dim)<<endl; 
         insertVertex(testKey,dim);
     }
-        
+    delete [] testKey;
     fileInput.close();
 }
 
@@ -1902,7 +1911,7 @@ TrieTree<valueType> * TrieTree<valueType>::dimLeftShift(){
      
     dimLeftShift(rootNode,&testKey,0,0,&result);
     
-    delete testKey;
+    delete [] testKey;
     
     return result;
 }
