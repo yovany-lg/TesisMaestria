@@ -1781,7 +1781,8 @@ void TrieTree<valueType>::saveTrie(string fileName){
 }
 
 template<typename valueType> 
-void TrieTree<valueType>::saveTrie(trieNode<valueType> *currentNode,valueType **key, int dim,ofstream *outputFile){
+void TrieTree<valueType>::saveTrie(trieNode<valueType> *currentNode,valueType **key, int dim,
+        ofstream *outputFile){
     if((currentNode) == NULL){
 //        cout<<"Dim: "<<(sizeof(valueType))<<endl;    // - 8 bytes for valueType type
         outputFile->write((char *) *key,(sizeof(valueType))*dim);

@@ -8,21 +8,24 @@
 #ifndef SOM_H
 #define	SOM_H
 
+#include <vector>
 #include "DataSet.h"
 
 //typedef double * weights;
 
 class SOM {
 public:
+    vector<double> patterns;
     double **weightMatrix;
-    DataSet *dataSet;
+//    DataSet *dataSet;
     int neurons;
     int dimension;
     double sigma,t1;
-    double niu,t2;
+    double eta,t2;
     int iter;
     
-    SOM(DataSet *_dataSet,int _dim,int _neurons);
+//    SOM(DataSet *_dataSet,int _dim,int _neurons);
+    SOM(int _neurons);
     SOM(const SOM& orig);
     virtual ~SOM();
     void initialize();
@@ -35,6 +38,11 @@ public:
     double effectiveWidth(int n);
     double learnRate(int n);
     void dataSetClustering();
+    void loadBinFile(string fileName);
+    string vectorToString(double *vector,int size);
+    void printWeights();
+    
+    unsigned int * clustering();
 private:
 
 };

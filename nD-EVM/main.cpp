@@ -18,6 +18,8 @@
 
 #include "nDEVM.h"
 
+#include <limits>       // std::numeric_limits
+
 void test2D(int size);
 string vectorToString(int **vector,int size);
 void hvUnion2D(int **hv1,int **hv2, int **result,int size,ofstream *resultFile);
@@ -42,6 +44,8 @@ void maskTest();
 void maskFrameComparison();
 void contentTest();
 void shiftTest();
+void dcFiles();
+void SOMTests();
 
 typedef unsigned long long timestamp_t;
 
@@ -142,7 +146,7 @@ int main(int argc, char** argv) {
 //    testSaving();
     
     // - Mask Tests
-    maskTest();
+//    maskTest();
 //    maskFrameComparison();
     
     // - Content Tests
@@ -150,7 +154,49 @@ int main(int argc, char** argv) {
     
     // - Shift Tests
 //    shiftTest();
+
+    // - DC Files tests
+//    dcFiles();
+    
+    // - SOM Tests
+    SOMTests();
+//  std::cout << std::boolalpha;
+//  std::cout << "Minimum value for float: " << std::numeric_limits<float>::min() << '\n';
+//  std::cout << "Maximum value for float: " << std::numeric_limits<float>::max() << '\n';
+//  std::cout << "float is signed: " << std::numeric_limits<float>::is_signed << '\n';
+//  std::cout << "Non-sign bits in float: " << std::numeric_limits<float>::digits << '\n';
+//  std::cout << "float has infinity: " << std::numeric_limits<float>::has_infinity << '\n';
     return 0;
+}
+
+void SOMTests(){
+    nDEVM<unsigned int> *evmClustering = new nDEVM<unsigned int>();
+    evmClustering->subAnimClustering(10);
+//    SOM *som = new SOM(10);
+//    som->loadBinFile("dcFiles/dcFile.dc");
+//    som->initialize();
+//    som->sampling();
+//    som->dataSetClustering();    
+    delete evmClustering;
+}
+
+void dcFiles(){
+    string fileName = "dcFiles/dcFile.dc";
+    ifstream fileInput;
+    fileInput.open(fileName.c_str(), ios_base::in |ios_base::binary); // binary file
+    double *dcValue = new double;
+    
+    if (! fileInput.is_open()){
+        cout<<"El archivo: "<<fileName<<" no pudo abrirse..."<<endl;
+        return;
+    }
+
+    while(fileInput.read((char *) dcValue, sizeof(double))){
+        cout <<"DC: "<<*dcValue <<endl; 
+    }
+    fileInput.close();
+    delete dcValue;
+    
 }
 
 /**

@@ -7,18 +7,17 @@
 
 #include "SOM.h"
 
-SOM::SOM(DataSet *_dataSet,int _dim,int _neurons) {
-    dataSet = _dataSet;
-    dimension = _dim;
+SOM::SOM(int _neurons) {
+//    dataSet = _dataSet;
+    dimension = 1;
     neurons = _neurons;
-    iter = 400;
-    niu = 0.25;t2 = 500.0;
-    sigma = 0.12*neurons;
+    iter = 10;
+    eta = 0.01;t2 = 500.0;
+    sigma = 0.001*neurons;
     t1 = 500.0/log10(sigma);
 
     weightMatrix = new double*[neurons]; 
-    for(int i = 0 ; i<neurons;i++)
-    {
+    for(int i = 0 ; i<neurons;i++){
         weightMatrix[i] = new double[dimension]; //Considerando el bias en la primera posicion
         for(int j = 0; j<(dimension);j++)
         {
@@ -37,14 +36,21 @@ SOM::~SOM() {
 void SOM::initialize(){
 //    Random randomNumbers = new Random();
 //    List<Integer> keys = new ArrayList<Integer>(dataSet.keySet());
-    int setSize = dataSet->patterns.size();
+//    int setSize = dataSet->patterns.size();
+    int setSize = patterns.size();
+
     int randKey;
     srand (time(NULL));
-    for(int i = 0; i < neurons; i++)
-    {
+    
+    float randStep = 1.0/10000; //Pasos discretos
+    
+    for(int i = 0; i < neurons; i++){
         randKey = rand() % setSize;
         for(int j = 0; j < dimension; j++){
-            weightMatrix[i][j] = dataSet->patterns[randKey]->inputs[j];
+//            double randValue = (rand() % 10000)*randStep;
+            weightMatrix[i][j] = patterns[randKey];
+//            weightMatrix[i][j] = randValue;
+            cout<<"Init Weight["<<i<<"]: "<<weightMatrix[i][j]<<endl;
         }
     }
 }
@@ -54,14 +60,21 @@ void SOM::initialize(){
  */
 void SOM::sampling(){
     int winner,dataSize;
-    dataSize = dataSet->patterns.size();
+    dataSize = patterns.size();
     for(int i = 0; i < iter; i++){
         
         for(int j = 0; j < dataSize; j++){
-            winner = minDistanceNeuron(dataSet->patterns[j]->inputs);
-            weightUpdates(dataSet->patterns[j]->inputs,winner,i);            
+            winner = minDistanceNeuron(&(patterns[j]));
+            weightUpdates(&(patterns[j]),winner,i);            
+//            cout<<"Winner: "<<vectorToString(&(patterns[j]),dimension)
+//                    <<" => "<< winner<<endl;
         }
+//        cout<<"----------"<<endl;
+//        printWeights();
+//        return;
     }
+    cout<<"----------Final Weights"<<endl;
+    printWeights();
 }
 
 int SOM::minDistanceNeuron(double *pattern){
@@ -100,6 +113,7 @@ double SOM::vectorDistance(double *v1,double *v2){
 }
 
 void SOM::weightUpdates(double *data,int winnerKey, int n){
+//    cout<<"Data: "<<data[0]<<endl;
     for(int i = 0; i < neurons; i++){
         weightUpdate(data,i,winnerKey,n);
     }
@@ -133,16 +147,65 @@ double SOM::effectiveWidth(int n){
 }
 
 double SOM::learnRate(int n){
-    return niu*exp(-((double) n)/t2);
+    return eta*exp(-((double) n)/t2);
 }
 
 void SOM::dataSetClustering(){
-    int dataSize = dataSet->patterns.size();
+    int dataSize = patterns.size();
     int winner;
     cout<<endl<<"SOM Clustering:"<<endl;
     for(int i = 0; i < dataSize; i++){
-        winner = minDistanceNeuron(dataSet->patterns[i]->inputs);
-        cout<<dataSet->patterns[i]->inputs[2]<<','<<dataSet->patterns[i]->inputs[3]
-                <<','<<winner+1<<endl;
+        winner = minDistanceNeuron(&patterns[i]);
+        cout<<patterns[i]<<','<<winner+1<<endl;
     }
+}
+
+unsigned int * SOM::clustering(){
+    int dataSize = patterns.size();
+    int winner;
+    cout<<endl<<"SOM Clustering:"<<endl;
+    for(int i = 0; i < dataSize; i++){
+        winner = minDistanceNeuron(&patterns[i]);
+        cout<<patterns[i]<<','<<winner+1<<endl;
+    }    
+}
+
+void SOM::printWeights(){
+    for(int i = 0; i < neurons;i++){
+        cout<<"Weight["<<i<<"]: "<<vectorToString(weightMatrix[i],dimension)<<endl;
+    }
+}
+
+void SOM::loadBinFile(string fileName){
+    ifstream fileInput;
+    fileInput.open(fileName.c_str(), ios_base::in |ios_base::binary); // binary file
+    double *dcValue = new double;
+    
+    if (! fileInput.is_open()){
+        cout<<"El archivo: "<<fileName<<" no pudo abrirse..."<<endl;
+        return;
+    }
+
+    int i = 0;
+    while(fileInput.read((char *) dcValue, sizeof(double))){
+        patterns.push_back(*dcValue);
+        cout <<"DC["<<i<<"]: "<<*dcValue <<endl; 
+        i++;
+    }
+    fileInput.close();
+    delete dcValue;
+}
+
+template <typename T> std::string to_string(T value)
+{
+	std::ostringstream os ;
+	os << value ;
+	return os.str() ;
+}
+
+string SOM::vectorToString(double *vector,int size){
+    string output="(  ";
+    for(int i =0;i<size;i++)
+        output+=to_string(vector[i])+"  ";
+    return output+")";
 }

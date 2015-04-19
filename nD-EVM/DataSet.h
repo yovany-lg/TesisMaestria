@@ -49,6 +49,7 @@ public:
     void addPattern(double *inputVector, double *outputVector);
     void addPattern(Pattern *pattern);
     void loadFile(string fileName);
+    void loadBinFile(string fileName);
     void normalize();
     string vectorToString(double *vector,int size);
     void printPattern(Pattern *patt);

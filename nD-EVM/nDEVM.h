@@ -25,10 +25,10 @@ class nDEVM {
 private:
 public:
     TrieTree<valueType> *trieTree;
-    valueType animMax[3];
     valueType maskMax[3];
     valueType maskMin[3];
     valueType LcMin = 0, LcMax = 0;
+    SOM *som;
     
     nDEVM();
     nDEVM(TrieTree<valueType> *trie);
@@ -167,6 +167,9 @@ public:
     
     void saveEVM(string fileName,int index);
     void readEVM(string fileName);
+    
+    // - SOM Clustering
+    void subAnimClustering(int clusters);
 };
 
 #endif	/* TRIETREE_H */
@@ -1015,7 +1018,6 @@ nDEVM<valueType>* nDEVM<valueType>::differenceOperation(nDEVM* section1, nDEVM* 
     nDEVM<valueType> *result = new nDEVM<valueType>(resultTrie);
 
     delete tempTrie;
-    resultTrie = NULL;
     
     return result;
 }
@@ -1038,7 +1040,6 @@ nDEVM<valueType>* nDEVM<valueType>::xorOperation(nDEVM* section1, nDEVM* section
     nDEVM<valueType> *result = new nDEVM<valueType>(resultTrie);
 
     delete tempTrie;
-    resultTrie = NULL;
 
     return result;
 }
@@ -1134,6 +1135,7 @@ void nDEVM<valueType>::generateAnimation(string framePrefix, valueType initFrame
         diffFrame->saveEVM("frameCouplet",time); 
 
         delete prevFrame;
+        delete diffFrame;
         prevFrame = currentFrame;
     }
     prevFrame->saveEVM("frameCouplet",time+1); 
@@ -1389,9 +1391,16 @@ void nDEVM<valueType>::maskDimReset(int dim){
 template<typename valueType>
 void nDEVM<valueType>::maskAnimConv(nDEVM * mask,int initCouplet,int endCouplet,
         valueType _xMax,valueType _yMax){
-    animMax[0] = endCouplet - initCouplet;
-    animMax[1] = _xMax;
-    animMax[2] = _yMax;
+    valueType maxFrames = endCouplet - initCouplet;
+
+    string fileName = "dcFiles/dcFile.dc";
+    ofstream outputFile( fileName.c_str(),ios_base::out|ios_base::binary );
+    if ( ! outputFile.is_open() ){    
+        cout << "El archivo no se pudo abrir!" << '\n';    
+        return;
+    } 
+//    float dcValue = 0;
+    double *dcPtr = new double;
     
 //    nDEVM<valueType> *animPrevResult = new nDEVM<valueType>();
 //    nDEVM<valueType> *animResult=  new nDEVM<valueType>();
@@ -1401,21 +1410,25 @@ void nDEVM<valueType>::maskAnimConv(nDEVM * mask,int initCouplet,int endCouplet,
     int i = 0;
     
     // Recorrido en T
-    while(mask->maskMax[0] <= animMax[0]){
-        cout<<"Mask tMin: "<<mask->maskMin[0]<<", tMax: "<<mask->maskMax[0]<<endl;
+    while(mask->maskMax[0] <= maxFrames){
+//        cout<<"Mask tMin: "<<mask->maskMin[0]<<", tMax: "<<mask->maskMax[0]<<endl;
         // - Recorrido en y
         while(mask->maskMax[2] <= _yMax){
-            cout<<"Mask yMin: "<<mask->maskMin[2]<<", yMax: "<<mask->maskMax[2]<<endl;
+//            cout<<"Mask yMin: "<<mask->maskMin[2]<<", yMax: "<<mask->maskMax[2]<<endl;
             // - Recorrido en x
             while(mask->maskMax[1] <= _xMax){
-                cout<<"Mask xMin: "<<mask->maskMin[1]<<", xMax: "<<mask->maskMax[1]<<endl;
+//                cout<<"Mask xMin: "<<mask->maskMin[1]<<", xMax: "<<mask->maskMax[1]<<endl;
                 
                 prevResult = currentResult;
                 currentResult = maskIntersection(mask,initCouplet,endCouplet);
                 
 //                cout<<"subSeq: "<<i<<endl;
-                cout<<"subSeq: "<<i<<", DC: "<<
-                        currentResult->discreteCompactness(mask->LcMin,mask->LcMax)<<endl;
+//                cout<<"subSeq: "<<i<<", DC: "<<
+//                        currentResult->discreteCompactness(mask->LcMin,mask->LcMax)<<endl;
+
+                *dcPtr = currentResult->discreteCompactness(mask->LcMin,mask->LcMax);
+                cout<<"subSeq: "<<i<<", DC: "<<*dcPtr<<endl;
+                outputFile.write((char *) dcPtr,sizeof(double));
 //                cout<<"subSeq: "<<i<<", Content: "<<
 //                        currentResult->content()<<endl;
                 
@@ -1437,6 +1450,7 @@ void nDEVM<valueType>::maskAnimConv(nDEVM * mask,int initCouplet,int endCouplet,
     mask->maskDimReset(1);
     delete currentResult;
     currentResult = NULL;
+    outputFile.close();
 
 //    int i = 0;
 //    nDEVM<valueType> *couplet;
@@ -1589,4 +1603,14 @@ double nDEVM<valueType>::discreteCompactness(valueType lMin,valueType lMax){
     valueType Lc = totalInternalContacts();
     
     return (double)(Lc - lMin)/(lMax - lMin);
+}
+
+template<typename valueType>
+void nDEVM<valueType>::subAnimClustering(int clusters){
+    string fileName = "dcFiles/dcFile.dc";    
+    som = new SOM(clusters);
+    som->loadBinFile(fileName);
+    som->initialize();
+    som->sampling();
+    som->dataSetClustering();    
 }
