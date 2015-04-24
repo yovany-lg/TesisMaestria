@@ -42,7 +42,7 @@ public:
     string vectorToString(double *vector,int size);
     void printWeights();
     
-    unsigned int * clustering();
+    void clustering();
 private:
 
 };

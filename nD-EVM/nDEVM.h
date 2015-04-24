@@ -170,6 +170,9 @@ public:
     
     // - SOM Clustering
     void subAnimClustering(int clusters);
+    void clusterContent(int cluster);
+    void clusterContent(int cluster, nDEVM * mask,int initCouplet,int endCouplet,
+            valueType _xMax,valueType _yMax);
 };
 
 #endif	/* TRIETREE_H */
@@ -1420,7 +1423,7 @@ void nDEVM<valueType>::maskAnimConv(nDEVM * mask,int initCouplet,int endCouplet,
 //                cout<<"Mask xMin: "<<mask->maskMin[1]<<", xMax: "<<mask->maskMax[1]<<endl;
                 
                 prevResult = currentResult;
-                currentResult = maskIntersection(mask,initCouplet,endCouplet);
+                currentResult = maskIntersection(mask,initCouplet,endCouplet+1);
                 
 //                cout<<"subSeq: "<<i<<endl;
 //                cout<<"subSeq: "<<i<<", DC: "<<
@@ -1437,15 +1440,15 @@ void nDEVM<valueType>::maskAnimConv(nDEVM * mask,int initCouplet,int endCouplet,
 //                animPrevResult = animResult;
 //                animResult = animResult->booleanOperation(currentResult,"union");
 //                delete animPrevResult;
-                mask->EVMTraslation(2,26);
+                mask->EVMTraslation(2,5);
                 i++;
             }
             mask->maskDimReset(2);
-            mask->EVMTraslation(3,27);
+            mask->EVMTraslation(3,5);
         }
         mask->maskDimReset(2);
         mask->maskDimReset(3);
-        mask->EVMTraslation(1,5);
+        mask->EVMTraslation(1,1);
     }
     mask->maskDimReset(1);
     delete currentResult;
@@ -1607,10 +1610,110 @@ double nDEVM<valueType>::discreteCompactness(valueType lMin,valueType lMax){
 
 template<typename valueType>
 void nDEVM<valueType>::subAnimClustering(int clusters){
-    string fileName = "dcFiles/dcFile.dc";    
+    string fileName = "dcFiles/dcFile_22_04_2015.dc";    
     som = new SOM(clusters);
     som->loadBinFile(fileName);
     som->initialize();
     som->sampling();
-    som->dataSetClustering();    
+    som->clustering();    
+    delete som;
+}
+
+template<typename valueType>
+void nDEVM<valueType>::clusterContent(int cluster){
+    string fileName = "clustering/cluster"+to_string(cluster)+".idx";
+    ifstream fileInput;
+    
+    fileInput.open(fileName.c_str(), ios_base::in |ios_base::binary); // binary file
+    if (! fileInput.is_open()){
+        cout<<"El archivo: "<<fileName<<" no pudo abrirse..."<<endl;
+        return;
+    }
+    
+    unsigned int *idx = new unsigned int;
+
+    int i = 0;
+    
+    cout<<"Cluster #"<<cluster<<" Content:"<<endl;
+    while(fileInput.read((char *) idx, sizeof(unsigned int))){
+        cout <<"Seq["<<i<<"]: "<<*idx <<endl; 
+        i++;
+    }
+    fileInput.close();
+    delete idx;
+    
+}
+
+template<typename valueType>
+void nDEVM<valueType>::clusterContent(int cluster, nDEVM * mask,int initCouplet,int endCouplet,
+        valueType _xMax,valueType _yMax){
+    valueType xCount = 71, xShift;
+    valueType yCount = 47, yShift;
+    valueType totalCount = xCount * yCount, tShift;
+    valueType steps = 5;
+
+    nDEVM<valueType> *prevResult;// = new nDEVM<valueType>();
+    nDEVM<valueType> *currentResult = new nDEVM<valueType>();
+    nDEVM<valueType> *finalResult = new nDEVM<valueType>();
+    
+    string fileName = "clustering/cluster"+to_string(cluster)+".idx";
+    ifstream fileInput;
+    
+    fileInput.open(fileName.c_str(), ios_base::in |ios_base::binary); // binary file
+    if (! fileInput.is_open()){
+        cout<<"El archivo: "<<fileName<<" no pudo abrirse..."<<endl;
+        return;
+    }
+    
+    unsigned int *idx = new unsigned int;
+
+    unsigned int i = 0;
+    
+    cout<<"Cluster #"<<cluster<<" Content:"<<endl;
+    while(fileInput.read((char *) idx, sizeof(unsigned int))){
+        tShift = (unsigned int) (*idx)/totalCount;
+        yShift = (unsigned int) ( (*idx) - (tShift * totalCount) )/xCount;
+        xShift = (*idx) - (tShift * totalCount) - yShift*xCount;
+        cout <<"Seq["<<i<<"]: "<<*idx<<", tShift: "<<tShift<<", yShift: "<<yShift
+                <<", xShift: "<<xShift<<endl; 
+
+        mask->EVMTraslation(1,tShift);
+        mask->EVMTraslation(2,xShift*steps);
+        mask->EVMTraslation(3,yShift*steps);
+        
+        prevResult = finalResult;
+        
+        currentResult = maskIntersection(mask,initCouplet,endCouplet+1);
+        finalResult = finalResult->booleanOperation(currentResult,"union");
+        
+        delete currentResult;
+        delete prevResult;
+        mask->maskDimReset(1);
+        mask->maskDimReset(2);
+        mask->maskDimReset(3);
+        i++;
+    }
+    
+    i = 0;
+    nDEVM<unsigned int> *couplet;
+    nDEVM<unsigned int> *currentSection,*prevSection;
+    currentSection= new nDEVM<unsigned int>();
+    
+    while(!finalResult->endEVM()){
+        couplet = finalResult->readCouplet();
+        couplet->EVMFile("clusterCouplet",i);
+        prevSection = currentSection;
+        currentSection = getSection(prevSection,couplet);        
+        currentSection->EVMFile("clusterSection",i);
+        
+        delete prevSection;
+        delete couplet;
+        i++;
+    }
+    delete currentSection;
+
+    finalResult->resetCoupletIndex();
+
+    fileInput.close();
+    delete idx;
 }

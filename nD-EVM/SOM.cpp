@@ -32,6 +32,12 @@ SOM::SOM(const SOM& orig) {
 SOM::~SOM() {
 }
 
+template <typename T> std::string to_string(T value)
+{
+	std::ostringstream os ;
+	os << value ;
+	return os.str() ;
+}
 
 void SOM::initialize(){
 //    Random randomNumbers = new Random();
@@ -160,14 +166,40 @@ void SOM::dataSetClustering(){
     }
 }
 
-unsigned int * SOM::clustering(){
-    int dataSize = patterns.size();
+void SOM::clustering(){
+    ofstream **files = NULL;
+    string fileName = "";
+    unsigned int dataSize = patterns.size();
     int winner;
+
+    files = new ofstream*[neurons];
+    
+    for(int i = 0; i < neurons; i++){
+        fileName = "clustering/cluster"+to_string(i)+".idx";
+        files[i] = new ofstream(fileName.c_str(),ios_base::out|ios_base::binary);
+
+        if ( ! files[i]->is_open() ){    
+            cout << "El archivo"<<fileName<<" no se pudo abrir!" << '\n';    
+            return;
+        } 
+        //        (*files)[i]
+    }
+
     cout<<endl<<"SOM Clustering:"<<endl;
-    for(int i = 0; i < dataSize; i++){
+    
+    for(unsigned int i = 0; i < dataSize; i++){
         winner = minDistanceNeuron(&patterns[i]);
+        
+        files[winner]->write((char *) &i,sizeof(unsigned int));
+        
         cout<<patterns[i]<<','<<winner+1<<endl;
     }    
+    
+    for(int i = 0; i < neurons; i++){
+        files[i]->close();
+        delete files[i];
+    }
+    delete [] files;
 }
 
 void SOM::printWeights(){
@@ -194,13 +226,6 @@ void SOM::loadBinFile(string fileName){
     }
     fileInput.close();
     delete dcValue;
-}
-
-template <typename T> std::string to_string(T value)
-{
-	std::ostringstream os ;
-	os << value ;
-	return os.str() ;
 }
 
 string SOM::vectorToString(double *vector,int size){

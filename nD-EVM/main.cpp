@@ -70,52 +70,6 @@ using namespace std;
  */
 int main(int argc, char** argv) {   
     // Pruebas Basicas de operaciones booleanas
-    
-//    nDEVM<double> * evm1 = new nDEVM<double>();
-//    double inputKey [] = {0};
-//    evm1->insertVertex(inputKey,1);
-//    double inputKey2 [] = {5};
-//    evm1->insertVertex(inputKey2,1);
-//    
-//    double inputKey3 [] = {8};
-//    evm1->insertVertex(inputKey3,1);
-//    double inputKey4 [] = {10};
-//    evm1->insertVertex(inputKey4,1);
-//    
-//    double inputKey5 [] = {10};
-//    evm1->insertVertex(inputKey5,1);
-//    double inputKey6 [] = {12};
-//    evm1->insertVertex(inputKey6,1);    
-    
-//    nDEVM<double> * evm2 = new nDEVM<double>();
-//    inputKey [0] = 3;
-//    evm2->insertVertex(inputKey,1);
-//    inputKey2 [0] = 7;
-//    evm2->insertVertex(inputKey2,1);
-//    
-//    inputKey3 [0] = 8;
-//    evm2->insertVertex(inputKey3,1);
-//    inputKey4 [0] = 10;
-//    evm2->insertVertex(inputKey4,1);
-//    
-//    evm2->booleanOperation(evm1,"xor",1)->printTrie();
-
-//    nDEVM<double> * evm1 = new nDEVM<double>();
-//    double inputKey [] = {1,1,1,2};
-//    evm1->insertVertex(inputKey,4);
-//    double inputKey2 [] = {1,1,1,3};
-//    evm1->insertVertex(inputKey2,4);    
-//    double inputKey3 [] = {1,3,2,0};
-//    evm1->insertVertex(inputKey3,4);
-//    double inputKey4 [] = {2,2,1,0};
-//    evm1->insertVertex(inputKey4,4);
-//    double inputKey5 [] = {3,0,0,3};
-//    evm1->insertVertex(inputKey5,4);
-//    double inputKey6 [] = {3,1,0,2};
-//    evm1->insertVertex(inputKey6,4);
-//    
-//    evm1->printTrie();
-//    evm1->deleteEVM();
 
     // Test de Operaciones Booleanas
 //    testOperations();
@@ -159,6 +113,7 @@ int main(int argc, char** argv) {
 //    dcFiles();
     
     // - SOM Tests
+//    cout<<"Mod: 100%2: "<< (unsigned int)4/187<<endl;
     SOMTests();
 //  std::cout << std::boolalpha;
 //  std::cout << "Minimum value for float: " << std::numeric_limits<float>::min() << '\n';
@@ -170,8 +125,17 @@ int main(int argc, char** argv) {
 }
 
 void SOMTests(){
+//    maskTest();
+    
+    
     nDEVM<unsigned int> *evmClustering = new nDEVM<unsigned int>();
-    evmClustering->subAnimClustering(10);
+    evmClustering->subAnimClustering(20);
+
+//    nDEVM<unsigned int> *mask = new nDEVM<unsigned int>();
+//    mask->maskInit(10,13,5,1,1);
+//    
+//    evmClustering->clusterContent(15,mask,1590,1595,360,243);
+
 //    SOM *som = new SOM(10);
 //    som->loadBinFile("dcFiles/dcFile.dc");
 //    som->initialize();
@@ -265,7 +229,7 @@ void maskFrameComparison(){
 void maskTest(){
     nDEVM<unsigned int> *animMask =  new nDEVM<unsigned int>();
     nDEVM<unsigned int> *mask = new nDEVM<unsigned int>();
-    mask->maskInit(100,100,5,1,1);
+    mask->maskInit(10,13,5,1,1);
     
 //    mask->EVMTraslation(2,100);
 //    animMask = animMask->maskIntersection(mask,1590,1601);
@@ -295,7 +259,7 @@ void maskTest(){
 //        delete frame;
 //    }
     
-    animMask->maskAnimConv(mask,1590,1601,360,243);
+    animMask->maskAnimConv(mask,1590,1595,360,243);
     
 }
 
