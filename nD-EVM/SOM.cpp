@@ -11,7 +11,7 @@ SOM::SOM(int _neurons) {
 //    dataSet = _dataSet;
     dimension = 1;
     neurons = _neurons;
-    iter = 10;
+    iter = 250;
     eta = 0.01;t2 = 500.0;
     sigma = 0.001*neurons;
     t1 = 500.0/log10(sigma);
@@ -192,7 +192,7 @@ void SOM::clustering(){
         
         files[winner]->write((char *) &i,sizeof(unsigned int));
         
-        cout<<patterns[i]<<','<<winner+1<<endl;
+//        cout<<patterns[i]<<','<<winner+1<<endl;
     }    
     
     for(int i = 0; i < neurons; i++){
@@ -200,6 +200,27 @@ void SOM::clustering(){
         delete files[i];
     }
     delete [] files;
+}
+
+void SOM::clusterContent(int n){
+    string fileName = "clustering/cluster"+to_string(n)+".idx";
+
+    ifstream fileInput;
+    fileInput.open(fileName.c_str(), ios_base::in |ios_base::binary); // binary file    
+
+    if (! fileInput.is_open()){
+        cout<<"El archivo: "<<fileName<<" no pudo abrirse..."<<endl;
+        return;
+    }
+    int i = 0;
+    unsigned int *dcValue = new unsigned int;
+    
+    while(fileInput.read((char *) dcValue, sizeof(unsigned int))){
+        patterns.push_back(*dcValue);
+        cout <<"idx["<<i<<"]: "<<*dcValue <<endl; 
+        i++;
+    }
+    delete dcValue;
 }
 
 void SOM::printWeights(){
@@ -221,7 +242,7 @@ void SOM::loadBinFile(string fileName){
     int i = 0;
     while(fileInput.read((char *) dcValue, sizeof(double))){
         patterns.push_back(*dcValue);
-        cout <<"DC["<<i<<"]: "<<*dcValue <<endl; 
+//        cout <<"DC["<<i<<"]: "<<*dcValue <<endl; 
         i++;
     }
     fileInput.close();

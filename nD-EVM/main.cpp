@@ -110,11 +110,11 @@ int main(int argc, char** argv) {
 //    shiftTest();
 
     // - DC Files tests
-//    dcFiles();
+    dcFiles();
     
     // - SOM Tests
-//    cout<<"Mod: 100%2: "<< (unsigned int)4/187<<endl;
-    SOMTests();
+//    cout<<"Mod: 0%2000: "<< 0 % 2000<<endl;
+//    SOMTests();
 //  std::cout << std::boolalpha;
 //  std::cout << "Minimum value for float: " << std::numeric_limits<float>::min() << '\n';
 //  std::cout << "Maximum value for float: " << std::numeric_limits<float>::max() << '\n';
@@ -127,14 +127,14 @@ int main(int argc, char** argv) {
 void SOMTests(){
 //    maskTest();
     
-    
     nDEVM<unsigned int> *evmClustering = new nDEVM<unsigned int>();
-    evmClustering->subAnimClustering(20);
+//    evmClustering->clusterContent(1);
+    evmClustering->subAnimClustering(10);
 
 //    nDEVM<unsigned int> *mask = new nDEVM<unsigned int>();
 //    mask->maskInit(10,13,5,1,1);
 //    
-//    evmClustering->clusterContent(15,mask,1590,1595,360,243);
+//    evmClustering->clusterContent(1,mask,1590,1595,360,243);
 
 //    SOM *som = new SOM(10);
 //    som->loadBinFile("dcFiles/dcFile.dc");
@@ -145,7 +145,33 @@ void SOMTests(){
 }
 
 void dcFiles(){
-    string fileName = "dcFiles/dcFile.dc";
+//    string fileName = "dcFiles/Part2/dcFile6.dc";
+//    ifstream fileInput;
+//    fileInput.open(fileName.c_str(), ios_base::in |ios_base::binary); // binary file
+//    double *dcValue = new double[756];
+//    
+//    if (! fileInput.is_open()){
+//        cout<<"El archivo: "<<fileName<<" no pudo abrirse..."<<endl;
+//        return;
+//    }
+//
+//    if(fileInput.read((char *) dcValue, sizeof(double) * 756)){
+//        fileName = "dcFiles/Part2/dcFilex.dcx";
+//        ofstream outputFile( fileName.c_str(),ios_base::out|ios_base::binary );
+//        if ( ! outputFile.is_open() ){    
+//            cout << "El archivo no se pudo abrir!" << '\n';    
+//            return;
+//        } 
+//        outputFile.write((char *) dcValue,sizeof(double) * 756);
+//        outputFile.close();
+////        cout <<"DC: "<<*dcValue <<endl; 
+//    }
+//
+//    
+//    fileInput.close();
+//    delete dcValue;
+
+    string fileName = "dcFiles/Part2/dcFilex.dcx";
     ifstream fileInput;
     fileInput.open(fileName.c_str(), ios_base::in |ios_base::binary); // binary file
     double *dcValue = new double;
@@ -154,13 +180,13 @@ void dcFiles(){
         cout<<"El archivo: "<<fileName<<" no pudo abrirse..."<<endl;
         return;
     }
-
+    int i = 0;
     while(fileInput.read((char *) dcValue, sizeof(double))){
-        cout <<"DC: "<<*dcValue <<endl; 
+        cout <<"DC["<<i<<"]: "<<*dcValue <<endl; 
+        i++;
     }
     fileInput.close();
     delete dcValue;
-    
 }
 
 /**
@@ -229,7 +255,8 @@ void maskFrameComparison(){
 void maskTest(){
     nDEVM<unsigned int> *animMask =  new nDEVM<unsigned int>();
     nDEVM<unsigned int> *mask = new nDEVM<unsigned int>();
-    mask->maskInit(10,13,5,1,1);
+//    animMask->dcContent(0);
+    mask->maskInit(10,13,3,1,1);
     
 //    mask->EVMTraslation(2,100);
 //    animMask = animMask->maskIntersection(mask,1590,1601);
@@ -258,8 +285,8 @@ void maskTest(){
 //        frame->EVMFile("maskCouplet",i);
 //        delete frame;
 //    }
-    
-    animMask->maskAnimConv(mask,1590,1595,360,243);
+    mask->EVMTraslation(1,2);
+    animMask->maskAnimConv(mask,780,880,320,213);
     
 }
 
@@ -314,8 +341,8 @@ void testUnion(){
  */
 void testAnimationLoad(){
     nDEVM<unsigned int> *evm = new nDEVM<unsigned int>();
-    evm->generateAnimation("Sequences/JackJack/frame",1590,1600);
-    evm->frameSequence(1590,1601);
+    evm->generateAnimation("Sequences/Pasillo/frame0",780,880);
+    evm->frameSequence(780,880);
     return;
 }
 

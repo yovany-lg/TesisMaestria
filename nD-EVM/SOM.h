@@ -42,6 +42,8 @@ public:
     string vectorToString(double *vector,int size);
     void printWeights();
     
+    void clusterContent(int n);
+    
     void clustering();
 private:
 

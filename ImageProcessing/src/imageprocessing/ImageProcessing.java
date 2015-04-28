@@ -25,7 +25,8 @@ public class ImageProcessing {
         // TODO code application logic here
         ImageProcessing test = new ImageProcessing();
         try {
-            test.imagesTest();
+//            test.imagesTest();
+            test.pasilloTest();
         } catch (IOException ex) {
             Logger.getLogger(ImageProcessing.class.getName()).log(Level.SEVERE, null, ex);
         } catch (InterruptedException ex) {
@@ -47,13 +48,44 @@ public class ImageProcessing {
         String fileName = "";
 //        String filePath = "Sequences\\JackJack\\";
 //        String command;
+        // - QVGA (320x240)- 
         for(int i = 1549; i <= 2000; i++){
             fileName = i+".bmp";
 //            command = "convert "+filePath+fileName+" -resize 50% -median 3 " +filePath+"frame"+fileName;
 //            command = "convert ";
 //            cout<<command<<endl;
 //            system(command.c_str());
-            stdin.println("C:\\ImageMagick\\convert.exe "+fileName+" -resize 50% -median 3"+ " frame"+fileName);
+            stdin.println("C:\\ImageMagick\\convert.exe "+fileName+" -scale 320x240"+ " frame"+fileName);
+        }
+        
+        
+        stdin.close();
+        int returnCode = p.waitFor();
+        System.out.println("Return code = " + returnCode);
+    }
+
+    public void pasilloTest() throws IOException, InterruptedException{
+        String[] command =
+        {
+            "cmd",
+        };
+        Process p = Runtime.getRuntime().exec(command);
+        new Thread(new SyncPipe(p.getErrorStream(), System.err)).start();
+        new Thread(new SyncPipe(p.getInputStream(), System.out)).start();
+        PrintWriter stdin = new PrintWriter(p.getOutputStream());
+
+        stdin.println("cd Sequences/Pasillo/");
+        String fileName = "";
+//        String filePath = "Sequences\\JackJack\\";
+//        String command;
+        // - QVGA (320x240)- 
+        for(int i = 780; i <= 880; i++){
+            fileName = "0"+i+".bmp";
+//            command = "convert "+filePath+fileName+" -resize 50% -median 3 " +filePath+"frame"+fileName;
+//            command = "convert ";
+//            cout<<command<<endl;
+//            system(command.c_str());
+            stdin.println("C:\\ImageMagick\\convert.exe "+fileName+" -resize 320x240 -median 3"+ " frame"+fileName);
         }
         
         

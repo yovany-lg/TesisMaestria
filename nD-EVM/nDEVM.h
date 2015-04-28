@@ -164,6 +164,7 @@ public:
     void maskDimReset(int dim);
     void maskAnimConv(nDEVM * mask,int initCouplet,int endCouplet,
         valueType _xMax,valueType _yMax);
+    void dcContent(int n);
     
     void saveEVM(string fileName,int index);
     void readEVM(string fileName);
@@ -1161,9 +1162,10 @@ void nDEVM<valueType>::frameSequence(int initCouplet,int endCouplet){
     for(int i = initCouplet; i < endCouplet; i++){
         nDEVM<valueType> * currentCouplet = new nDEVM<valueType>();
         currentCouplet->readEVM("frameCouplet" + to_string(i));
+        currentCouplet->EVMFile("frameCouplet",i);
         prevSection = currentSection;
         currentSection = getSection(prevSection,currentCouplet);
-        currentSection->saveEVM("frame",i);
+        currentSection->EVMFile("frameSection",i);
         
         delete prevSection;
         delete currentCouplet;
@@ -1395,23 +1397,24 @@ template<typename valueType>
 void nDEVM<valueType>::maskAnimConv(nDEVM * mask,int initCouplet,int endCouplet,
         valueType _xMax,valueType _yMax){
     valueType maxFrames = endCouplet - initCouplet;
-
-    string fileName = "dcFiles/dcFile.dc";
-    ofstream outputFile( fileName.c_str(),ios_base::out|ios_base::binary );
-    if ( ! outputFile.is_open() ){    
-        cout << "El archivo no se pudo abrir!" << '\n';    
-        return;
-    } 
-//    float dcValue = 0;
-    double *dcPtr = new double;
     
 //    nDEVM<valueType> *animPrevResult = new nDEVM<valueType>();
 //    nDEVM<valueType> *animResult=  new nDEVM<valueType>();
     nDEVM<valueType> *prevResult;// = new nDEVM<valueType>();
     nDEVM<valueType> *currentResult = new nDEVM<valueType>();
     
-    int i = 0;
+    string fileName = "";
+    double *dcPtr = new double;
+    unsigned int i = 0;
+    unsigned int dcIdx = 0;
     
+    fileName = "dcFiles/dcFile"+to_string(dcIdx)+".dc";
+    ofstream outputFile( fileName.c_str(),ios_base::out|ios_base::binary );
+    if ( ! outputFile.is_open() ){    
+        cout << "El archivo: "+fileName+" no se pudo abrir!!" << '\n';    
+        return;
+    }
+
     // Recorrido en T
     while(mask->maskMax[0] <= maxFrames){
 //        cout<<"Mask tMin: "<<mask->maskMin[0]<<", tMax: "<<mask->maskMax[0]<<endl;
@@ -1440,19 +1443,33 @@ void nDEVM<valueType>::maskAnimConv(nDEVM * mask,int initCouplet,int endCouplet,
 //                animPrevResult = animResult;
 //                animResult = animResult->booleanOperation(currentResult,"union");
 //                delete animPrevResult;
-                mask->EVMTraslation(2,5);
+                mask->EVMTraslation(2,2);
+                
                 i++;
+                if(i >= 2500){
+                    outputFile.close();
+                    dcIdx++;
+                    fileName = "dcFiles/dcFile"+to_string(dcIdx)+".dc";
+                    outputFile.open( fileName.c_str(),ios_base::out|ios_base::binary );
+                    if ( ! outputFile.is_open() ){    
+                        cout << "El archivo: "+fileName+" no se pudo abrir!!" << '\n';    
+                        return;
+                    }
+                    i = 0;
+                }
             }
             mask->maskDimReset(2);
-            mask->EVMTraslation(3,5);
+            mask->EVMTraslation(3,2);
         }
+        outputFile.close();
+        break;
         mask->maskDimReset(2);
         mask->maskDimReset(3);
         mask->EVMTraslation(1,1);
     }
     mask->maskDimReset(1);
     delete currentResult;
-    currentResult = NULL;
+    delete dcPtr; 
     outputFile.close();
 
 //    int i = 0;
@@ -1473,6 +1490,31 @@ void nDEVM<valueType>::maskAnimConv(nDEVM * mask,int initCouplet,int endCouplet,
 //    animResult->resetCoupletIndex();
 //    
 //    return animResult;
+}
+
+template<typename valueType>
+void nDEVM<valueType>::dcContent(int n){
+    string fileName = "dcFiles/dcFile"+to_string(n)+".dc";
+    ifstream fileInput;
+    
+    fileInput.open(fileName.c_str(), ios_base::in |ios_base::binary); // binary file
+    if (! fileInput.is_open()){
+        cout<<"El archivo: "<<fileName<<" no pudo abrirse..."<<endl;
+        return;
+    }
+    
+    double *idx = new double;
+
+    int i = 0;
+    
+    cout<<"dcFile#"<<n<<" Content:"<<endl;
+    while(fileInput.read((char *) idx, sizeof(double))){
+        cout <<"Seq["<<i<<"]: "<<*idx <<endl; 
+        i++;
+    }
+    fileInput.close();
+    delete idx;
+        
 }
 
 template<typename valueType>
@@ -1605,7 +1647,7 @@ template<typename valueType>
 double nDEVM<valueType>::discreteCompactness(valueType lMin,valueType lMax){
     valueType Lc = totalInternalContacts();
     
-    return (double)(Lc - lMin)/(lMax - lMin);
+    return ((double)(Lc - lMin))/((double)(lMax - lMin));
 }
 
 template<typename valueType>
