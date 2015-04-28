@@ -15,8 +15,8 @@
 
 class SOM {
 public:
-    vector<double> patterns;
-    double **weightMatrix;
+//    vector<double> patterns;
+    double **weightMatrix;  // - ELIMINAR
 //    DataSet *dataSet;
     int neurons;
     int dimension;
@@ -24,8 +24,11 @@ public:
     double eta,t2;
     int iter;
     
+    int parts,dcFiles;
+    
 //    SOM(DataSet *_dataSet,int _dim,int _neurons);
     SOM(int _neurons);
+    SOM(int _neurons,int _parts,int _dcFiles);
     SOM(const SOM& orig);
     virtual ~SOM();
     void initialize();

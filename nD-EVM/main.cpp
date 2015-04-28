@@ -110,11 +110,11 @@ int main(int argc, char** argv) {
 //    shiftTest();
 
     // - DC Files tests
-    dcFiles();
+//    dcFiles();
     
     // - SOM Tests
 //    cout<<"Mod: 0%2000: "<< 0 % 2000<<endl;
-//    SOMTests();
+    SOMTests();
 //  std::cout << std::boolalpha;
 //  std::cout << "Minimum value for float: " << std::numeric_limits<float>::min() << '\n';
 //  std::cout << "Maximum value for float: " << std::numeric_limits<float>::max() << '\n';
@@ -129,7 +129,7 @@ void SOMTests(){
     
     nDEVM<unsigned int> *evmClustering = new nDEVM<unsigned int>();
 //    evmClustering->clusterContent(1);
-    evmClustering->subAnimClustering(10);
+    evmClustering->subAnimClustering(20,3,7);
 
 //    nDEVM<unsigned int> *mask = new nDEVM<unsigned int>();
 //    mask->maskInit(10,13,5,1,1);

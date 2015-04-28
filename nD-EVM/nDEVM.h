@@ -170,7 +170,7 @@ public:
     void readEVM(string fileName);
     
     // - SOM Clustering
-    void subAnimClustering(int clusters);
+    void subAnimClustering(int clusters,int _parts,int _dcFiles);
     void clusterContent(int cluster);
     void clusterContent(int cluster, nDEVM * mask,int initCouplet,int endCouplet,
             valueType _xMax,valueType _yMax);
@@ -1651,10 +1651,10 @@ double nDEVM<valueType>::discreteCompactness(valueType lMin,valueType lMax){
 }
 
 template<typename valueType>
-void nDEVM<valueType>::subAnimClustering(int clusters){
-    string fileName = "dcFiles/dcFile_22_04_2015.dc";    
-    som = new SOM(clusters);
-    som->loadBinFile(fileName);
+void nDEVM<valueType>::subAnimClustering(int clusters,int _parts,int _dcFiles){
+//    string fileName = "dcFiles/dcFile_22_04_2015.dc";    
+    som = new SOM(clusters,_parts,_dcFiles);
+//    som->loadBinFile(fileName);
     som->initialize();
     som->sampling();
     som->clustering();    
