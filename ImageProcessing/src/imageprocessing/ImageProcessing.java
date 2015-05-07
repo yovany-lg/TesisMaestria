@@ -49,13 +49,13 @@ public class ImageProcessing {
 //        String filePath = "Sequences\\JackJack\\";
 //        String command;
         // - QVGA (320x240)- 
-        for(int i = 1549; i <= 2000; i++){
+        for(int i = 1549; i <= 1600; i++){
             fileName = i+".bmp";
 //            command = "convert "+filePath+fileName+" -resize 50% -median 3 " +filePath+"frame"+fileName;
 //            command = "convert ";
 //            cout<<command<<endl;
 //            system(command.c_str());
-            stdin.println("C:\\ImageMagick\\convert.exe "+fileName+" -scale 320x240"+ " frame"+fileName);
+            stdin.println("C:\\ImageMagick\\convert.exe "+fileName+" -median 3 -blur 3"+ " frame"+fileName);
         }
         
         
@@ -76,16 +76,17 @@ public class ImageProcessing {
 
         stdin.println("cd Sequences/Pasillo/");
         String fileName = "";
-//        String filePath = "Sequences\\JackJack\\";
+//        String filePath = "Sequences\\JackJack\\"; 
 //        String command;
         // - QVGA (320x240)- 
+        // - HQVGA (160x120)
         for(int i = 780; i <= 880; i++){
             fileName = "0"+i+".bmp";
 //            command = "convert "+filePath+fileName+" -resize 50% -median 3 " +filePath+"frame"+fileName;
 //            command = "convert ";
 //            cout<<command<<endl;
 //            system(command.c_str());
-            stdin.println("C:\\ImageMagick\\convert.exe "+fileName+" -resize 320x240 -median 3"+ " frame"+fileName);
+            stdin.println("C:\\ImageMagick\\convert.exe "+fileName+" -blur 3"+ " frame"+fileName);
         }
         
         

@@ -18,7 +18,8 @@
 
 #include "nDEVM.h"
 
-#include <limits>       // std::numeric_limits
+#include <limits>
+#include <thread>       // std::numeric_limits
 
 void test2D(int size);
 string vectorToString(int **vector,int size);
@@ -40,7 +41,7 @@ void testUnion();
 void testSaving();
 void testLoadEVMSeq();
 void testImages();
-void maskTest();
+void maskTest(int _xLength, int _yLength,int _timeLegth,int timeShift);
 void maskFrameComparison();
 void contentTest();
 void shiftTest();
@@ -69,6 +70,16 @@ using namespace std;
  * 
  */
 int main(int argc, char** argv) {   
+//   cout << "argc = " << argc << endl; 
+//   if(argc != 5){
+//       cout<<"Argumentos invalidos...";
+//       return 0;
+//   }
+
+//   for(int i = 0; i < argc; i++) 
+//      cout << "argv[" << i << "] = " << atoi(argv[i]) << endl; 
+//   return 0;     
+    
     // Pruebas Basicas de operaciones booleanas
 
     // Test de Operaciones Booleanas
@@ -93,15 +104,12 @@ int main(int argc, char** argv) {
 //    testImageLoad();
     
     // - Test para cargar videos
-//    testAnimationLoad();
+    testAnimationLoad();
 //    testLoadEVMSeq();
 
     // - Test Savings
 //    testSaving();
     
-    // - Mask Tests
-//    maskTest();
-//    maskFrameComparison();
     
     // - Content Tests
 //    contentTest();
@@ -112,81 +120,67 @@ int main(int argc, char** argv) {
     // - DC Files tests
 //    dcFiles();
     
+    // - Mask Tests
+//    maskTest(atoi(argv[1]),atoi(argv[2]),atoi(argv[3]),atoi(argv[4]));
+    
+//    maskFrameComparison();
+
     // - SOM Tests
 //    cout<<"Mod: 0%2000: "<< 0 % 2000<<endl;
-    SOMTests();
-//  std::cout << std::boolalpha;
-//  std::cout << "Minimum value for float: " << std::numeric_limits<float>::min() << '\n';
-//  std::cout << "Maximum value for float: " << std::numeric_limits<float>::max() << '\n';
-//  std::cout << "float is signed: " << std::numeric_limits<float>::is_signed << '\n';
-//  std::cout << "Non-sign bits in float: " << std::numeric_limits<float>::digits << '\n';
-//  std::cout << "float has infinity: " << std::numeric_limits<float>::has_infinity << '\n';
+//    SOMTests();
     return 0;
+}
+
+/**
+ * Cargar una secuencia de frames como una animacion...
+ */
+void testAnimationLoad(){
+    nDEVM<unsigned int> *evm = new nDEVM<unsigned int>();
+//    evm->generateAnimation("Sequences/Pasillo/frame0",780,880);
+    evm->frameSequence(780,880);
+    return;
 }
 
 void SOMTests(){
 //    maskTest();
     
     nDEVM<unsigned int> *evmClustering = new nDEVM<unsigned int>();
-//    evmClustering->clusterContent(1);
-    evmClustering->subAnimClustering(20,3,7);
+//    evmClustering->dcNormalization(5,4);
 
-//    nDEVM<unsigned int> *mask = new nDEVM<unsigned int>();
-//    mask->maskInit(10,13,5,1,1);
-//    
-//    evmClustering->clusterContent(1,mask,1590,1595,360,243);
+//    evmClustering->subAnimClustering(10,5,4);
 
-//    SOM *som = new SOM(10);
-//    som->loadBinFile("dcFiles/dcFile.dc");
-//    som->initialize();
-//    som->sampling();
-//    som->dataSetClustering();    
+    
+//    for(int i = 0; i < 10; i++){
+//        nDEVM<unsigned int> *mask = new nDEVM<unsigned int>();
+//        mask->maskInit(10,10,3,1,1);
+//        
+//        evmClustering->clusterContent(i,mask,780,880,240,160);
+//        delete mask;
+//    }
+
+    nDEVM<unsigned int> *mask = new nDEVM<unsigned int>();
+    mask->maskInit(10,10,3,1,1);
+
+    evmClustering->clusterContent(9,mask,780,880,240,160);
+    delete mask;
+
     delete evmClustering;
 }
 
-void dcFiles(){
-//    string fileName = "dcFiles/Part2/dcFile6.dc";
-//    ifstream fileInput;
-//    fileInput.open(fileName.c_str(), ios_base::in |ios_base::binary); // binary file
-//    double *dcValue = new double[756];
-//    
-//    if (! fileInput.is_open()){
-//        cout<<"El archivo: "<<fileName<<" no pudo abrirse..."<<endl;
-//        return;
-//    }
-//
-//    if(fileInput.read((char *) dcValue, sizeof(double) * 756)){
-//        fileName = "dcFiles/Part2/dcFilex.dcx";
-//        ofstream outputFile( fileName.c_str(),ios_base::out|ios_base::binary );
-//        if ( ! outputFile.is_open() ){    
-//            cout << "El archivo no se pudo abrir!" << '\n';    
-//            return;
-//        } 
-//        outputFile.write((char *) dcValue,sizeof(double) * 756);
-//        outputFile.close();
-////        cout <<"DC: "<<*dcValue <<endl; 
-//    }
-//
-//    
-//    fileInput.close();
-//    delete dcValue;
+/**
+ * Inicializacion de la mascara y convolucion con la animacion...
+ */
+void maskTest(int _xLength, int _yLength,int _timeLegth,int timeShift){
+    nDEVM<unsigned int> *animMask =  new nDEVM<unsigned int>();
+    nDEVM<unsigned int> *mask = new nDEVM<unsigned int>();
+//    animMask->dcContent(0,0);
+    mask->maskInit(_xLength,_yLength,_timeLegth,1,1);
+    mask->EVMTraslation(1,timeShift);
 
-    string fileName = "dcFiles/Part2/dcFilex.dcx";
-    ifstream fileInput;
-    fileInput.open(fileName.c_str(), ios_base::in |ios_base::binary); // binary file
-    double *dcValue = new double;
-    
-    if (! fileInput.is_open()){
-        cout<<"El archivo: "<<fileName<<" no pudo abrirse..."<<endl;
-        return;
-    }
-    int i = 0;
-    while(fileInput.read((char *) dcValue, sizeof(double))){
-        cout <<"DC["<<i<<"]: "<<*dcValue <<endl; 
-        i++;
-    }
-    fileInput.close();
-    delete dcValue;
+    cout<<"Mask => xLength: "<<_xLength<<", yLength: "<<_yLength<<", timeLength: "<<
+            _timeLegth<<", timeShift: "<<timeShift<<endl;
+
+    animMask->maskAnimConv(mask,780,880,240,160);    
 }
 
 /**
@@ -250,47 +244,6 @@ void maskFrameComparison(){
 }
 
 /**
- * Inicializacion de la mascara y convolucion con la animacion...
- */
-void maskTest(){
-    nDEVM<unsigned int> *animMask =  new nDEVM<unsigned int>();
-    nDEVM<unsigned int> *mask = new nDEVM<unsigned int>();
-//    animMask->dcContent(0);
-    mask->maskInit(10,13,3,1,1);
-    
-//    mask->EVMTraslation(2,100);
-//    animMask = animMask->maskIntersection(mask,1590,1601);
-//    
-//    int i = 0;
-//    nDEVM<unsigned int> *couplet;
-////    nDEVM<unsigned int> *currentSection,*prevSection;
-////    currentSection= new nDEVM<unsigned int>();
-//    
-//    while(!animMask->endEVM()){
-//        couplet = animMask->readCouplet();
-//        couplet->saveEVM("maskCouplet",i);
-////        prevSection = currentSection;
-////        currentSection = animMask->getSection(prevSection,couplet);        
-////        currentSection->saveEVM("maskSection",i);
-////        
-////        delete prevSection;
-////        delete couplet;
-//        i++;
-//    }
-//    animMask->resetCoupletIndex();
-//    
-//    for(int i = 0; i <= 5; i++){
-//        nDEVM<unsigned int> *frame = new nDEVM<unsigned int>();
-//        frame->readEVM("maskCouplet"+to_string(i));
-//        frame->EVMFile("maskCouplet",i);
-//        delete frame;
-//    }
-    mask->EVMTraslation(1,2);
-    animMask->maskAnimConv(mask,780,880,320,213);
-    
-}
-
-/**
  * Almacenamiento del EVM en un archivo binario...
  */
 void testSaving(){
@@ -334,16 +287,6 @@ void testUnion(){
     nDEVM<int>* evm3 = evmOp->EVMCoupletSequence();
     cout<<endl<<"Couplet Sequence obtained..."<<endl;
     //evm3->printTrie();
-}
-
-/**
- * Cargar una secuencia de frames como una animacion...
- */
-void testAnimationLoad(){
-    nDEVM<unsigned int> *evm = new nDEVM<unsigned int>();
-    evm->generateAnimation("Sequences/Pasillo/frame0",780,880);
-    evm->frameSequence(780,880);
-    return;
 }
 
 void testLoadEVMSeq(){

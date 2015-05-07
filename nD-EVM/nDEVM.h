@@ -79,6 +79,7 @@ public:
 
     void EVMFile(int index);
     void EVMFile(string suffix, int index);
+    void EVMFile(string folder,string suffix, int index);
     void EVMFile(ofstream *EVMFile,trieNode<valueType> *currentNode,valueType **key, int dim);
     
     string vectorToString(valueType **vector,int size);
@@ -140,6 +141,8 @@ public:
     valueType boundaryContent(nDEVM *p, int n);
     valueType perimeter();
     double discreteCompactness(valueType lMin,valueType lMax);
+    void dcNormalization(int _parts,int _dcFiles,double max,double min);  // - Agregar un prefijo
+    void dcNormalization(int _parts,int _dcFiles);
     nDEVM * dimLeftShift();
     valueType internalContacts();
     valueType internalContacts(nDEVM * p,int n);
@@ -162,9 +165,9 @@ public:
         bool *fromP, bool *fromQ);
     void EVMTraslation(int dim,valueType shift);
     void maskDimReset(int dim);
-    void maskAnimConv(nDEVM * mask,int initCouplet,int endCouplet,
+    void maskAnimConv(nDEVM * mask,int initFrame,int endFrame,
         valueType _xMax,valueType _yMax);
-    void dcContent(int n);
+    void dcContent(int _part,int _dc);
     
     void saveEVM(string fileName,int index);
     void readEVM(string fileName);
@@ -514,6 +517,22 @@ template<typename valueType>
 void nDEVM<valueType>::EVMFile(string suffix, int index){
     valueType * testKey = new valueType[3];   //Eliminar
     string fileName = "EVMFiles/EVM_"+suffix+to_string(index)+".evm";
+    
+    ofstream outputFile( fileName );
+    if ( ! outputFile.is_open() ){    
+        cout << "El archivo no se pudo abrir!" << '\n';    
+        return;
+    } 
+    outputFile<<"XYZ"<<'\n'<<'3'<<'\n';
+    EVMFile(&outputFile,trieTree->rootNode,&testKey,0);
+    outputFile.close();
+    delete [] testKey;
+}
+
+template<typename valueType> 
+void nDEVM<valueType>::EVMFile(string folder,string suffix, int index){
+    valueType * testKey = new valueType[3];   //Eliminar
+    string fileName = folder+"/EVM_"+suffix+to_string(index)+".evm";
     
     ofstream outputFile( fileName );
     if ( ! outputFile.is_open() ){    
@@ -1394,21 +1413,20 @@ void nDEVM<valueType>::maskDimReset(int dim){
 }
 
 template<typename valueType>
-void nDEVM<valueType>::maskAnimConv(nDEVM * mask,int initCouplet,int endCouplet,
+void nDEVM<valueType>::maskAnimConv(nDEVM * mask,int initFrame,int endFrame,
         valueType _xMax,valueType _yMax){
-    valueType maxFrames = endCouplet - initCouplet;
+    valueType maxFrames = endFrame- initFrame;
     
-//    nDEVM<valueType> *animPrevResult = new nDEVM<valueType>();
-//    nDEVM<valueType> *animResult=  new nDEVM<valueType>();
     nDEVM<valueType> *prevResult;// = new nDEVM<valueType>();
     nDEVM<valueType> *currentResult = new nDEVM<valueType>();
     
     string fileName = "";
     double *dcPtr = new double;
     unsigned int i = 0;
-    unsigned int dcIdx = 0;
+    unsigned int dcFile = 0;
+    unsigned int dcPart = mask->trieTree->rootNode->value;
     
-    fileName = "dcFiles/dcFile"+to_string(dcIdx)+".dc";
+    fileName = "../dcFiles/Part"+to_string(dcPart)+"/dcFile"+to_string(dcFile)+".dc";
     ofstream outputFile( fileName.c_str(),ios_base::out|ios_base::binary );
     if ( ! outputFile.is_open() ){    
         cout << "El archivo: "+fileName+" no se pudo abrir!!" << '\n';    
@@ -1417,6 +1435,7 @@ void nDEVM<valueType>::maskAnimConv(nDEVM * mask,int initCouplet,int endCouplet,
 
     // Recorrido en T
     while(mask->maskMax[0] <= maxFrames){
+        cout<<"Computing Part"<<dcPart<<"..."<<endl;
 //        cout<<"Mask tMin: "<<mask->maskMin[0]<<", tMax: "<<mask->maskMax[0]<<endl;
         // - Recorrido en y
         while(mask->maskMax[2] <= _yMax){
@@ -1426,14 +1445,14 @@ void nDEVM<valueType>::maskAnimConv(nDEVM * mask,int initCouplet,int endCouplet,
 //                cout<<"Mask xMin: "<<mask->maskMin[1]<<", xMax: "<<mask->maskMax[1]<<endl;
                 
                 prevResult = currentResult;
-                currentResult = maskIntersection(mask,initCouplet,endCouplet+1);
+                currentResult = maskIntersection(mask,initFrame,endFrame+1);
                 
 //                cout<<"subSeq: "<<i<<endl;
 //                cout<<"subSeq: "<<i<<", DC: "<<
 //                        currentResult->discreteCompactness(mask->LcMin,mask->LcMax)<<endl;
 
                 *dcPtr = currentResult->discreteCompactness(mask->LcMin,mask->LcMax);
-                cout<<"subSeq: "<<i<<", DC: "<<*dcPtr<<endl;
+//                cout<<"subSeq["<<i<<"] => DC: "<<*dcPtr<<endl;
                 outputFile.write((char *) dcPtr,sizeof(double));
 //                cout<<"subSeq: "<<i<<", Content: "<<
 //                        currentResult->content()<<endl;
@@ -1448,8 +1467,8 @@ void nDEVM<valueType>::maskAnimConv(nDEVM * mask,int initCouplet,int endCouplet,
                 i++;
                 if(i >= 2500){
                     outputFile.close();
-                    dcIdx++;
-                    fileName = "dcFiles/dcFile"+to_string(dcIdx)+".dc";
+                    dcFile++;
+                    fileName = "../dcFiles/Part"+to_string(dcPart)+"/dcFile"+to_string(dcFile)+".dc";
                     outputFile.open( fileName.c_str(),ios_base::out|ios_base::binary );
                     if ( ! outputFile.is_open() ){    
                         cout << "El archivo: "+fileName+" no se pudo abrir!!" << '\n';    
@@ -1461,40 +1480,32 @@ void nDEVM<valueType>::maskAnimConv(nDEVM * mask,int initCouplet,int endCouplet,
             mask->maskDimReset(2);
             mask->EVMTraslation(3,2);
         }
-        outputFile.close();
-        break;
         mask->maskDimReset(2);
         mask->maskDimReset(3);
         mask->EVMTraslation(1,1);
+        
+        outputFile.close();
+        return;
+        
+        dcPart = mask->trieTree->rootNode->value;
+        dcFile = 0;
+        fileName = "../dcFiles/Part"+to_string(dcPart)+"/dcFile"+to_string(dcFile)+".dc";
+        outputFile.open( fileName.c_str(),ios_base::out|ios_base::binary );
+        if ( ! outputFile.is_open() ){    
+            cout << "El archivo: "+fileName+" no se pudo abrir!!" << '\n';    
+            return;
+        }
+        i = 0;
     }
     mask->maskDimReset(1);
     delete currentResult;
     delete dcPtr; 
     outputFile.close();
-
-//    int i = 0;
-//    nDEVM<valueType> *couplet;
-//    nDEVM<valueType> *currentSection,*prevSection;
-//    currentSection= new nDEVM<valueType>();
-//    
-//    while(!animResult->endEVM()){
-//        couplet = animResult->readCouplet();
-//        prevSection = currentSection;
-//        currentSection = getSection(prevSection,couplet);        
-//        currentSection->saveEVM("maskSection",i);
-//        
-//        delete prevSection;
-//        delete couplet;
-//        i++;
-//    }
-//    animResult->resetCoupletIndex();
-//    
-//    return animResult;
 }
 
 template<typename valueType>
-void nDEVM<valueType>::dcContent(int n){
-    string fileName = "dcFiles/dcFile"+to_string(n)+".dc";
+void nDEVM<valueType>::dcContent(int _part,int _dc){
+    string fileName = "dcFiles/Part"+to_string(_part)+"/dcFile"+to_string(_dc)+".dc";
     ifstream fileInput;
     
     fileInput.open(fileName.c_str(), ios_base::in |ios_base::binary); // binary file
@@ -1505,16 +1516,15 @@ void nDEVM<valueType>::dcContent(int n){
     
     double *idx = new double;
 
-    int i = 0;
+    unsigned int i = 0;
     
-    cout<<"dcFile#"<<n<<" Content:"<<endl;
+    cout<<fileName<<" Content:"<<endl;
     while(fileInput.read((char *) idx, sizeof(double))){
         cout <<"Seq["<<i<<"]: "<<*idx <<endl; 
         i++;
     }
     fileInput.close();
     delete idx;
-        
 }
 
 template<typename valueType>
@@ -1689,10 +1699,10 @@ void nDEVM<valueType>::clusterContent(int cluster){
 template<typename valueType>
 void nDEVM<valueType>::clusterContent(int cluster, nDEVM * mask,int initCouplet,int endCouplet,
         valueType _xMax,valueType _yMax){
-    valueType xCount = 71, xShift;
-    valueType yCount = 47, yShift;
+    valueType xCount = 116, xShift;
+    valueType yCount = 76, yShift;
     valueType totalCount = xCount * yCount, tShift;
-    valueType steps = 5;
+    valueType steps = 2;
 
     nDEVM<valueType> *prevResult;// = new nDEVM<valueType>();
     nDEVM<valueType> *currentResult = new nDEVM<valueType>();
@@ -1743,10 +1753,10 @@ void nDEVM<valueType>::clusterContent(int cluster, nDEVM * mask,int initCouplet,
     
     while(!finalResult->endEVM()){
         couplet = finalResult->readCouplet();
-        couplet->EVMFile("clusterCouplet",i);
+        couplet->EVMFile("clustering/Cluster"+to_string(cluster),"clusterCouplet",i);
         prevSection = currentSection;
         currentSection = getSection(prevSection,couplet);        
-        currentSection->EVMFile("clusterSection",i);
+        currentSection->EVMFile("clustering/Cluster"+to_string(cluster),"clusterSection",i);
         
         delete prevSection;
         delete couplet;
@@ -1758,4 +1768,86 @@ void nDEVM<valueType>::clusterContent(int cluster, nDEVM * mask,int initCouplet,
 
     fileInput.close();
     delete idx;
+}
+
+template<typename valueType>
+void nDEVM<valueType>::dcNormalization(int _parts,int _dcFiles){
+    string fileName = "";
+    string part = "";
+    double *dcValue = new double;
+    double min = 1.0, max = 0.0;
+    
+    for(int j = 0; j < _parts; j++){
+        part = "Part"+to_string(j);
+        // - Lectura de los archivos de cada parte
+        for(int k = 0; k < _dcFiles; k++){
+            fileName = "dcFiles/"+part+"/dcFile"+to_string(k)+".dc";
+            cout<<"Reading File: "<<fileName<<endl;
+            ifstream fileInput;
+            fileInput.open(fileName.c_str(), ios_base::in |ios_base::binary); // binary file
+
+            if (! fileInput.is_open()){
+                cout<<"El archivo: "<<fileName<<" no pudo abrirse!!!..."<<endl;
+                return;
+            }
+
+            while(fileInput.read((char *) dcValue, sizeof(double))){
+                if((*dcValue) < min){
+                    min = *dcValue;
+                }
+                if((*dcValue) > max){
+                    max = *dcValue;
+                }
+            }
+            fileInput.close();
+        }
+    }
+    
+    cout<<"maxDC: "<<max<<", minDC: "<<min<<endl;
+    dcNormalization(_parts,_dcFiles,max,min);
+}
+
+template<typename valueType>
+void nDEVM<valueType>::dcNormalization(int _parts,int _dcFiles,double max,double min){
+    string fileName = "";
+    string fileNorm = "";
+    string part = "";
+    double *dcValue = new double;
+    
+    for(int j = 0; j < _parts; j++){
+        part = "Part"+to_string(j);
+        // - Lectura de los archivos de cada parte
+        for(int k = 0; k < _dcFiles; k++){
+
+            fileName = "dcFiles/"+part+"/dcFile"+to_string(k)+".dc";
+            fileNorm = "dcFiles/"+part+"/dcNFile"+to_string(k)+".dc";
+            ifstream fileInput;
+            fileInput.open(fileName.c_str(), ios_base::in |ios_base::binary); // binary file
+
+            if (! fileInput.is_open()){
+                cout<<"El archivo: "<<fileName<<" no pudo abrirse!!!..."<<endl;
+                return;
+            }
+//                {
+//                    cout<<"Reading File: "<<fileName<<endl;
+//                }
+            ofstream outputFile( fileNorm.c_str(),ios_base::out|ios_base::binary );
+            
+            if ( ! outputFile.is_open() ){    
+                cout << "El archivo: "+fileName+" no se pudo abrir!!" << '\n';    
+                return;
+            }
+
+            while(fileInput.read((char *) dcValue, sizeof(double))){
+//                cout<<"DCValue: "<<*dcValue;
+                *dcValue = (*dcValue-min)/(max-min);
+//                cout<<", DCNValue: "<<*dcValue<<endl;
+                outputFile.write((char *) dcValue,sizeof(double));
+            }
+            outputFile.close();
+            fileInput.close();
+
+        }
+    }
+    
 }

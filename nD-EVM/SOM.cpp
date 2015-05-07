@@ -30,10 +30,10 @@ SOM::SOM(int _neurons,int _parts,int _dcFiles) {
 //    dataSet = _dataSet;
     dimension = 1;
     neurons = _neurons;
-    iter = 50;
-    eta = 0.01;t2 = 500.0;
+    iter = 100;
+    eta = 0.1;t2 = 100.0;
     sigma = 0.0001*neurons;
-    t1 = 500.0/log10(sigma);
+    t1 = 100.0/log10(sigma);
 
     weightMatrix = new double*[neurons]; 
     for(int i = 0 ; i<neurons;i++){
