@@ -43,7 +43,7 @@ public class AnimConv implements Runnable{
 //        stdin.println("cd C:/Users/yova/Documents/TesisDocs/TesisMaestria/"
 //                + "nD-EVM/dist/Debug/MinGW-Windows");
         
-        stdin.println("AnimConv.exe 4 4 2 " +timeShift);
+        stdin.println("AnimConv2.exe 4 4 3 " +timeShift);
 
         stdin.close();
         int returnCode = 0;

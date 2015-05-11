@@ -245,7 +245,7 @@ void SOM::clustering(){
     }
     
     // - Proceso de Clustering
-    cout<<endl<<"SOM Clustering:"<<endl;
+    cout<<endl<<"SOM Clustering..."<<endl;
 
     // - Lectura de las partes en que se dividen los archivos de DC
     for(int j = 0; j < parts; j++){

@@ -153,7 +153,9 @@ public:
     void loadImage(string fileName);
     void generateAnimation(string framePrefix, valueType initFrame,
         valueType endFrame);
+    void generateAnimation(string framePrefix, valueType endFrame);
     void frameSequence(int initFrame,int endFrame);
+    void frameSequence(int endCouplet);
     void maskInit(int xLength, int yLength, int timeLength,
         int colorComponents, int colorCompSize);
     void minMask(int xLength, int yLength, int timeLength,
@@ -167,6 +169,10 @@ public:
     void maskDimReset(int dim);
     void maskAnimConv(nDEVM * mask,int initFrame,int endFrame,
         valueType _xMax,valueType _yMax);
+    nDEVM<valueType> *maskIntersection(nDEVM* mask, nDEVM* sectionSeq);
+    nDEVM<valueType> *maskAnimSections(nDEVM* mask,int endCouplet);
+    void maskAnimConv2(nDEVM * mask,int endFrame,
+        valueType _xMax,valueType _yMax);
     void dcContent(int _part,int _dc);
     
     void saveEVM(string fileName,int index);
@@ -175,8 +181,10 @@ public:
     // - SOM Clustering
     void subAnimClustering(int clusters,int _parts,int _dcFiles);
     void clusterContent(int cluster);
-    void clusterContent(int cluster, nDEVM * mask,int initCouplet,int endCouplet,
+    void clusterContent(int cluster, nDEVM * mask,int initFrame,int endFrame,
             valueType _xMax,valueType _yMax);
+    void clusterContent2(int cluster, nDEVM * mask,int endFrame,
+        valueType _xMax,valueType _yMax);
 };
 
 #endif	/* TRIETREE_H */
@@ -513,6 +521,11 @@ void nDEVM<valueType>::EVMFile(int index){
     EVMFile("",index);
 }
 
+/**
+ * Metodo para guardar un archivo 3D-EVM de texto...
+ * @param suffix
+ * @param index
+ */
 template<typename valueType> 
 void nDEVM<valueType>::EVMFile(string suffix, int index){
     valueType * testKey = new valueType[3];   //Eliminar
@@ -1168,17 +1181,57 @@ void nDEVM<valueType>::generateAnimation(string framePrefix, valueType initFrame
 }
 
 /**
+ * Metodo para generar una animacion a partir de una secuencia de Frames. Que son una
+ * secuencia de imagenes *.bmp. Genera un conjunto de archivos *.evm binarios con 
+ * los Couplets de la animacion.
+ * @param framePrefix
+ * @param initFrame
+ * @param endFrame
+ * @param _xMax
+ * @param _yMax
+ */
+template<typename valueType> 
+void nDEVM<valueType>::generateAnimation(string framePrefix,
+        valueType endFrame){
+    // - Se guarda la animacion sobre el objeto desde que se llama    
+    nDEVM<valueType> *currentFrame, *prevFrame,*diffFrame;
+    int time;
+    prevFrame = new nDEVM<valueType>();
+    string frameName;
+    
+    for(int i = 0; i <= endFrame; i++){
+        currentFrame = new nDEVM<valueType>();
+        time = i;
+
+        frameName = framePrefix + to_string(i)+".bmp";
+        cout<<"Loading: "<<frameName<<endl;
+        
+        currentFrame->loadImageFile(frameName);
+        diffFrame = getCouplet(prevFrame,currentFrame);
+        diffFrame->saveEVM("frameCouplet",time); 
+
+        delete prevFrame;
+        delete diffFrame;
+        prevFrame = currentFrame;
+    }
+    prevFrame->saveEVM("frameCouplet",time+1); 
+    delete prevFrame;
+    
+    resetCoupletIndex();
+}
+
+/**
  * Obtiene la secuencia original de frames...
  * @param framePrefix
  * @param initCouplet
  * @param endCouplet
  */
 template<typename valueType> 
-void nDEVM<valueType>::frameSequence(int initCouplet,int endCouplet){
+void nDEVM<valueType>::frameSequence(int endCouplet){
     nDEVM<valueType> * currentSection= new nDEVM<valueType>();
     nDEVM<valueType> * prevSection;
 
-    for(int i = initCouplet; i < endCouplet; i++){
+    for(int i = 0; i < endCouplet; i++){
         nDEVM<valueType> * currentCouplet = new nDEVM<valueType>();
         currentCouplet->readEVM("frameCouplet" + to_string(i));
         currentCouplet->EVMFile("frameCouplet",i);
@@ -1367,6 +1420,150 @@ nDEVM<valueType> * nDEVM<valueType>::maskIntersection(nDEVM* mask,int initCouple
 }
 
 template<typename valueType> 
+nDEVM<valueType> * nDEVM<valueType>::maskIntersection(nDEVM* mask, nDEVM* sectionSeq){
+    
+    nDEVM<valueType> *animSection,*maskSection,*couplet;
+    nDEVM<valueType> *result, *rPrevSection, *rCurrentSection;
+
+    valueType coord;
+
+//    nDEVM* currentFrame = new nDEVM();
+    int dim = mask->dimDepth();
+
+//    animSection = new nDEVM<valueType>();
+    maskSection = new nDEVM<valueType>();
+    rCurrentSection = new nDEVM<valueType>();
+    
+    result = new nDEVM<valueType>();
+
+    coord = mask->getCoord();
+    couplet = mask->readCouplet();
+    maskSection = getSection(maskSection,couplet);
+    delete couplet;
+
+    while(!sectionSeq->endEVM()){
+        // - Version modificada de nextObject
+//        animNextObject(iCouplet,mask,&coord,&fromAnim,&fromMask);
+        
+        animSection = sectionSeq->readCouplet();
+        
+        rPrevSection = rCurrentSection;
+        rCurrentSection = booleanOperation(animSection, maskSection,"intersection",dim-1);
+
+        couplet = getCouplet(rPrevSection,rCurrentSection);
+        
+        if(!couplet->isEmpty()){
+            couplet->trieTree->isCouplet = true;
+            couplet->setCoord(coord);
+
+            result->putCouplet(couplet);
+            delete couplet;
+        }
+        
+        delete rPrevSection;    //Liberar Memoria
+        delete animSection;
+
+        coord++;
+    }
+
+    if(!rCurrentSection->isEmpty()){
+        rCurrentSection->trieTree->isCouplet = true;
+        rCurrentSection->setCoord(coord);
+
+        result->putCouplet(rCurrentSection);
+    }
+
+    mask->resetCoupletIndex();
+    result->resetCoupletIndex();
+    sectionSeq->resetCoupletIndex();
+
+    delete maskSection;
+    delete rCurrentSection;
+
+//    while(!result->endEVM()){
+//        coord = result->getCoord();
+//        cout<<"Result Couplet idx: "<<coord<<endl;
+//        animSection = result->readCouplet();
+//        animSection->EVMFile("maskInter",coord);
+//    }
+    
+    return result;
+}
+
+/**
+ * Extraer un EVM con la secuencia de Secciones necesarias para la interseccion
+ * de la maskara, todo en base al desplazamiento con respecto al tiempo...
+ * @param mask
+ * @param initCouplet
+ * @param endCouplet
+ * @return 
+ */
+template<typename valueType> 
+nDEVM<valueType> * nDEVM<valueType>::maskAnimSections(nDEVM* mask,int endCouplet){
+    int iCouplet = 0;
+    
+    nDEVM<valueType> *animSection,*animPrevSection, *couplet;
+    nDEVM<valueType> *sectionSequence;
+    bool fromAnim, fromMask,saveSection = false;
+    valueType coord;
+
+    animSection = new nDEVM<valueType>();
+    
+    sectionSequence = new nDEVM<valueType>();
+
+    while(iCouplet <= endCouplet and !(mask->endEVM())){
+        // - Version modificada de nextObject
+        animNextObject(iCouplet,mask,&coord,&fromAnim,&fromMask);
+        
+        if(fromAnim){
+            couplet = new nDEVM<valueType>();
+            couplet->readEVM("frameCouplet" + to_string(iCouplet));
+            animPrevSection = animSection;
+            animSection = getSection(animPrevSection,couplet);
+            delete couplet;   
+            delete animPrevSection;
+        }
+        
+        if(fromMask){
+            couplet = mask->readCouplet();
+            if(!mask->endEVM()){
+                saveSection = true;
+            }else{
+                saveSection = false;
+            }
+            delete couplet;
+        }
+        
+        if(saveSection){
+            cout<<"Loading Section: "<<iCouplet<<endl;
+            nDEVM<valueType> *section;
+            section = animSection->cloneEVM();
+            section->trieTree->isCouplet = true;
+            section->setCoord(iCouplet);
+            sectionSequence->putCouplet(section);
+            
+            delete section;
+        }
+        
+        iCouplet++;
+    }
+    mask->resetCoupletIndex();
+    sectionSequence->resetCoupletIndex();
+    
+    delete animSection;
+    
+//    while(!sectionSequence->endEVM()){
+//        iSection = sectionSequence->getCoord();
+//        cout<<"Section idx: "<<iSection<<endl;
+//        animSection = sectionSequence->readCouplet();
+//        animSection->EVMFile("animSecSeq",iSection);
+//    }
+//    sectionSequence->resetCoupletIndex();
+
+    return sectionSequence;
+}
+
+template<typename valueType> 
 void nDEVM<valueType>::animNextObject(valueType iCouplet, nDEVM *mask,valueType *coord,
         bool *fromP, bool *fromQ){
     if(iCouplet < (*(mask->trieTree->coupletIndex))->value){
@@ -1426,7 +1623,7 @@ void nDEVM<valueType>::maskAnimConv(nDEVM * mask,int initFrame,int endFrame,
     unsigned int dcFile = 0;
     unsigned int dcPart = mask->trieTree->rootNode->value;
     
-    fileName = "../dcFiles/Part"+to_string(dcPart)+"/dcFile"+to_string(dcFile)+".dc";
+    fileName = "dcFiles/Part"+to_string(dcPart)+"/dcFile"+to_string(dcFile)+".dc";
     ofstream outputFile( fileName.c_str(),ios_base::out|ios_base::binary );
     if ( ! outputFile.is_open() ){    
         cout << "El archivo: "+fileName+" no se pudo abrir!!" << '\n';    
@@ -1452,7 +1649,7 @@ void nDEVM<valueType>::maskAnimConv(nDEVM * mask,int initFrame,int endFrame,
 //                        currentResult->discreteCompactness(mask->LcMin,mask->LcMax)<<endl;
 
                 *dcPtr = currentResult->discreteCompactness(mask->LcMin,mask->LcMax);
-//                cout<<"subSeq["<<i<<"] => DC: "<<*dcPtr<<endl;
+                cout<<"subSeq["<<i<<"] => DC: "<<*dcPtr<<endl;
                 outputFile.write((char *) dcPtr,sizeof(double));
 //                cout<<"subSeq: "<<i<<", Content: "<<
 //                        currentResult->content()<<endl;
@@ -1468,7 +1665,7 @@ void nDEVM<valueType>::maskAnimConv(nDEVM * mask,int initFrame,int endFrame,
                 if(i >= 2500){
                     outputFile.close();
                     dcFile++;
-                    fileName = "../dcFiles/Part"+to_string(dcPart)+"/dcFile"+to_string(dcFile)+".dc";
+                    fileName = "dcFiles/Part"+to_string(dcPart)+"/dcFile"+to_string(dcFile)+".dc";
                     outputFile.open( fileName.c_str(),ios_base::out|ios_base::binary );
                     if ( ! outputFile.is_open() ){    
                         cout << "El archivo: "+fileName+" no se pudo abrir!!" << '\n';    
@@ -1489,7 +1686,7 @@ void nDEVM<valueType>::maskAnimConv(nDEVM * mask,int initFrame,int endFrame,
         
         dcPart = mask->trieTree->rootNode->value;
         dcFile = 0;
-        fileName = "../dcFiles/Part"+to_string(dcPart)+"/dcFile"+to_string(dcFile)+".dc";
+        fileName = "dcFiles/Part"+to_string(dcPart)+"/dcFile"+to_string(dcFile)+".dc";
         outputFile.open( fileName.c_str(),ios_base::out|ios_base::binary );
         if ( ! outputFile.is_open() ){    
             cout << "El archivo: "+fileName+" no se pudo abrir!!" << '\n';    
@@ -1498,6 +1695,79 @@ void nDEVM<valueType>::maskAnimConv(nDEVM * mask,int initFrame,int endFrame,
         i = 0;
     }
     mask->maskDimReset(1);
+    delete currentResult;
+    delete dcPtr; 
+    outputFile.close();
+}
+
+template<typename valueType>
+void nDEVM<valueType>::maskAnimConv2(nDEVM * mask,int endFrame,
+        valueType _xMax,valueType _yMax){    
+    nDEVM<valueType> *prevResult;// = new nDEVM<valueType>();
+    nDEVM<valueType> *currentResult = new nDEVM<valueType>();
+    nDEVM<unsigned int> *sectionSeq = new nDEVM<unsigned int>();
+    
+    string fileName = "";
+    double *dcPtr = new double;
+    unsigned int i = 0;
+    unsigned int dcFile = 0;
+    unsigned int dcPart = mask->getCoord();
+
+    if(mask->maskMax[0] > endFrame){
+        cout<<"Se ha llegado al final de la animacion..."<<endl;
+        return;
+    }
+        
+    // - Validar cuando se llega al final de la animacion
+    sectionSeq = sectionSeq->maskAnimSections(mask,endFrame+1);
+
+    fileName = "../dcFiles/Part"+to_string(dcPart)+"/dcFile"+to_string(dcFile)+".dc";
+    ofstream outputFile( fileName.c_str(),ios_base::out|ios_base::binary );
+    if ( ! outputFile.is_open() ){    
+        cout << "El archivo: "+fileName+" no se pudo abrir!!" << '\n';    
+        return;
+    }
+
+    cout<<"Computing Part"<<dcPart<<"..."<<endl;
+    // - Recorrido en y
+    while(mask->maskMax[2] <= _yMax){
+        // - Recorrido en x
+        while(mask->maskMax[1] <= _xMax){
+
+            prevResult = currentResult;
+            currentResult = maskIntersection(mask,sectionSeq);
+
+            currentResult->resetCoupletIndex();
+
+            *dcPtr = currentResult->discreteCompactness(mask->LcMin,mask->LcMax);
+//            cout<<"subSeq["<<i<<"] => DC: "<<*dcPtr<<endl;
+            outputFile.write((char *) dcPtr,sizeof(double));
+
+            delete prevResult;
+
+            mask->EVMTraslation(2,1);
+
+            i++;
+            if(i >= 5000){
+                outputFile.close();
+                dcFile++;
+                cout<<fileName<<" ... DONE!!"<<endl;
+                fileName = "../dcFiles/Part"+to_string(dcPart)+"/dcFile"+to_string(dcFile)+".dc";
+                outputFile.open( fileName.c_str(),ios_base::out|ios_base::binary );
+                if ( ! outputFile.is_open() ){    
+                    cout << "El archivo: "+fileName+" no se pudo abrir!!" << '\n';    
+                    return;
+                }
+                i = 0;
+            }
+        }
+        mask->maskDimReset(2);
+        mask->EVMTraslation(3,1);
+    }
+    mask->maskDimReset(2);
+    mask->maskDimReset(3);
+
+
     delete currentResult;
     delete dcPtr; 
     outputFile.close();
@@ -1697,10 +1967,10 @@ void nDEVM<valueType>::clusterContent(int cluster){
 }
 
 template<typename valueType>
-void nDEVM<valueType>::clusterContent(int cluster, nDEVM * mask,int initCouplet,int endCouplet,
+void nDEVM<valueType>::clusterContent(int cluster, nDEVM * mask,int initFrame,int endFrame,
         valueType _xMax,valueType _yMax){
-    valueType xCount = 116, xShift;
-    valueType yCount = 76, yShift;
+    valueType xCount = 119, xShift;
+    valueType yCount = 79, yShift;
     valueType totalCount = xCount * yCount, tShift;
     valueType steps = 2;
 
@@ -1708,6 +1978,7 @@ void nDEVM<valueType>::clusterContent(int cluster, nDEVM * mask,int initCouplet,
     nDEVM<valueType> *currentResult = new nDEVM<valueType>();
     nDEVM<valueType> *finalResult = new nDEVM<valueType>();
     
+    // - Lectura del archivo de DC
     string fileName = "clustering/cluster"+to_string(cluster)+".idx";
     ifstream fileInput;
     
@@ -1717,11 +1988,11 @@ void nDEVM<valueType>::clusterContent(int cluster, nDEVM * mask,int initCouplet,
         return;
     }
     
-    unsigned int *idx = new unsigned int;
-
-    unsigned int i = 0;
+    unsigned int *idx = new unsigned int; // para leer el contenido del dcFile
+    unsigned int i = 0; // Numero de secuencia...
     
     cout<<"Cluster #"<<cluster<<" Content:"<<endl;
+    // - Mientras haya informacion en el archivo...
     while(fileInput.read((char *) idx, sizeof(unsigned int))){
         tShift = (unsigned int) (*idx)/totalCount;
         yShift = (unsigned int) ( (*idx) - (tShift * totalCount) )/xCount;
@@ -1735,7 +2006,92 @@ void nDEVM<valueType>::clusterContent(int cluster, nDEVM * mask,int initCouplet,
         
         prevResult = finalResult;
         
-        currentResult = maskIntersection(mask,initCouplet,endCouplet+1);
+        currentResult = maskIntersection(mask,initFrame,endFrame+1);
+        finalResult = finalResult->booleanOperation(currentResult,"union");
+        
+        delete currentResult;
+        delete prevResult;
+        mask->maskDimReset(1);
+        mask->maskDimReset(2);
+        mask->maskDimReset(3);
+        i++;
+    }
+    
+    i = 0;
+    nDEVM<unsigned int> *couplet;
+    nDEVM<unsigned int> *currentSection,*prevSection;
+    currentSection= new nDEVM<unsigned int>();
+    
+    while(!finalResult->endEVM()){
+        couplet = finalResult->readCouplet();
+        couplet->EVMFile("clustering/Cluster"+to_string(cluster),"clusterCouplet",i);
+        prevSection = currentSection;
+        currentSection = getSection(prevSection,couplet);        
+        currentSection->EVMFile("clustering/Cluster"+to_string(cluster),"clusterSection",i);
+        
+        delete prevSection;
+        delete couplet;
+        i++;
+    }
+    delete currentSection;
+
+    finalResult->resetCoupletIndex();
+
+    fileInput.close();
+    delete idx;
+}
+
+template<typename valueType>
+void nDEVM<valueType>::clusterContent2(int cluster, nDEVM * mask,int endFrame,
+        valueType _xMax,valueType _yMax){
+    valueType xCount = 119, xShift;
+    valueType yCount = 79, yShift;
+    valueType totalCount = xCount * yCount, tShift;
+    valueType steps = 2;
+
+    nDEVM<valueType> *prevResult;// = new nDEVM<valueType>();
+    nDEVM<valueType> *currentResult = new nDEVM<valueType>();
+    nDEVM<valueType> *finalResult = new nDEVM<valueType>();
+    nDEVM<unsigned int> *sectionSeq = new nDEVM<unsigned int>();
+    
+    // - Lectura del archivo de DC
+    string fileName = "clustering/cluster"+to_string(cluster)+".idx";
+    ifstream fileInput;
+    
+    fileInput.open(fileName.c_str(), ios_base::in |ios_base::binary); // binary file
+    if (! fileInput.is_open()){
+        cout<<"El archivo: "<<fileName<<" no pudo abrirse..."<<endl;
+        return;
+    }
+    
+    unsigned int *idx = new unsigned int; // para leer el contenido del dcFile
+    unsigned int i = 0; // Numero de secuencia...
+    
+    cout<<"Cluster #"<<cluster<<" Content:"<<endl;
+    // - Mientras haya informacion en el archivo...
+    while(fileInput.read((char *) idx, sizeof(unsigned int))){
+        tShift = (unsigned int) (*idx)/totalCount;
+        yShift = (unsigned int) ( (*idx) - (tShift * totalCount) )/xCount;
+        xShift = (*idx) - (tShift * totalCount) - yShift*xCount;
+//        cout <<"Seq["<<i<<"]: "<<*idx<<", tShift: "<<tShift<<", yShift: "<<yShift
+//                <<", xShift: "<<xShift<<endl; 
+
+        mask->EVMTraslation(1,tShift);
+        mask->EVMTraslation(2,xShift*steps);
+        mask->EVMTraslation(3,yShift*steps);
+        
+        // - Estraer la secuencia de Secciones, solo si el EVM de la secuencia esta vacio
+        // o el desplazamiento en el tiempo no coincide con la mascara
+        if(sectionSeq->isEmpty() or sectionSeq->getCoord() != mask->getCoord()){
+            cout <<"Seq["<<i<<"]: "<<*idx<<", tShift: "<<tShift<<", yShift: "<<yShift
+                    <<", xShift: "<<xShift<<endl; 
+            delete sectionSeq;
+            sectionSeq = maskAnimSections(mask,endFrame+1);
+        }
+        
+        prevResult = finalResult;
+        
+        currentResult = maskIntersection(mask,sectionSeq);
         finalResult = finalResult->booleanOperation(currentResult,"union");
         
         delete currentResult;

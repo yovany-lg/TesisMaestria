@@ -27,13 +27,13 @@ public class JavaThreads {
 //        }
         
         JavaThreads threads = new JavaThreads();
-        threads.ThreadLauncher(0, 20);
+        threads.ThreadLauncher(0, 14);
 //        threads.AnimConvThreads(0,3);
 
     }
     
     public void ThreadLauncher(int initFrame, int endFrame){
-        int threadCount = 4;
+        int threadCount = 5;
         int totalFrames = endFrame - initFrame + 1;        
         int frameCount = initFrame;
         

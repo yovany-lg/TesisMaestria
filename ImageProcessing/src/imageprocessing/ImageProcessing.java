@@ -80,13 +80,15 @@ public class ImageProcessing {
 //        String command;
         // - QVGA (320x240)- 
         // - HQVGA (160x120)
+        int j = 0;
         for(int i = 780; i <= 880; i++){
             fileName = "0"+i+".bmp";
 //            command = "convert "+filePath+fileName+" -resize 50% -median 3 " +filePath+"frame"+fileName;
 //            command = "convert ";
 //            cout<<command<<endl;
 //            system(command.c_str());
-            stdin.println("C:\\ImageMagick\\convert.exe "+fileName+" -blur 3"+ " frame"+fileName);
+            stdin.println("C:\\ImageMagick\\convert.exe "+fileName+" -median 2 -blur 2"+ " frame"+j+".bmp");
+            j++;
         }
         
         

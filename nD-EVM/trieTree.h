@@ -1800,7 +1800,7 @@ void TrieTree<valueType>::saveTrie(trieNode<valueType> *currentNode,valueType **
 
 template<typename valueType> 
 void TrieTree<valueType>::readTrie(string fileName){
-    fileName = "EVMFiles/"+fileName+".evm";
+    fileName = "../EVMFiles/"+fileName+".evm";
     ifstream fileInput;
     fileInput.open(fileName.c_str(), ios_base::in |ios_base::binary); // binary file
     if (! fileInput.is_open()){

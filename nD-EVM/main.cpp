@@ -47,6 +47,9 @@ void contentTest();
 void shiftTest();
 void dcFiles();
 void SOMTests();
+void SOMClustering();
+void SOMClusterContent();
+void testAnimSections(int _xLength, int _yLength,int _timeLegth,int timeShift);
 
 typedef unsigned long long timestamp_t;
 
@@ -70,11 +73,12 @@ using namespace std;
  * 
  */
 int main(int argc, char** argv) {   
-//   cout << "argc = " << argc << endl; 
-//   if(argc != 5){
-//       cout<<"Argumentos invalidos...";
-//       return 0;
-//   }
+    // - Manejo de Argumentos de entrada para scripts
+   cout << "argc = " << argc << endl; 
+   if(argc != 5){
+       cout<<"Argumentos invalidos...";
+       return 0;
+   }
 
 //   for(int i = 0; i < argc; i++) 
 //      cout << "argv[" << i << "] = " << atoi(argv[i]) << endl; 
@@ -89,22 +93,11 @@ int main(int argc, char** argv) {
 //    testSequences();
 //    testUnion();
     
-    // - Test SOM
-//    DataSet *dataSet = new DataSet(4,0);
-//    string fileName = "DataSets/Iris.csv";
-//    dataSet->loadFile(fileName);
-//    dataSet->normalize();   // - Agregar guardar archivo normalizado
-//    
-//    SOM *som = new SOM(dataSet,4,3);
-//    som->initialize();
-//    som->sampling();
-//    som->dataSetClustering();
-
     // - Test para cargar imagenes
 //    testImageLoad();
     
     // - Test para cargar videos
-    testAnimationLoad();
+//    testAnimationLoad();
 //    testLoadEVMSeq();
 
     // - Test Savings
@@ -122,13 +115,48 @@ int main(int argc, char** argv) {
     
     // - Mask Tests
 //    maskTest(atoi(argv[1]),atoi(argv[2]),atoi(argv[3]),atoi(argv[4]));
+//    maskTest(4,4,3,0);
     
 //    maskFrameComparison();
 
     // - SOM Tests
 //    cout<<"Mod: 0%2000: "<< 0 % 2000<<endl;
 //    SOMTests();
+//   SOMClustering();
+//   SOMClusterContent();
+    
+    // - Test para extreaer secuencias de secciones
+    // - Calculo de DC con la mejora de la secuencia de secciones
+    testAnimSections(atoi(argv[1]),atoi(argv[2]),atoi(argv[3]),atoi(argv[4]));
+//    testAnimSections(4,4,3,0);
     return 0;
+}
+
+/**
+ * Metodo para realizar la convolucion con el enfoque de la secuencia de Secciones
+ * @param _xLength
+ * @param _yLength
+ * @param _timeLegth
+ * @param timeShift
+ */
+void testAnimSections(int _xLength, int _yLength,int _timeLegth,int timeShift){
+//    nDEVM<unsigned int> *sectionSeq = new nDEVM<unsigned int>();
+    nDEVM<unsigned int> *evm = new nDEVM<unsigned int>();
+    nDEVM<unsigned int> *mask = new nDEVM<unsigned int>();
+
+    mask->maskInit(_xLength,_yLength,_timeLegth,1,1);
+    mask->EVMTraslation(1,timeShift);
+
+//    sectionSeq = sectionSeq->maskAnimSections(mask,780,881);
+//    evm = evm->maskIntersection(mask,sectionSeq);
+//    cout<<"DC: "<<evm->discreteCompactness(mask->LcMin,mask->LcMax)<<endl;
+    
+    cout<<"Mask => xLength: "<<_xLength<<", yLength: "<<_yLength<<", timeLength: "<<
+            _timeLegth<<", timeShift: "<<timeShift<<endl;
+
+    // - Son 100 Secciones y 101 Couplets
+    // - Para la mascara, el maximo desplazamiento en el tiempo es 100-_timeShift
+    evm->maskAnimConv2(mask,99,240,160);    
 }
 
 /**
@@ -136,32 +164,37 @@ int main(int argc, char** argv) {
  */
 void testAnimationLoad(){
     nDEVM<unsigned int> *evm = new nDEVM<unsigned int>();
-//    evm->generateAnimation("Sequences/Pasillo/frame0",780,880);
-    evm->frameSequence(780,880);
+    evm->generateAnimation("Sequences/Pasillo/frame",99);
+    evm->frameSequence(100);
     return;
 }
 
-void SOMTests(){
-//    maskTest();
+/**
+ * Agrupamiento de sub-animaciones a traves de su DC
+ */
+void SOMClustering(){
     
     nDEVM<unsigned int> *evmClustering = new nDEVM<unsigned int>();
 //    evmClustering->dcNormalization(5,4);
+    evmClustering->subAnimClustering(5,3,2);
 
-//    evmClustering->subAnimClustering(10,5,4);
+}
 
-    
+void SOMClusterContent(){
+    nDEVM<unsigned int> *evmClustering = new nDEVM<unsigned int>();
+
 //    for(int i = 0; i < 10; i++){
 //        nDEVM<unsigned int> *mask = new nDEVM<unsigned int>();
-//        mask->maskInit(10,10,3,1,1);
+//        mask->maskInit(4,4,5,1,1);
 //        
-//        evmClustering->clusterContent(i,mask,780,880,240,160);
+//        evmClustering->clusterContent2(i,mask,780,880,240,160);
 //        delete mask;
 //    }
 
     nDEVM<unsigned int> *mask = new nDEVM<unsigned int>();
-    mask->maskInit(10,10,3,1,1);
+    mask->maskInit(4,4,5,1,1);
 
-    evmClustering->clusterContent(9,mask,780,880,240,160);
+    evmClustering->clusterContent2(0,mask,99,240,160);
     delete mask;
 
     delete evmClustering;
@@ -174,6 +207,7 @@ void maskTest(int _xLength, int _yLength,int _timeLegth,int timeShift){
     nDEVM<unsigned int> *animMask =  new nDEVM<unsigned int>();
     nDEVM<unsigned int> *mask = new nDEVM<unsigned int>();
 //    animMask->dcContent(0,0);
+
     mask->maskInit(_xLength,_yLength,_timeLegth,1,1);
     mask->EVMTraslation(1,timeShift);
 
