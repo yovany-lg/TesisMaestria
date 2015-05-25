@@ -8,6 +8,51 @@
 #include "BMP.h"
 #include <iostream>
 
+/**
+ * Constructor para generar una imagen nueva.
+ * @param width => Ancho de la imagen
+ * @param height => Alto de la imagen
+ * @param colors => Cantidad de componentes de color, se considera 1 BYTE por componente
+ */
+BMP::BMP(int width,int height, int colorCount){
+    // Bitmap file header: 14 bytes
+    header.identifier = 0x4D42;
+    header.headerSize = 40;
+
+    header.bitsPerPixel = colorCount*8;
+    // - Paleta de colores obligatoria para menor igual a 8 bits...
+    if(header.bitsPerPixel == 8){
+        // Sino se sabe cuantos colores son...
+//        if(header.numberOfColours == 0)
+        header.numberOfColours = 256;
+
+        // - Generar paleta de colores
+        pPalette = new Color[header.numberOfColours];
+        for(int i = 0; i < header.numberOfColours; i++){
+            pPalette[i].a = i;
+            pPalette[i].b = i;
+            pPalette[i].g = i;
+            pPalette[i].r = i;
+        }
+        header.bitoffset = header.headerSize + 14 + header.numberOfColours * 4;
+    }else{
+        header.numberOfColours = 0;
+        header.bitoffset = header.headerSize + 14;
+    }
+    
+    header.width = width;
+    header.height = height;
+    header.planes = 1;
+    
+    header.imageSize = header.width * header.height * colorCount;
+    header.size = header.imageSize + header.bitoffset;
+    header.compression = 0;
+    header.reserved = 0;
+    header.hresolution = 0;
+    header.vresolution = 0;
+    header.importantColours = 0;
+}
+
 BMP::BMP(const char *fileName) {
     if(!fileName) return;
 
@@ -114,6 +159,63 @@ BMP::BMP(const char *fileName) {
     }    
 }
 
+BMP::BMP(string name){
+    if(name == "") return;
+
+    // Reinicio de las variables
+    isImageLoaded = false;
+    pPalette = NULL;
+    pImageData = NULL;
+
+    // Apertura del archivo
+    FILE *pFile = fopen(name.c_str(), "rb");	
+
+    // Si se pudo cargar el archivo
+    if(pFile)
+    {
+        // Cargo la cabecera
+        fread(&header.identifier,       1, sizeof(WORD),  pFile);		
+        fread(&header.size,             1, sizeof(DWORD), pFile);		
+        fread(&header.reserved,         1, sizeof(DWORD), pFile);
+        fread(&header.bitoffset,        1, sizeof(DWORD), pFile);		
+        fread(&header.headerSize,       1, sizeof(DWORD), pFile);		
+        fread(&header.width,            1, sizeof(DWORD), pFile);		
+        fread(&header.height,           1, sizeof(DWORD), pFile);		
+        fread(&header.planes,           1, sizeof(WORD),  pFile);		
+        fread(&header.bitsPerPixel,     1, sizeof(WORD),  pFile);		
+        fread(&header.compression,      1, sizeof(DWORD), pFile);		
+        fread(&header.imageSize,        1, sizeof(DWORD), pFile);		
+        fread(&header.hresolution,      1, sizeof(DWORD), pFile);		
+        fread(&header.vresolution,      1, sizeof(DWORD), pFile);		
+        fread(&header.numberOfColours,  1, sizeof(DWORD), pFile);		
+        fread(&header.importantColours, 1, sizeof(DWORD), pFile);	
+
+        // Si el archivo no es de 8bpp, termino la ejecución
+        // - Paleta de colores obligatoria para menor igual a 8 bits...
+        if(header.bitsPerPixel <= 8){
+            // Sino se sabe cuantos colores son...
+            if(header.numberOfColours == 0)
+                    header.numberOfColours = (int)pow(2.0, 1.0 * header.bitsPerPixel);
+
+            // Creo y leo la paleta de colores
+            pPalette = new Color[header.numberOfColours];
+            fread(pPalette, header.numberOfColours, sizeof(Color), pFile);
+        }
+        
+//        if(header.bitsPerPixel == 24)
+        readData(pFile);
+        
+//        if(header.bitsPerPixel == 8 )
+        
+        // - No siempre funciona por el padding
+//        fseek(pFile, header.bitoffset, SEEK_SET);
+//        fread(pImageData, 1, header.width * header.height, pFile);
+
+        // Cierro el archivo
+        fclose(pFile);
+    }
+}
+
 BMP::BMP(const BMP& orig) {
 }
 
@@ -147,6 +249,58 @@ void BMP::printHeader(void)
 	}else{
 		printf("\n  + There is not information to show.\n");
 	}
+}
+
+void BMP::readData(FILE *pFile){
+    BYTE pixelBytes = header.bitsPerPixel/8;
+
+    // - Tamano de la fila en bytes
+    unsigned int rowSize = floor( (header.bitsPerPixel * header.width + 31) / 32)*4;
+    
+    // - Se calcula el tamano en bytes de la imagen si no existe
+    if(header.imageSize == 0){
+        header.imageSize = header.width * header.height * pixelBytes;
+    }
+
+    // - Reserver memoria para la informacion de los pixeles
+    pImageData = new BYTE[header.imageSize];
+
+    // - move file point to the begging of bitmap data
+    fseek(pFile, header.bitoffset, SEEK_SET);
+
+    // - Row size with padding...
+//    int row_padded = (header.width*3 + 3) & (~3);
+    
+    // - vector para leer la fila...
+    BYTE* rowData = new BYTE[rowSize];
+    
+    int pixelIndex = 0;
+
+    for(int i = 0; i < header.height; i++){
+        // - leer fila
+        fread(rowData, sizeof(BYTE), rowSize, pFile);
+        for(int j = 0; j < header.width * pixelBytes; j++){
+            // Convert (B, G, R) to (R, G, B)
+//            pImageData[pixelIndex] = rowData[j+2];
+//            pImageData[pixelIndex+1] = rowData[j+1];
+//            pImageData[pixelIndex+2] = rowData[j];
+
+            pImageData[pixelIndex] = rowData[j];
+//            pImageData[pixelIndex+1] = rowData[j+1];
+//            pImageData[pixelIndex+2] = rowData[j+2];
+
+            pixelIndex++;
+        }
+    }
+    delete rowData;
+
+    //make sure bitmap image data was read
+    if (pImageData == NULL){
+        fclose(pFile);
+        return;
+    }
+
+    isImageLoaded = true;		    
 }
 
 void BMP::save(const char *name)
@@ -184,6 +338,59 @@ void BMP::save(const char *name)
                 
 		fclose(pFile);		
 	}
+}
+
+/**
+ * Se guarda una imagen en base a la configuracion del Header actual, y el contenido
+ * del pImageData...
+ * @param fileName
+ */
+void BMP::saveImage(string fileName){
+    if(isImageLoaded)
+    {
+//            if(!name) return;
+        FILE *pFile = fopen(fileName.c_str(), "wb");
+
+        fwrite(&header.identifier,       sizeof(header.identifier), 1, pFile);
+        fwrite(&header.size,             sizeof(header.size), 1, pFile);
+        fwrite(&header.reserved,         sizeof(header.reserved), 1, pFile);
+        fwrite(&header.bitoffset,        sizeof(header.bitoffset), 1, pFile);
+        fwrite(&header.headerSize,       sizeof(header.headerSize), 1, pFile);
+        fwrite(&header.width,            sizeof(header.width), 1, pFile);
+        fwrite(&header.height,           sizeof(header.height), 1, pFile);
+        fwrite(&header.planes,           sizeof(header.planes), 1, pFile);
+        fwrite(&header.bitsPerPixel,     sizeof(header.bitsPerPixel), 1, pFile);
+        fwrite(&header.compression,      sizeof(header.compression), 1, pFile);
+        fwrite(&header.imageSize,        sizeof(header.imageSize), 1, pFile);
+        fwrite(&header.hresolution,      sizeof(header.hresolution), 1, pFile);
+        fwrite(&header.vresolution,      sizeof(header.vresolution), 1, pFile);
+        fwrite(&header.numberOfColours,  sizeof(header.numberOfColours), 1, pFile);
+        fwrite(&header.importantColours, sizeof(header.importantColours), 1, pFile);
+
+        if(header.bitsPerPixel <= 8){
+            fwrite(pPalette, sizeof(Color), header.numberOfColours, pFile);
+        }            
+
+        fseek(pFile, header.bitoffset, SEEK_SET);
+
+        // - Tamano de la fila en bytes
+        unsigned int rowSize = floor( (header.bitsPerPixel * header.width + 31) / 32)*4;
+        unsigned int pixelIndex = 0;
+        // - vector para leer la fila...
+        BYTE* rowData = new BYTE[rowSize];
+        BYTE pixelBytes = header.bitsPerPixel/8;
+
+        
+        for(int i = 0; i < header.height; i++){
+            for(int j = 0; j < header.width * pixelBytes; j++){
+                rowData[j] = pImageData[pixelIndex];
+                pixelIndex++;
+            }            
+            fwrite(rowData, 1, rowSize, pFile);
+        }
+
+        fclose(pFile);  	
+    }
 }
 
 BYTE* BMP::getRGBData(){

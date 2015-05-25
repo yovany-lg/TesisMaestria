@@ -2,27 +2,26 @@
  * File:   BMP.h
  * Author: yova
  *
- * Created on 5 de enero de 2015, 12:34 PM
+ * Created on 15 de mayo de 2015, 06:50 PM
  */
 
+#pragma once
+
 #ifndef BMP_H
-#define	BMP_H
+#define BMP_H
 
 #include <stdio.h>
 #include <math.h>
 #include <string>
-//using namespace std;
 
-typedef unsigned char BYTE;
-typedef unsigned short WORD;
-typedef unsigned int DWORD;
-
-//#define BYTE  unsigned char		// 8-bits
-//#define WORD  unsigned short	// 16-bits
-//#define DWORD unsigned int		// 32-bits
+#define BYTE  unsigned char		// 8-bits
+#define WORD  unsigned short	// 16-bits
+#define DWORD unsigned int		// 32-bits
 
 #define CLAMP(x)  (((x) > (255)) ? (255) : (((x) < (0)) ? (0) : (x)))
 #define RGB2GRAY(r,g,b) (BYTE)( (b)*0.3 + (g)*0.59 + (r)*0.11 )
+
+using namespace std;
 
 typedef struct 
 {
@@ -53,28 +52,29 @@ typedef struct
 
 }Color;
 
-using namespace std;
+class BMP
+{
+    private:
+        BMPHeader header;		// Cabecera	
+        Color *pPalette;		// Tabla de colores
+        BYTE *pImageData;		// Pixeles
+        bool isImageLoaded;		// Bandera para saber cuando la imagen se ha cargado con exito
 
-class BMP {
-public:
-    BMP(const char *fileName);
-    BMP(const BMP& orig);
-    virtual ~BMP();
+    public:
+        BMP(const char *name);
+        BMP(string name);
+        ~BMP(void);
 
-    void save(const char *name);
-    void printHeader(void);	
-    BYTE* getRGBData();
-    void printDotImage(string filename);
-    BYTE* getImageData();
-    
-    void getPixelRGB(int x,int y, double **rgb);
-private:
-    BMPHeader header;
-    Color *pPalette;
-    BYTE *pImageData;
-    bool isImageLoaded;
-    
+        void save(const char *name);
+        void printHeader(void);	
+        void negative(void);
+        void brightness(const int u);
+        void fromRGBtoGRAY(void);
+
+        void readData(FILE *pFile);
+        void printDotImage();
+        void saveImage(string fileName);
 };
 
-#endif	/* BMP_H */
+#endif
 

@@ -48,8 +48,9 @@ void shiftTest();
 void dcFiles();
 void SOMTests();
 void SOMClustering();
-void SOMClusterContent();
+void SOMClusterContent(int cluster,int _xLength, int _yLength,int _timeLegth);
 void testAnimSections(int _xLength, int _yLength,int _timeLegth,int timeShift);
+void maskAnimInter(int _xLength, int _yLength,int _timeLegth,int timeShift);
 
 typedef unsigned long long timestamp_t;
 
@@ -72,18 +73,20 @@ using namespace std;
 /*
  * 
  */
-int main(int argc, char** argv) {   
+int main(int argc, char** argv) {
     // - Manejo de Argumentos de entrada para scripts
-   cout << "argc = " << argc << endl; 
-   if(argc != 5){
-       cout<<"Argumentos invalidos...";
-       return 0;
-   }
+//   cout << "argc = " << argc << endl; 
+//   if(argc != 5){
+//       cout<<"Argumentos invalidos...";
+//       return 0;
+//   }
 
 //   for(int i = 0; i < argc; i++) 
 //      cout << "argv[" << i << "] = " << atoi(argv[i]) << endl; 
 //   return 0;     
     
+
+
     // Pruebas Basicas de operaciones booleanas
 
     // Test de Operaciones Booleanas
@@ -116,18 +119,20 @@ int main(int argc, char** argv) {
     // - Mask Tests
 //    maskTest(atoi(argv[1]),atoi(argv[2]),atoi(argv[3]),atoi(argv[4]));
 //    maskTest(4,4,3,0);
+//    maskAnimInter(100,100,5,35);
     
 //    maskFrameComparison();
 
     // - SOM Tests
 //    cout<<"Mod: 0%2000: "<< 0 % 2000<<endl;
 //    SOMTests();
-//   SOMClustering();
-//   SOMClusterContent();
+   SOMClustering();
+//   SOMClusterContent(0,3,3,3);
+//   SOMClusterContent(atoi(argv[1]),atoi(argv[2]),atoi(argv[3]),atoi(argv[4]));
     
     // - Test para extreaer secuencias de secciones
     // - Calculo de DC con la mejora de la secuencia de secciones
-    testAnimSections(atoi(argv[1]),atoi(argv[2]),atoi(argv[3]),atoi(argv[4]));
+//    testAnimSections(atoi(argv[1]),atoi(argv[2]),atoi(argv[3]),atoi(argv[4]));
 //    testAnimSections(4,4,3,0);
     return 0;
 }
@@ -164,8 +169,8 @@ void testAnimSections(int _xLength, int _yLength,int _timeLegth,int timeShift){
  */
 void testAnimationLoad(){
     nDEVM<unsigned int> *evm = new nDEVM<unsigned int>();
-    evm->generateAnimation("Sequences/Pasillo/frame",99);
-    evm->frameSequence(100);
+    evm->generateAnimation("Sequences/Pasillo/frame",54);
+    evm->frameSequence(55);
     return;
 }
 
@@ -176,27 +181,25 @@ void SOMClustering(){
     
     nDEVM<unsigned int> *evmClustering = new nDEVM<unsigned int>();
 //    evmClustering->dcNormalization(5,4);
-    evmClustering->subAnimClustering(5,3,2);
-
+    evmClustering->subAnimClustering(10,8,8);
 }
 
-void SOMClusterContent(){
+/**
+ * Obtener el contenido del Cluster...
+ * @param cluster: Cluster del cual se obtendra el contenido
+ * @param _xLength: Longitud en x de la mascara
+ * @param _yLength: Longitud en y de la mascara
+ * @param _timeLegth: Longitud temporal de la mascara
+ */
+void SOMClusterContent(int cluster,int _xLength, int _yLength,int _timeLegth){
     nDEVM<unsigned int> *evmClustering = new nDEVM<unsigned int>();
 
-//    for(int i = 0; i < 10; i++){
-//        nDEVM<unsigned int> *mask = new nDEVM<unsigned int>();
-//        mask->maskInit(4,4,5,1,1);
-//        
-//        evmClustering->clusterContent2(i,mask,780,880,240,160);
-//        delete mask;
-//    }
-
     nDEVM<unsigned int> *mask = new nDEVM<unsigned int>();
-    mask->maskInit(4,4,5,1,1);
+    mask->maskInit(_xLength,_yLength,_timeLegth,1,1);
 
-    evmClustering->clusterContent2(0,mask,99,240,160);
+    evmClustering->clusterContent2(cluster,mask,99,240,160);
+
     delete mask;
-
     delete evmClustering;
 }
 
@@ -209,12 +212,45 @@ void maskTest(int _xLength, int _yLength,int _timeLegth,int timeShift){
 //    animMask->dcContent(0,0);
 
     mask->maskInit(_xLength,_yLength,_timeLegth,1,1);
-    mask->EVMTraslation(1,timeShift);
+    mask->EVMTraslation(0,timeShift);
 
     cout<<"Mask => xLength: "<<_xLength<<", yLength: "<<_yLength<<", timeLength: "<<
             _timeLegth<<", timeShift: "<<timeShift<<endl;
 
     animMask->maskAnimConv(mask,780,880,240,160);    
+}
+
+/**
+ * Inicializacion de la mascara y convolucion con la animacion...
+ */
+void maskAnimInter(int _xLength, int _yLength,int _timeLegth,int timeShift){
+    nDEVM<unsigned int> *sectionSeq =  new nDEVM<unsigned int>();
+    nDEVM<unsigned int> *mask = new nDEVM<unsigned int>();
+    nDEVM<unsigned int> *result = new nDEVM<unsigned int>();
+//    animMask->dcContent(0,0);
+
+    mask->maskInit(_xLength,_yLength,_timeLegth,1,1);
+    mask->EVMTraslation(0,timeShift);
+
+    cout<<"Mask => xLength: "<<_xLength<<", yLength: "<<_yLength<<", timeLength: "<<
+            _timeLegth<<", timeShift: "<<timeShift<<endl;
+    
+    sectionSeq = sectionSeq->maskAnimSections(mask,55);
+    
+    result = result->maskIntersection(mask,sectionSeq);
+    
+    int iSection;
+    nDEVM<unsigned int> *couplet;
+    while(!result->endEVM()){
+        iSection = result->getCoord();
+        cout<<"Section idx: "<<iSection<<endl;
+        couplet = result->readCouplet();
+        couplet->frameToImage(240,160,1,"MaskCouplet"+to_string(iSection));
+//        couplet->EVMFile("maskAnimCouplet",iSection);
+    }
+    result->resetCoupletIndex();
+
+//    animMask->maskAnimConv(mask,780,880,240,160);    
 }
 
 /**
@@ -261,7 +297,6 @@ void contentTest(){
     temp->EVMFile("Sedan",1);
 //    temp->discreteCompactness();
     cout<< "Contenido: "<<temp->content()<<", Total Internal Contacts: "<<temp->totalInternalContacts()<<endl; //<<", Área de la frontera: "<<temp->boundaryContent()<<"\n";
-    
 }
 
 /**
@@ -274,7 +309,6 @@ void maskFrameComparison(){
     frame->readEVM("frame1591");
     maskSection->readEVM("maskSection1");
     cout<<"Comparacion de Frame y maskSection: "<<frame->compareEVM(maskSection)<<endl;
-    
 }
 
 /**
@@ -333,9 +367,53 @@ void testLoadEVMSeq(){
 }
 
 void testImageLoad(){
-    nDEVM<double> *evm = new nDEVM<double>();
-    evm->loadImageFile("Sequences/JackJack/1673.bmp");
-    evm->EVMFile("frame",0);
+//    nDEVM<double> *evm = new nDEVM<double>();
+//    evm->loadImageFile("Sequences/JackJack/frame1565.bmp");
+//    evm->EVMFile("JackJackFrame",0);
+    int width = 240, height = 160,colorCount = 1;
+    BMP bmp(width, height,colorCount);
+    
+    bmp.pImageData = new BYTE[width*height*colorCount];
+//    bmp.saveImage("Images/1663_2.bmp");	
+    
+    nDEVM<unsigned int> *frame = new nDEVM<unsigned int>();
+    nDEVM<unsigned int> *frameMask = new nDEVM<unsigned int>();
+    
+    frame->readEVM("frameCouplet0");
+    
+    frameMask->frameMaskInit(colorCount,1);
+    
+    nDEVM<unsigned int> *inter;
+//    nDEVM<unsigned int> *result = new nDEVM<unsigned int>();
+//    nDEVM<unsigned int> *prevResult;
+    // - Maximo en x
+    int j = 0;
+    while(frameMask->maskMax[1] <= height){
+        while(frameMask->maskMax[0] <= width){
+//            cout<<"xShift: "<<frameMask->maskMax[0]<<", yShift: "<<frameMask->maskMax[1]<<endl;
+            inter = frame->booleanOperation(frameMask,"intersection");
+//            inter->dimMax(2);
+            
+            for(int i = 0; i < colorCount; i++){
+                bmp.pImageData[j] = inter->dimMax(2+i);
+                j++;
+            }
+            
+//            inter->printEVM();
+//            return;
+//            prevResult = result;
+//            result = result->booleanOperation(inter,"union");
+//            
+//            delete prevResult;
+            frameMask->EVMTraslation(0,1);
+            delete inter;
+        }
+        frameMask->maskDimReset(0);
+        frameMask->EVMTraslation(1,1);
+    }
+    bmp.saveImage("Images/Frame0.bmp");
+    
+//    result->EVMFile("frameMask",0);
 }
 
 void testSequences(){

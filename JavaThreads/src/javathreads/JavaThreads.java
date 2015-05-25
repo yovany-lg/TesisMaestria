@@ -27,13 +27,13 @@ public class JavaThreads {
 //        }
         
         JavaThreads threads = new JavaThreads();
-        threads.ThreadLauncher(0, 14);
-//        threads.AnimConvThreads(0,3);
+//        threads.ThreadLauncher(0, 20);
+        threads.ClusterTreadLauncher(3,9);
 
     }
     
     public void ThreadLauncher(int initFrame, int endFrame){
-        int threadCount = 5;
+        int threadCount = 4;
         int totalFrames = endFrame - initFrame + 1;        
         int frameCount = initFrame;
         
@@ -49,17 +49,18 @@ public class JavaThreads {
         }
 //        System.out.println("Finally => InitFrame: " + frameCount+ ", EndFrame: "+
 //                endFrame);
-        AnimConvThreads(initFrame, endFrame);        
+        AnimConvThreads(frameCount, endFrame);        
     }
     
     public void AnimConvThreads(int initFrame, int endFrame){
         System.out.println( "Starting Executor" );
-
+        String cmd = "";
         // create ExecutorService to manage threads
         ExecutorService threadExecutor = Executors.newCachedThreadPool();
         
         for(int i = initFrame; i <= endFrame; i++){
-            AnimConv anim = new AnimConv(i);
+            cmd = "AnimConv2.exe 3 3 3 " +i;
+            CommandRunner anim = new CommandRunner(cmd);
             threadExecutor.execute( anim ); // start task1        
         }
         
@@ -73,6 +74,50 @@ public class JavaThreads {
             }
         }
         System.out.println( "Tasks block ends...\n" );                
+    }
+    
+    public void ClusterTreadLauncher(int initCluster, int endCluster){
+        int threadCount = 2;
+        int totalClusters = endCluster - initCluster + 1;        
+        int clusterCount = initCluster;
+        
+//        System.out.println("InitFrame: "+initFrame+", EndFrame: "+endFrame+
+//                ", TotalFrames: "+totalFrames);
+        
+        while(totalClusters > threadCount){
+//            System.out.println("Launching => InitFrame: "+frameCount+", EndFrame: "+
+//                    (frameCount+threadCount-1));
+            ClusterTreads(clusterCount,clusterCount+threadCount-1);
+            clusterCount += threadCount;
+            totalClusters -= threadCount;
+        }
+//        System.out.println("Finally => InitFrame: " + frameCount+ ", EndFrame: "+
+//                endFrame);
+        ClusterTreads(clusterCount, endCluster);        
+    }
+    
+    public void ClusterTreads(int initCluster, int endCluster){
+        System.out.println( "Starting Executor" );
+        String cmd = "";
+        // create ExecutorService to manage threads
+        ExecutorService threadExecutor = Executors.newCachedThreadPool();
+        
+        for(int i = initCluster; i <= endCluster; i++){
+            cmd = "ClusterContent.exe "+i+" 3 3 3 " ;
+            CommandRunner anim = new CommandRunner(cmd);
+            threadExecutor.execute( anim ); // start task1        
+        }
+        
+        // shut down worker threads when their tasks complete
+        threadExecutor.shutdown();
+        while(!threadExecutor.isTerminated()){
+            try {
+                Thread.sleep( (long)10000 );
+            } catch (InterruptedException ex) {
+                Logger.getLogger(JavaThreads.class.getName()).log(Level.SEVERE, null, ex);
+            }
+        }
+        System.out.println( "Tasks block ends...\n" ); 
     }
     
 }

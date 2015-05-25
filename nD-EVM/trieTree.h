@@ -113,6 +113,12 @@ public:
     void dimLeftShift(trieNode<valueType> *currentNode,valueType **key, int dim,
             valueType shiftValue,TrieTree **result);
     
+    // - Guardar imagenes
+    valueType dimMax(int dim);
+    valueType dimMax(trieNode<valueType> *currentNode,int currentDim,
+        int dim, valueType currentMax);
+    valueType dimMax(trieNode<valueType> *currentNode, valueType currentVal);
+    
     // - Cargar Videos e Imagenes
 //    void loadImage(string fileName);
 private:
@@ -1800,7 +1806,9 @@ void TrieTree<valueType>::saveTrie(trieNode<valueType> *currentNode,valueType **
 
 template<typename valueType> 
 void TrieTree<valueType>::readTrie(string fileName){
-    fileName = "../EVMFiles/"+fileName+".evm";
+    // *** CAMBIAR PARA SCRIPTS EJECUTADOS EN CONSOLA
+//    fileName = "EVMFiles/"+fileName+".evm";
+    fileName = "..\\EVMFiles\\"+fileName+".evm";
     ifstream fileInput;
     fileInput.open(fileName.c_str(), ios_base::in |ios_base::binary); // binary file
     if (! fileInput.is_open()){
@@ -1867,7 +1875,7 @@ void TrieTree<valueType>::TrieTranslation(int dim,valueType shift){
 template<typename valueType> 
 void TrieTree<valueType>::TrieTranslation(trieNode<valueType> **currentNode,int currentDim,
         int dim,valueType shift){
-    if(currentDim == (dim-1)){
+    if(currentDim == dim){
         (*currentNode)->value += shift;
         if((*currentNode)->nextTrieNode != NULL){
             TrieTranslation(&((*currentNode)->nextTrieNode), currentDim, dim,shift);
@@ -1937,5 +1945,43 @@ void TrieTree<valueType>::dimLeftShift(trieNode<valueType> *currentNode,valueTyp
 
     if((currentNode)->nextTrieNode != NULL){
         dimLeftShift((currentNode)->nextTrieNode, key, dim,shiftValue,result);
+    }
+}
+
+template<typename valueType>
+valueType TrieTree<valueType>::dimMax(int dim){
+    return dimMax(rootNode,0,dim,0);
+}
+
+template<typename valueType>
+valueType TrieTree<valueType>::dimMax(trieNode<valueType> *currentNode,int currentDim,
+        int dim, valueType currentMax){
+    if(currentNode == NULL){
+        return currentMax;
+    }
+        
+    if(currentDim == dim){
+        valueType tempMax = dimMax(currentNode,currentNode->value);
+        if(currentMax < tempMax){
+            currentMax = tempMax;
+//            cout<<"Dim: "<<currentDim<<", tempMax: "<<tempMax<<endl;
+        }
+        return currentMax;
+    }
+    
+    valueType tempMax = dimMax(currentNode->nextDim,currentDim+1,dim,currentMax);
+    return dimMax(currentNode->nextTrieNode,currentDim,dim,tempMax);
+}
+
+template<typename valueType>
+valueType TrieTree<valueType>::dimMax(trieNode<valueType> *currentNode, valueType currentVal){
+    if(currentNode == NULL ){
+        return currentVal;
+    }
+    
+    if(currentVal < currentNode->value){
+        dimMax(currentNode->nextTrieNode,currentNode->value);
+    }else{
+        dimMax(currentNode->nextTrieNode,currentVal);    
     }
 }

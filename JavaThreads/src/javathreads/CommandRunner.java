@@ -14,11 +14,12 @@ import java.util.logging.Logger;
  *
  * @author yova
  */
-public class AnimConv implements Runnable{
+public class CommandRunner implements Runnable{
     int timeShift;
+    String cmd;
 
-    public AnimConv(int _time) {
-        timeShift = _time;
+    public CommandRunner(String _cmd) {
+        cmd = _cmd;
     }
     
     @Override
@@ -32,7 +33,7 @@ public class AnimConv implements Runnable{
         try {
             p = Runtime.getRuntime().exec(command);
         } catch (IOException ex) {
-            Logger.getLogger(AnimConv.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(CommandRunner.class.getName()).log(Level.SEVERE, null, ex);
         }
         new Thread(new SyncPipe(p.getErrorStream(), System.err)).start();
         new Thread(new SyncPipe(p.getInputStream(), System.out)).start();
@@ -43,14 +44,14 @@ public class AnimConv implements Runnable{
 //        stdin.println("cd C:/Users/yova/Documents/TesisDocs/TesisMaestria/"
 //                + "nD-EVM/dist/Debug/MinGW-Windows");
         
-        stdin.println("AnimConv2.exe 4 4 3 " +timeShift);
+        stdin.println(cmd);
 
         stdin.close();
         int returnCode = 0;
         try {
             returnCode = p.waitFor();
         } catch (InterruptedException ex) {
-            Logger.getLogger(AnimConv.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(CommandRunner.class.getName()).log(Level.SEVERE, null, ex);
         }
         System.out.println("Return code = " + returnCode);
         

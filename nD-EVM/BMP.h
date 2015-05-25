@@ -58,8 +58,11 @@ using namespace std;
 class BMP {
 public:
     BMPHeader header;
-
+    BYTE *pImageData;
+    
+    BMP(int width,int height, int colorCount);
     BMP(const char *fileName);
+    BMP(string name);
     BMP(const BMP& orig);
     virtual ~BMP();
 
@@ -69,10 +72,12 @@ public:
     void printDotImage(string filename);
     BYTE* getImageData();
     
+    void readData(FILE *pFile);
+    void saveImage(string fileName);
+    
     void getPixelRGB(int x,int y, unsigned char **rgb);
 private:
     Color *pPalette;
-    BYTE *pImageData;
     bool isImageLoaded;
     
 };

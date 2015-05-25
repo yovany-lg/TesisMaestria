@@ -25,6 +25,8 @@ class nDEVM {
 private:
 public:
     TrieTree<valueType> *trieTree;
+    // - Maximo y minimo de una mascara, para evaluar contra la longitud de una animacion
+    // - o frame.
     valueType maskMax[3];
     valueType maskMin[3];
     valueType LcMin = 0, LcMax = 0;
@@ -185,6 +187,12 @@ public:
             valueType _xMax,valueType _yMax);
     void clusterContent2(int cluster, nDEVM * mask,int endFrame,
         valueType _xMax,valueType _yMax);
+    
+    // - Guardar imagenes de los EVMs de los frames.
+    void frameMaskInit(int colorComponents, int colorCompSize);
+    valueType dimMax(int dim);
+    void frameToImage(int width, int height,int colorCount,string imageName);
+    void animImages(valueType _width, valueType _length,string imageName);
 };
 
 #endif	/* TRIETREE_H */
@@ -1259,6 +1267,10 @@ void nDEVM<valueType>::saveEVM(string fileName,int index){
     }
 }
 
+/**
+ * Lectura de EVMs a partir de arhivos binarios..
+ * @param fileName
+ */
 template<typename valueType> 
 void nDEVM<valueType>::readEVM(string fileName){
     trieTree->readTrie(fileName);
@@ -1597,16 +1609,16 @@ void nDEVM<valueType>::animNextObject(valueType iCouplet, nDEVM *mask,valueType 
 template<typename valueType>
 void nDEVM<valueType>::EVMTraslation(int dim,valueType shift){
     trieTree->TrieTranslation(dim,shift);
-    maskMax[dim-1] += shift;
-    maskMin[dim-1] += shift;
+    maskMax[dim] += shift;
+    maskMin[dim] += shift;
 }
 
 
 template<typename valueType>
 void nDEVM<valueType>::maskDimReset(int dim){
-    trieTree->TrieTranslation(dim,-maskMin[dim-1]);
-    maskMax[dim-1] -= maskMin[dim-1];
-    maskMin[dim-1] -= maskMin[dim-1];
+    trieTree->TrieTranslation(dim,-maskMin[dim]);
+    maskMax[dim] -= maskMin[dim];
+    maskMin[dim] -= maskMin[dim];
 }
 
 template<typename valueType>
@@ -1659,7 +1671,7 @@ void nDEVM<valueType>::maskAnimConv(nDEVM * mask,int initFrame,int endFrame,
 //                animPrevResult = animResult;
 //                animResult = animResult->booleanOperation(currentResult,"union");
 //                delete animPrevResult;
-                mask->EVMTraslation(2,2);
+                mask->EVMTraslation(1,2); // - Traslacion en x
                 
                 i++;
                 if(i >= 2500){
@@ -1674,12 +1686,12 @@ void nDEVM<valueType>::maskAnimConv(nDEVM * mask,int initFrame,int endFrame,
                     i = 0;
                 }
             }
-            mask->maskDimReset(2);
-            mask->EVMTraslation(3,2);
+            mask->maskDimReset(1); // - reset en x
+            mask->EVMTraslation(2,2); // - traslacion en y
         }
-        mask->maskDimReset(2);
-        mask->maskDimReset(3);
-        mask->EVMTraslation(1,1);
+        mask->maskDimReset(1); // - reset en x
+        mask->maskDimReset(2); // - reset en y
+        mask->EVMTraslation(0,1); // - traslacion en tiempo
         
         outputFile.close();
         return;
@@ -1694,7 +1706,7 @@ void nDEVM<valueType>::maskAnimConv(nDEVM * mask,int initFrame,int endFrame,
         }
         i = 0;
     }
-    mask->maskDimReset(1);
+    mask->maskDimReset(0); // - reset en tiempo
     delete currentResult;
     delete dcPtr; 
     outputFile.close();
@@ -1721,7 +1733,7 @@ void nDEVM<valueType>::maskAnimConv2(nDEVM * mask,int endFrame,
     // - Validar cuando se llega al final de la animacion
     sectionSeq = sectionSeq->maskAnimSections(mask,endFrame+1);
 
-    fileName = "../dcFiles/Part"+to_string(dcPart)+"/dcFile"+to_string(dcFile)+".dc";
+    fileName = "..\\dcFiles\\Part"+to_string(dcPart)+"\\dcFile"+to_string(dcFile)+".dc";
     ofstream outputFile( fileName.c_str(),ios_base::out|ios_base::binary );
     if ( ! outputFile.is_open() ){    
         cout << "El archivo: "+fileName+" no se pudo abrir!!" << '\n';    
@@ -1745,14 +1757,14 @@ void nDEVM<valueType>::maskAnimConv2(nDEVM * mask,int endFrame,
 
             delete prevResult;
 
-            mask->EVMTraslation(2,1);
+            mask->EVMTraslation(1,1);
 
             i++;
             if(i >= 5000){
                 outputFile.close();
                 dcFile++;
                 cout<<fileName<<" ... DONE!!"<<endl;
-                fileName = "../dcFiles/Part"+to_string(dcPart)+"/dcFile"+to_string(dcFile)+".dc";
+                fileName = "..\\dcFiles\\Part"+to_string(dcPart)+"\\dcFile"+to_string(dcFile)+".dc";
                 outputFile.open( fileName.c_str(),ios_base::out|ios_base::binary );
                 if ( ! outputFile.is_open() ){    
                     cout << "El archivo: "+fileName+" no se pudo abrir!!" << '\n';    
@@ -1761,11 +1773,11 @@ void nDEVM<valueType>::maskAnimConv2(nDEVM * mask,int endFrame,
                 i = 0;
             }
         }
-        mask->maskDimReset(2);
-        mask->EVMTraslation(3,1);
+        mask->maskDimReset(1);
+        mask->EVMTraslation(2,1);
     }
+    mask->maskDimReset(1);
     mask->maskDimReset(2);
-    mask->maskDimReset(3);
 
 
     delete currentResult;
@@ -2000,9 +2012,9 @@ void nDEVM<valueType>::clusterContent(int cluster, nDEVM * mask,int initFrame,in
         cout <<"Seq["<<i<<"]: "<<*idx<<", tShift: "<<tShift<<", yShift: "<<yShift
                 <<", xShift: "<<xShift<<endl; 
 
-        mask->EVMTraslation(1,tShift);
-        mask->EVMTraslation(2,xShift*steps);
-        mask->EVMTraslation(3,yShift*steps);
+        mask->EVMTraslation(0,tShift);
+        mask->EVMTraslation(1,xShift*steps);
+        mask->EVMTraslation(2,yShift*steps);
         
         prevResult = finalResult;
         
@@ -2011,9 +2023,9 @@ void nDEVM<valueType>::clusterContent(int cluster, nDEVM * mask,int initFrame,in
         
         delete currentResult;
         delete prevResult;
+        mask->maskDimReset(0);
         mask->maskDimReset(1);
         mask->maskDimReset(2);
-        mask->maskDimReset(3);
         i++;
     }
     
@@ -2043,19 +2055,26 @@ void nDEVM<valueType>::clusterContent(int cluster, nDEVM * mask,int initFrame,in
 
 template<typename valueType>
 void nDEVM<valueType>::clusterContent2(int cluster, nDEVM * mask,int endFrame,
-        valueType _xMax,valueType _yMax){
-    valueType xCount = 119, xShift;
-    valueType yCount = 79, yShift;
+        valueType _width,valueType _length){
+    unsigned int _xLength = mask->dimMax(1);
+    unsigned int _yLength = mask->dimMax(2);
+    
+    valueType xCount = _width - _xLength + 1 , xShift;
+    valueType yCount = _length - _yLength + 1, yShift;
     valueType totalCount = xCount * yCount, tShift;
-    valueType steps = 2;
+    valueType steps = 1;
 
     nDEVM<valueType> *prevResult;// = new nDEVM<valueType>();
-    nDEVM<valueType> *currentResult = new nDEVM<valueType>();
+    nDEVM<valueType> *currentResult;
     nDEVM<valueType> *finalResult = new nDEVM<valueType>();
-    nDEVM<unsigned int> *sectionSeq = new nDEVM<unsigned int>();
+    nDEVM<unsigned int> *sectionSeq;
+    
+    sectionSeq = maskAnimSections(mask,endFrame+1);
     
     // - Lectura del archivo de DC
-    string fileName = "clustering/cluster"+to_string(cluster)+".idx";
+    // *** CAMBIAR PARA SCRIPTS EJECUTADOS EN CONSOLA
+//    string fileName = "clustering/cluster"+to_string(cluster)+".idx";
+    string fileName = "..\\clustering\\cluster"+to_string(cluster)+".idx";
     ifstream fileInput;
     
     fileInput.open(fileName.c_str(), ios_base::in |ios_base::binary); // binary file
@@ -2067,7 +2086,7 @@ void nDEVM<valueType>::clusterContent2(int cluster, nDEVM * mask,int endFrame,
     unsigned int *idx = new unsigned int; // para leer el contenido del dcFile
     unsigned int i = 0; // Numero de secuencia...
     
-    cout<<"Cluster #"<<cluster<<" Content:"<<endl;
+    cout<<"Getting cluster's #"<<cluster<<" Content:"<<endl;
     // - Mientras haya informacion en el archivo...
     while(fileInput.read((char *) idx, sizeof(unsigned int))){
         tShift = (unsigned int) (*idx)/totalCount;
@@ -2076,15 +2095,15 @@ void nDEVM<valueType>::clusterContent2(int cluster, nDEVM * mask,int endFrame,
 //        cout <<"Seq["<<i<<"]: "<<*idx<<", tShift: "<<tShift<<", yShift: "<<yShift
 //                <<", xShift: "<<xShift<<endl; 
 
-        mask->EVMTraslation(1,tShift);
-        mask->EVMTraslation(2,xShift*steps);
-        mask->EVMTraslation(3,yShift*steps);
+        mask->EVMTraslation(0,tShift);
+        mask->EVMTraslation(1,xShift*steps);
+        mask->EVMTraslation(2,yShift*steps);
         
         // - Estraer la secuencia de Secciones, solo si el EVM de la secuencia esta vacio
         // o el desplazamiento en el tiempo no coincide con la mascara
-        if(sectionSeq->isEmpty() or sectionSeq->getCoord() != mask->getCoord()){
+        if(sectionSeq->getCoord() != mask->getCoord()){
             cout <<"Seq["<<i<<"]: "<<*idx<<", tShift: "<<tShift<<", yShift: "<<yShift
-                    <<", xShift: "<<xShift<<endl; 
+                    <<", xShift: "<<xShift<<endl;                         
             delete sectionSeq;
             sectionSeq = maskAnimSections(mask,endFrame+1);
         }
@@ -2096,34 +2115,67 @@ void nDEVM<valueType>::clusterContent2(int cluster, nDEVM * mask,int endFrame,
         
         delete currentResult;
         delete prevResult;
+        mask->maskDimReset(0);
         mask->maskDimReset(1);
         mask->maskDimReset(2);
-        mask->maskDimReset(3);
         i++;
     }
+    fileInput.close();
+
+    cout<<"Getting images..."<<endl;
+    // *** CAMBIAR PARA SCRIPTS EJECUTADOS EN CONSOLA
+    finalResult->animImages(_width,_length,"..\\clustering\\Cluster"+
+            to_string(cluster)+"\\clusterSection");
+//    finalResult->animImages(_width,_length,"clustering/Cluster"+
+//            to_string(cluster)+"/clusterSection");
     
-    i = 0;
+//    i = 0;
+//    nDEVM<unsigned int> *couplet;
+//    nDEVM<unsigned int> *currentSection,*prevSection;
+//    currentSection= new nDEVM<unsigned int>();
+//    
+//    cout<<"Getting cluster images..."<<endl;
+//    while(!finalResult->endEVM()){
+//        couplet = finalResult->readCouplet();
+////        couplet->EVMFile("clustering/Cluster"+to_string(cluster),"clusterCouplet",i);
+//        prevSection = currentSection;
+//        currentSection = getSection(prevSection,couplet);        
+////        currentSection->EVMFile("clustering/Cluster"+to_string(cluster),"clusterSection",i);
+//        // *** CAMBIAR PARA SCRIPTS EJECUTADOS EN CONSOLA
+//        currentSection->frameToImage(_width,_length,1,
+//                "..\\clustering\\Cluster"+to_string(cluster)+"\\clusterSection"+to_string(i));
+//        delete prevSection;
+//        delete couplet;
+//        i++;
+//    }
+//    delete currentSection;
+
+//    finalResult->resetCoupletIndex();
+    delete finalResult;
+    delete idx;
+}
+
+template<typename valueType>
+void nDEVM<valueType>::animImages(valueType _width, valueType _length,
+        string imageName){
+    unsigned int i = 0;
     nDEVM<unsigned int> *couplet;
     nDEVM<unsigned int> *currentSection,*prevSection;
     currentSection= new nDEVM<unsigned int>();
     
-    while(!finalResult->endEVM()){
-        couplet = finalResult->readCouplet();
-        couplet->EVMFile("clustering/Cluster"+to_string(cluster),"clusterCouplet",i);
+    while(!endEVM()){
+        couplet = readCouplet();
+//        couplet->EVMFile("clustering/Cluster"+to_string(cluster),"clusterCouplet",i);
         prevSection = currentSection;
         currentSection = getSection(prevSection,couplet);        
-        currentSection->EVMFile("clustering/Cluster"+to_string(cluster),"clusterSection",i);
-        
+//        currentSection->EVMFile("clustering/Cluster"+to_string(cluster),"clusterSection",i);
+        // *** CAMBIAR PARA SCRIPTS EJECUTADOS EN CONSOLA
+        currentSection->frameToImage(_width,_length,1,imageName+to_string(i));
         delete prevSection;
         delete couplet;
         i++;
     }
-    delete currentSection;
-
-    finalResult->resetCoupletIndex();
-
-    fileInput.close();
-    delete idx;
+    delete currentSection;    
 }
 
 template<typename valueType>
@@ -2206,4 +2258,68 @@ void nDEVM<valueType>::dcNormalization(int _parts,int _dcFiles,double max,double
         }
     }
     
+}
+
+template<typename valueType>
+void nDEVM<valueType>::frameMaskInit(int colorComponents, int colorCompSize){
+    maskMin[0] = 0;
+    maskMax[0] = 1;
+    maskMin[1] = 0;
+    maskMax[1] = 1;
+    
+    valueType colorCompMax = pow(2,colorCompSize*8);
+    valueType * maskVoxel = new valueType[3+colorComponents];
+    valueType * maskLengths = new valueType[3+colorComponents];
+    
+    maskVoxel[0] = 0;
+    maskLengths[0] = 1;
+    
+    maskVoxel[1] = 0;
+    maskLengths[1] = 1;
+    
+    for(int i = 0; i < colorComponents; i++){
+        maskVoxel[2+i] = 0;
+        maskLengths[2+i] = colorCompMax;
+    }
+    populateMask(&maskVoxel,2+colorComponents,0,&maskLengths);
+    
+    delete [] maskVoxel;
+    delete [] maskLengths;
+}
+
+template<typename valueType>
+valueType nDEVM<valueType>::dimMax(int dim){
+    return trieTree->dimMax(dim);
+}
+
+template<typename valueType>
+void nDEVM<valueType>::frameToImage(int width, int height,int colorCount,string imageName){
+    BMP bmp(width, height,colorCount);
+    bmp.pImageData = new BYTE[width*height*colorCount];
+
+    nDEVM<unsigned int> *frameMask = new nDEVM<unsigned int>();
+    
+    frameMask->frameMaskInit(colorCount,1);
+    
+    nDEVM<unsigned int> *inter;
+
+    // - Maximo en x
+    int j = 0;
+    while(frameMask->maskMax[1] <= height){
+        while(frameMask->maskMax[0] <= width){
+            inter = booleanOperation(frameMask,"intersection");
+            
+            for(int i = 0; i < colorCount; i++){
+                bmp.pImageData[j] = inter->dimMax(2+i);
+                j++;
+            }
+            
+            frameMask->EVMTraslation(0,1);
+            delete inter;
+        }
+        frameMask->maskDimReset(0);
+        frameMask->EVMTraslation(1,1);
+    }
+    // CAMBIAR PARA SCRIPTS EJECUTADOS EN CONSOLA
+    bmp.saveImage(imageName+".bmp");    
 }
