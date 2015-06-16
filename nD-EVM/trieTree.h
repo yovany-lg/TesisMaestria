@@ -99,8 +99,10 @@ public:
     int dimDepth();
     int dimDepth(trieNode<valueType> * currentNode,int dim);
     void saveTrie(string fileName);
+    void saveTrie2(string fileName);
     void saveTrie(trieNode<valueType> *currentNode,valueType **key, int dim,ofstream *outputFile);
     void readTrie(string fileName);
+    void readTrie2(string fileName);
     
     void TrieTranslation(int dim,valueType shift);
     void TrieTranslation(trieNode<valueType> **currentNode,int currentDim,
@@ -1762,7 +1764,40 @@ int TrieTree<valueType>::dimDepth(trieNode<valueType>* currentNode,int dim){
 
 template<typename valueType> 
 void TrieTree<valueType>::saveTrie(string fileName){
-    fileName = "EVMFiles/"+ fileName + ".evm";
+    // ***
+//    fileName = "EVMFiles/"+ fileName + ".evm";
+    fileName = "..\\EVMFiles\\"+ fileName + ".evm";
+    ofstream outputFile( fileName.c_str(),ios_base::out|ios_base::binary );
+    if ( ! outputFile.is_open() ){    
+        cout << "El archivo "<<fileName<<" no se pudo abrir!" << '\n';    
+        return;
+    } 
+    
+    // - Write Header
+    int dim = dimDepth();
+    string head = to_string(dim)+"D-EVM";
+    const char * header = head.c_str();
+//    cout<<sizeof(header)<<endl;
+    outputFile.write((char *)header,6); // - 6 bytes
+    
+    valueType * testKey = new valueType[dim];
+//    cout<<sizeof(testKey)<<endl;
+    
+    if(!isEmpty())
+        saveTrie(rootNode,&testKey,0,&outputFile);
+    
+    delete [] testKey;
+    outputFile.close();
+}
+
+/**
+ * Guarda el archivo binario de un EVM, en la ruta especificada
+ * @param fileName
+ */
+template<typename valueType> 
+void TrieTree<valueType>::saveTrie2(string fileName){
+//    fileName = "EVMFiles/"+ fileName + ".evm";
+    fileName = fileName + ".evm";
     ofstream outputFile( fileName.c_str(),ios_base::out|ios_base::binary );
     if ( ! outputFile.is_open() ){    
         cout << "El archivo no se pudo abrir!" << '\n';    
@@ -1835,6 +1870,45 @@ void TrieTree<valueType>::readTrie(string fileName){
     fileInput.close();
 }
 
+/**
+ * Abre un archivo .evm binario desde la ruta especificada...
+ * @param fileName
+ */
+template<typename valueType> 
+void TrieTree<valueType>::readTrie2(string fileName){
+    // *** CAMBIAR PARA SCRIPTS EJECUTADOS EN CONSOLA
+//    fileName = "EVMFiles/"+fileName+".evm";
+    fileName = fileName+".evm";
+    ifstream fileInput;
+    fileInput.open(fileName.c_str(), ios_base::in |ios_base::binary); // binary file
+    if (! fileInput.is_open()){
+        cout<<"El archivo: "<<fileName<<" no pudo abrirse..."<<endl;
+        exit(EXIT_FAILURE);
+        return;
+    }
+    
+//    cout<<"Leyendo el archivo: "<<fileName<<endl;
+    
+    char buffer[6];
+//    cout<<"tamano del buffer: "<<sizeof(buffer)<<endl;
+    if(fileInput.read((char *)(buffer), sizeof(buffer))){
+//        cout<<buffer<<endl;   // - Header
+    }
+    
+    int dim = buffer[0] - '0';
+    if(dim == 0){
+        cout<<"El archivo: "<<fileName<<" esta vacio..."<<endl;
+        return;
+    }
+    valueType * testKey = new valueType[dim];
+    
+    while(fileInput.read((char *)(testKey), (sizeof(valueType))*dim )){
+//        cout << vectorToString(&testKey,dim)<<endl; 
+        insertVertex(testKey,dim);
+    }
+    delete [] testKey;
+    fileInput.close();
+}
 
 template<typename valueType> 
 string TrieTree<valueType>::vectorToString(valueType **vector,int size){

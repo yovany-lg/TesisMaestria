@@ -24,11 +24,12 @@ public:
     double eta,t2;
     int iter;
     
-    int parts,dcFiles;
+    int dcParts,dcFiles;
     
 //    SOM(DataSet *_dataSet,int _dim,int _neurons);
     SOM(int _neurons);
-    SOM(int _neurons,int _parts,int _dcFiles);
+    SOM(int _neurons,int _dcParts,int _dcFiles);
+    SOM(int _neurons,int _dcParts);
     SOM(const SOM& orig);
     virtual ~SOM();
     void initialize();

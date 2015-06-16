@@ -1,0 +1,4 @@
+#Frames initFrame: 0 endFrame: 59 colors: 3 width: 240 length: 160
+#Mask xLength: 3 yLength: 3 timeLength: 5
+#Clustering clusters: 10
+#ThreadCount conv: 4 clusters: 4

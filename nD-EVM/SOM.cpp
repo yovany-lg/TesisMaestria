@@ -26,7 +26,7 @@ SOM::SOM(int _neurons) {
     }
 }
 
-SOM::SOM(int _neurons,int _parts,int _dcFiles) {
+SOM::SOM(int _neurons,int _dcParts,int _dcFiles) {
 //    dataSet = _dataSet;
     dimension = 1;
     neurons = _neurons;
@@ -44,8 +44,30 @@ SOM::SOM(int _neurons,int _parts,int _dcFiles) {
         }
     }
     
-    parts = _parts;
+    dcParts = _dcParts;
     dcFiles = _dcFiles;
+}
+
+SOM::SOM(int _neurons,int _dcParts) {
+//    dataSet = _dataSet;
+    dimension = 1;
+    neurons = _neurons;
+    iter = 100;
+    eta = 0.1;t2 = 100.0;
+    sigma = 0.000001*neurons;
+    t1 = 100.0/log10(sigma);
+
+    weightMatrix = new double*[neurons]; 
+    for(int i = 0 ; i<neurons;i++){
+        weightMatrix[i] = new double[dimension]; //Considerando el bias en la primera posicion
+        for(int j = 0; j<(dimension);j++)
+        {
+            weightMatrix[i][j] = 0;   //Inicializacion de los pesos y el bias        
+        }
+    }
+    
+    dcParts = _dcParts;
+    dcFiles = 0;
 }
 
 SOM::SOM(const SOM& orig) {
@@ -87,28 +109,37 @@ void SOM::initialize(){
 void SOM::sampling(){
     int winner;
     string fileName = "";
-    string part = "";
+    string path = "";
     double *dcValue = new double;
+    
+    ifstream filesPath;    
 
+    cout<<"--- Starting Sampling"<<endl;
 //    dataSize = patterns.size();
     for(int i = 0; i < iter; i++){
 //        cout<<"Iteration["<<i<<"]..."<<endl;
         // - Lectura de las partes en que se dividen los archivos de DC
-        for(int j = 0; j < parts; j++){
-            part = "Part"+to_string(j);
-            // - Lectura de los archivos de cada parte
-            for(int k = 0; k < dcFiles; k++){
-                
-                fileName = "dcFiles/"+part+"/dcFile"+to_string(k)+".dc";
+        for(int j = 0; j < dcParts; j++){
+            // ***
+            fileName = "..\\dcFiles\\Part"+to_string(j)+"\\dcFiles.txt";            
+//            fileName = "dcFiles/Part"+to_string(j)+"/dcFiles.txt";            
+            filesPath.open(fileName.c_str(), ios_base::in);
+            if (! filesPath.is_open()){
+                cout<<"El archivo: "<<fileName<<" no pudo abrirse..."<<endl;
+                return;
+            }
+            
+            while(getline(filesPath, path)){
+//                fileName = "dcFiles/"+part+"/dcFile"+to_string(k)+".dc";
                 ifstream fileInput;
-                fileInput.open(fileName.c_str(), ios_base::in |ios_base::binary); // binary file
+                fileInput.open(path.c_str(), ios_base::in |ios_base::binary); // binary file
                 
                 if (! fileInput.is_open()){
-                    cout<<"El archivo: "<<fileName<<" no pudo abrirse!!!..."<<endl;
+                    cout<<"El archivo: "<<path<<" no pudo abrirse!!!..."<<endl;
                     return;
                 }else
 //                {
-//                    cout<<"Reading File: "<<fileName<<endl;
+//                cout<<"Reading File: "<<path<<endl;
 //                }
 
                 while(fileInput.read((char *) dcValue, sizeof(double))){
@@ -118,8 +149,33 @@ void SOM::sampling(){
 //                    i++;
                 }
                 fileInput.close();
-                
             }
+            filesPath.close();
+//            part = "Part"+to_string(j);
+//            // - Lectura de los archivos de cada parte
+//            for(int k = 0; k < dcFiles; k++){
+//                
+//                fileName = "dcFiles/"+part+"/dcFile"+to_string(k)+".dc";
+//                ifstream fileInput;
+//                fileInput.open(fileName.c_str(), ios_base::in |ios_base::binary); // binary file
+//                
+//                if (! fileInput.is_open()){
+//                    cout<<"El archivo: "<<fileName<<" no pudo abrirse!!!..."<<endl;
+//                    return;
+//                }else
+////                {
+////                    cout<<"Reading File: "<<fileName<<endl;
+////                }
+//
+//                while(fileInput.read((char *) dcValue, sizeof(double))){
+//                    winner = minDistanceNeuron(dcValue);
+//                    weightUpdates(dcValue,winner,i);            
+////                    cout <<"DC: "<<*dcValue <<endl; 
+////                    i++;
+//                }
+//                fileInput.close();
+//                
+//            }
         }
         
         
@@ -224,7 +280,8 @@ double SOM::learnRate(int n){
 void SOM::clustering(){
     ofstream **files = NULL;
     string fileName = "";
-    string part = "";
+    string path = "";
+    ifstream filesPath;    
 //    unsigned int dataSize = patterns.size();
     int winner;
     double *dcValue = new double;
@@ -234,11 +291,12 @@ void SOM::clustering(){
     files = new ofstream*[neurons];
     
     for(int i = 0; i < neurons; i++){
-        fileName = "clustering/cluster"+to_string(i)+".idx";
+        // ***
+        fileName = "..\\clustering\\cluster"+to_string(i)+".idx";
         files[i] = new ofstream(fileName.c_str(),ios_base::out|ios_base::binary);
 
         if ( ! files[i]->is_open() ){    
-            cout << "El archivo"<<fileName<<" no se pudo abrir!" << '\n';    
+            cout << "El archivo "<<fileName<<" no se pudo abrir!" << '\n';    
             return;
         } 
         //        (*files)[i]
@@ -248,17 +306,25 @@ void SOM::clustering(){
     cout<<endl<<"SOM Clustering..."<<endl;
 
     // - Lectura de las partes en que se dividen los archivos de DC
-    for(int j = 0; j < parts; j++){
-        part = "Part"+to_string(j);
-        // - Lectura de los archivos de cada parte
-        for(int k = 0; k < dcFiles; k++){
+    for(int j = 0; j < dcParts; j++){
+//        part = "Part"+to_string(j);
+        
+        // ***
+        fileName = "..\\dcFiles\\Part"+to_string(j)+"\\dcFiles.txt";            
+        filesPath.open(fileName.c_str(), ios_base::in);
+        if (! filesPath.is_open()){
+            cout<<"El archivo: "<<fileName<<" no pudo abrirse..."<<endl;
+            return;
+        }
 
-            fileName = "dcFiles/"+part+"/dcFile"+to_string(k)+".dc";
+        while(getline(filesPath, path)){
+//            fileName = "dcFiles/"+part+"/dcFile"+to_string(k)+".dc";
+//            fileName = "..dcFiles\\"+part+"\\dcFile"+to_string(k)+".dc";
             ifstream fileInput;
-            fileInput.open(fileName.c_str(), ios_base::in |ios_base::binary); // binary file
+            fileInput.open(path.c_str(), ios_base::in |ios_base::binary); // binary file
 
             if (! fileInput.is_open()){
-                cout<<"El archivo: "<<fileName<<" no pudo abrirse!!!..."<<endl;
+                cout<<"El archivo: "<<path<<" no pudo abrirse!!!..."<<endl;
                 return;
             }
 
@@ -268,8 +334,30 @@ void SOM::clustering(){
                 i++;
             }
             fileInput.close();
-
         }
+        filesPath.close();
+        
+        // - Lectura de los archivos de cada parte
+//        for(int k = 0; k < dcFiles; k++){
+//            // ***
+////            fileName = "dcFiles/"+part+"/dcFile"+to_string(k)+".dc";
+//            fileName = "..dcFiles\\"+part+"\\dcFile"+to_string(k)+".dc";
+//            ifstream fileInput;
+//            fileInput.open(fileName.c_str(), ios_base::in |ios_base::binary); // binary file
+//
+//            if (! fileInput.is_open()){
+//                cout<<"El archivo: "<<fileName<<" no pudo abrirse!!!..."<<endl;
+//                return;
+//            }
+//
+//            while(fileInput.read((char *) dcValue, sizeof(double))){
+//                winner = minDistanceNeuron(dcValue);
+//                files[winner]->write((char *) &i,sizeof(unsigned int));
+//                i++;
+//            }
+//            fileInput.close();
+//
+//        }
     }
     
 //    for(unsigned int i = 0; i < dataSize; i++){

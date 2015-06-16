@@ -7,6 +7,7 @@
 
 #include "BMP.h"
 #include <iostream>
+#include <cstdlib>
 
 /**
  * Constructor para generar una imagen nueva.
@@ -51,6 +52,7 @@ BMP::BMP(int width,int height, int colorCount){
     header.hresolution = 0;
     header.vresolution = 0;
     header.importantColours = 0;
+    isImageLoaded = true;
 }
 
 BMP::BMP(const char *fileName) {
@@ -213,6 +215,10 @@ BMP::BMP(string name){
 
         // Cierro el archivo
         fclose(pFile);
+//        printHeader();
+    }else{
+        cout<<"No se pudo abrir el archivo "<< name<<endl;
+        exit(EXIT_FAILURE);
     }
 }
 
@@ -389,7 +395,10 @@ void BMP::saveImage(string fileName){
             fwrite(rowData, 1, rowSize, pFile);
         }
 
-        fclose(pFile);  	
+        fclose(pFile);
+        delete [] rowData;
+    }else{
+        cout<<"Nothing Saved..."<<endl;
     }
 }
 
