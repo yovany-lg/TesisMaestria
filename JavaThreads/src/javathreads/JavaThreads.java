@@ -29,9 +29,9 @@ public class JavaThreads {
     public static void main(String[] args) {
         // TODO code application logic here        
         JavaThreads threads = new JavaThreads();
-        threads.AnimConvThreadLauncher();
+//        threads.AnimConvThreadLauncher();
 //        threads.ClusterContentTreadLauncher();
-//        threads.ClusterFrameLauncher();
+        threads.ClusterFrameLauncher();
 //        threads.SOMClustering();
         
 
@@ -292,8 +292,13 @@ public class JavaThreads {
             if(line.contains("#Clustering")){
                 String[] words = line.split(" ");    
                 for (int i = 0; i < words.length; i++) {
-                    if(words[i].equals("clusters:")){
-                        endCluster = Integer.parseInt(words[i+1]) - 1;
+                    if(words[i].equals("endCluster:")){
+                        endCluster = Integer.parseInt(words[i+1]);
+                    }
+                }
+                for (int i = 0; i < words.length; i++) {
+                    if(words[i].equals("initCluster:")){
+                        initCluster = Integer.parseInt(words[i+1]);
                     }
                 }
             }

@@ -28,8 +28,8 @@ public:
     
 //    SOM(DataSet *_dataSet,int _dim,int _neurons);
     SOM(int _neurons);
-    SOM(int _neurons,int _dcParts,int _dcFiles);
-    SOM(int _neurons,int _dcParts);
+//    SOM(int _neurons,int _dcParts,int _dcFiles);
+    SOM(int _neurons,int _dcParts, int _iter);
     SOM(const SOM& orig);
     virtual ~SOM();
     void initialize();

@@ -226,8 +226,11 @@ BMP::BMP(const BMP& orig) {
 }
 
 BMP::~BMP() {
-    if (pImageData != NULL) delete[] pImageData;
-    if (pPalette != NULL) delete[] pPalette;
+    if (pImageData != NULL) 
+        delete[] pImageData;
+    // -- Para eliminar pPalette hay que eliminar uno a uno sus elementos... o algo asi
+//    if (pPalette != NULL) 
+//        delete[] pPalette;
 }
 
 void BMP::printHeader(void)
@@ -386,7 +389,7 @@ void BMP::saveImage(string fileName){
         BYTE* rowData = new BYTE[rowSize];
         BYTE pixelBytes = header.bitsPerPixel/8;
 
-        
+//        cout<<"Saving rowdata blocks..."<<endl;
         for(int i = 0; i < header.height; i++){
             for(int j = 0; j < header.width * pixelBytes; j++){
                 rowData[j] = pImageData[pixelIndex];

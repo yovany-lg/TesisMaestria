@@ -25,8 +25,8 @@ public class ImageProcessing {
         // TODO code application logic here
         ImageProcessing test = new ImageProcessing();
         try {
-//            test.imagesTest();
-            test.pasilloTest();
+            test.imagesTest();
+//            test.pasilloTest();
         } catch (IOException ex) {
             Logger.getLogger(ImageProcessing.class.getName()).log(Level.SEVERE, null, ex);
         } catch (InterruptedException ex) {
@@ -44,18 +44,18 @@ public class ImageProcessing {
         new Thread(new SyncPipe(p.getInputStream(), System.out)).start();
         PrintWriter stdin = new PrintWriter(p.getOutputStream());
 
-        stdin.println("cd Sequences/JackJack/");
+        stdin.println("cd Sequences/Faces/");
         String fileName = "";
 //        String filePath = "Sequences\\JackJack\\";
 //        String command;
         // - QVGA (320x240)- 
-        for(int i = 1549; i <= 1600; i++){
+        for(int i = 0; i <= 3; i++){
             fileName = i+".bmp";
 //            command = "convert "+filePath+fileName+" -resize 50% -median 3 " +filePath+"frame"+fileName;
 //            command = "convert ";
 //            cout<<command<<endl;
 //            system(command.c_str());
-            stdin.println("C:\\ImageMagick\\convert.exe "+fileName+" -median 3 -blur 3"+ " frame"+fileName);
+            stdin.println("C:\\ImageMagick\\convert.exe "+fileName+" -resize 50% "+ " frame"+fileName);
         }
         
         

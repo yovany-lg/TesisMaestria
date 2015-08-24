@@ -18,6 +18,9 @@
 #ifndef TRIETREE_H
 #define	TRIETREE_H
 
+/**
+ * Estructura de un nodo Trie.
+ */
 template<typename valueType>
 struct trieNode{
     valueType value;  //Valor de la dimension actual
@@ -30,99 +33,134 @@ using namespace std;
 template<typename valueType>
 class TrieTree {
 public:
-    trieNode<valueType> *rootNode;
-    trieNode<valueType> **coupletIndex;
-    bool isCouplet;
+    // -- Variables de la clase TrieTree
+    // - Nodo raiz del arbol TRIE.
+    trieNode<valueType> *rootNode = NULL; 
+    // - Apuntador al Couplet del eje x_1.
+    trieNode<valueType> **coupletIndex; 
+    // - Variable para indicar cuando el Trie actual corresponde a un Couplet (n-1)D
+    // - de un nD-EVM. Es importante al momento de liberar memoria, ya que si es un Couplet 
+    // - no es deseable eliminarlo.
+    bool isCouplet; // - 
 
+    // -- Constructores
+    // - Constructor para un Trie vacio.
     TrieTree();
+    // - Constructor de un Trie a partir de otro, se requiere el nodo raiz.
     TrieTree(trieNode<valueType> *node);
     TrieTree(const TrieTree& orig);
     virtual ~TrieTree();
-    
     void deleteTrie();
+    // - Metodo que elimina todos los nodos en un Trie.
     void deleteTrie(trieNode<valueType> *currentNode);
+    
+    // -- Metodos basicos
+    // - Metodo para incializar el apuntador "coupletIndex", este apunta al nodo raiz
+    // - del Trie actual.
     void resetCoupletIndex();
+    // - Evalua si un Trie esta vacio.
     bool isEmpty();
+    // - Evalua si el apuntador "coupletIndex" ha llegado al final del EVM.
     bool endTrie();
-    
-    void insertVertex(valueType * inputKey,int length);
-    bool insertVertex(trieNode<valueType> **prevNode,trieNode<valueType> **currentNode,
-            valueType * inputKey,int length,int prevDim,int currentDim,int matchCount);
-    bool existsVertex(valueType * inputKey,int length);
-    bool existsVertex(trieNode<valueType> **currentNode,valueType * inputKey,int length,int currentDim);
-    void clone(trieNode<valueType> **prevNode,trieNode<valueType> **currentNode,
-            trieNode<valueType> **copyPrevNode,trieNode<valueType> **copyCurrentNode);
-    void removeVertex(valueType *key);
-    bool removeVertex(trieNode<valueType> **prevNode,trieNode<valueType> **currentNode,
-            valueType *key,int currentDim);
-    
+    // - Compara el Trie actual con otro Trie.
     bool compare(TrieTree *otherTrie);
     void compare(trieNode<valueType> **currentNode,trieNode<valueType> **otherCurrentNode,
             bool *compare);
+    // - Evalua si un vertice existe dentro de un Trie.
+    bool existsVertex(valueType * inputKey,int length);
+    bool existsVertex(trieNode<valueType> **currentNode,valueType * inputKey,int length,int currentDim);
+    // - Metodo para insertar un vertice en el Trie actual.
+    void insertVertex(valueType * inputKey,int length);
+    bool insertVertex(trieNode<valueType> **prevNode,trieNode<valueType> **currentNode,
+            valueType * inputKey,int length,int prevDim,int currentDim,int matchCount);
+    // - Metodo para eliminar un vertice del Trie actual.
+    void removeVertex(valueType *key);
+    bool removeVertex(trieNode<valueType> **prevNode,trieNode<valueType> **currentNode,
+            valueType *key,int currentDim);
+    // - Clona un Trie y devuelve un nuevo Trie.
     TrieTree *clone();
+    void clone(trieNode<valueType> **prevNode,trieNode<valueType> **currentNode,
+            trieNode<valueType> **copyPrevNode,trieNode<valueType> **copyCurrentNode);
+    // - Realiza la operacion XOR entre el Trie actual y otro Trie.
+    // - La operacion XOR se realiza comparando los vertices de cada Trie.
     TrieTree *mergeXOR(TrieTree* otherTrie);
-    TrieTree *XOR(TrieTree *otherTrie);
-    void XOR(TrieTree **resultTrie,trieNode<valueType> **currentNode,valueType **key,int dim);
-    
-    void putCouplet(TrieTree * couplet);
-    void putCouplet2(TrieTree* couplet);
-    void putCouplet(trieNode<valueType> ** prevNode,trieNode<valueType> **currentNode,
-            trieNode<valueType> *coupletRoot);
+    void mergeXOR(TrieTree **resultTrie,trieNode<valueType> **currentNode,valueType **key,int dim);    
+    // - Realiza la lectura del siguiente Couplet en base al apuntador "coupletIndex".
     TrieTree *readCouplet();
+    // - Establece la coordenada en el eje x_1 de un Couplet (Trie actual).
     void setCoord(valueType coord);
+    // - Agrega un Couplet (n-1)D, inmerso en el espacio nD, al Trie actual.
+    void putCouplet2(TrieTree* couplet);
+    // - Obtinee la coordenada del Couplet (Trie actual).
     valueType getCoord();
-    valueType coupletCoord();
-    valueType length();
     
+    // -- Metodos utilizados para realizar las Operaciones Booleanas para 1D,
+    // -- en base al algoritmo de operaciones booleanas.
+    // - Determina la longitud de un 1D-EVM a partir de los segmentos en el Trie.
+    valueType length();
+    // - Metodos para realizar la operacion union entre 1D-EVMs.
     TrieTree* unionOperation(TrieTree* section1, TrieTree* section2);
     void unionOperation(trieNode<valueType> * section1, trieNode<valueType> * section2,
             TrieTree **result);
+    // - Metodos para realizar la operacion interseccion entre 1D-EVMs.
     TrieTree *intersectionOperation(TrieTree* section1, TrieTree* section2);
     void intersectionOperation(trieNode<valueType> * section1, trieNode<valueType> * section2,
             trieNode<valueType> **result);
+    // - Metodos para realizar la operacion diferencia entre 1D-EVMs.
     TrieTree *differenceOperation(TrieTree* section1, TrieTree* section2);
     void differenceOperation(trieNode<valueType> ** section1, trieNode<valueType> ** section2,
             trieNode<valueType> **result);
+    // - Metodo que concatena segmentos 1D generados de las operaciones booleanas 1D.
     void mergeSegments(trieNode<valueType> ***currentSegment, trieNode<valueType> *otherSegment);
+    // - Metodos para realizar la operacion XOR entre 1D-EVMs, la cual es diferente 
+    // - al metodo mergeXOR.
     TrieTree* xorOperation(TrieTree* section1, TrieTree* section2);
     void xorOperation(trieNode<valueType> * section1, trieNode<valueType> * section2,
             trieNode<valueType> **result);
-    
+    // - Clonar un segmento 1D.
     trieNode<valueType> *cloneSegment(trieNode<valueType> *segment);
+    // - Metodo que determina si se inserta o no el resto de Couplets del operando
+    // - que no ha finalizado, esto en base al algoritmo de operaciones booleanas.
     bool putCoupletByOp(string op,int argPosition);
+    // - Insertar un vertice solo si este no existe.
     void condInsertVertex(valueType * inputKey,int length);
     
-    void printTrie();
-    void printTrie(trieNode<valueType> *currentNode,valueType **key, int dim);
+    // -- Otros metodos utilizados
+    // - Devuelve la cantidad de vertices en el Trie actual.
     valueType size();
     void size(trieNode<valueType> *currentNode,valueType *size);
+    // - Devuelve la cantidad de dimensiones de un Trie, la cual es "n" para un nD-EVM.
     int dimDepth();
     int dimDepth(trieNode<valueType> * currentNode,int dim);
+    // - Metodos para generar el archivo binario correspondiente al Trie actual.
     void saveTrie(string fileName);
     void saveTrie2(string fileName);
     void saveTrie(trieNode<valueType> *currentNode,valueType **key, int dim,ofstream *outputFile);
+    // - Metodos para lectura del archivo binario de un arbol Trie.
     void readTrie(string fileName);
     void readTrie2(string fileName);
     
+    // - Metodo para realizar una traslacion del Trie en la dimension indicada.
     void TrieTranslation(int dim,valueType shift);
     void TrieTranslation(trieNode<valueType> **currentNode,int currentDim,
         int dim,valueType shift);
-    
-    string vectorToString(valueType **vector,int size);
-    string vectorToString2(valueType **vector,int size);
-    
+    // - Metodo para obtener un ordenamiento de ejes coordenados diferente al actual.
     TrieTree * dimLeftShift();
     void dimLeftShift(trieNode<valueType> *currentNode,valueType **key, int dim,
             valueType shiftValue,TrieTree **result);
     
-    // - Guardar imagenes
+    // - Metodos para imprimir el contenido de un Trie.
+    void printTrie();
+    void printTrie(trieNode<valueType> *currentNode,valueType **key, int dim);
+    string vectorToString(valueType **vector,int size);
+    string vectorToString2(valueType **vector,int size);
+    
+    // - Metodos para obtener el maximo valor almacenado de una dimension dada.
     valueType dimMax(int dim);
     valueType dimMax(trieNode<valueType> *currentNode,int currentDim,
         int dim, valueType currentMax);
     valueType dimMax(trieNode<valueType> *currentNode, valueType currentVal);
     
-    // - Cargar Videos e Imagenes
-//    void loadImage(string fileName);
 private:
 };
 
@@ -137,6 +175,9 @@ template <typename T> std::string to_string(T value)
 	return os.str() ;
 }
 
+/**
+ * Constructor de un Trie vacio.
+ */
 template<typename valueType> 
 TrieTree<valueType>::TrieTree() {
     rootNode = NULL;
@@ -144,6 +185,10 @@ TrieTree<valueType>::TrieTree() {
     resetCoupletIndex();
 }
 
+/**
+ * Constructor de un Trie a partir de otro, en donde se toma el nodo raiz como referencia.
+ * @param node: Nodo raiz.
+ */
 template<typename valueType> 
 TrieTree<valueType>::TrieTree(trieNode<valueType> *node) {
     rootNode = node;
@@ -165,11 +210,18 @@ TrieTree<valueType>::~TrieTree() {
 //    this = NULL;
 }
 
+/**
+ * Metodo principal que realiza la eliminacion de todos los nodos del arbol Trie.
+ */
 template<typename valueType> 
 void TrieTree<valueType>::deleteTrie(){
     deleteTrie(rootNode);    
 }
 
+/**
+ * Eliminacion de nodos en un Trie.
+ * @param currentNode: Nodo actual en la exploracion.
+ */
 template<typename valueType> 
 void TrieTree<valueType>::deleteTrie(trieNode<valueType> *currentNode){
     if((currentNode) == NULL){
@@ -186,11 +238,18 @@ void TrieTree<valueType>::deleteTrie(trieNode<valueType> *currentNode){
     currentNode = NULL;
 }
 
+/**
+ * Metodo que inicializa el apuntador "coupletIndex", apunta al nodo raiz del Trie actual.
+ */
 template<typename valueType> 
 void TrieTree<valueType>::resetCoupletIndex(){
     coupletIndex = &rootNode;
 }
 
+/**
+ * Determinar si el Trie actual esta vacio.
+ * @return 
+ */
 template<typename valueType> 
 bool TrieTree<valueType>::isEmpty(){
     if(rootNode == NULL)
@@ -199,6 +258,10 @@ bool TrieTree<valueType>::isEmpty(){
         return false;
 }
 
+/**
+ * Medoto que determina si se ha llegado al final del Trie segun el apuntador "coupletIndex"
+ * @return 
+ */
 template<typename valueType> 
 bool TrieTree<valueType>::endTrie(){
     if(*coupletIndex == NULL)
@@ -207,12 +270,31 @@ bool TrieTree<valueType>::endTrie(){
         return false;
 }
 
+/**
+ * Metodo principal para insertar un vertice en el Trie actual.
+ * @param inputKey: Vector con los elementos del vertice a insertar.
+ * @param length: Longitud del vector de entrada, esta es la dimension nD del Trie.
+ */
 template<typename valueType> 
 void TrieTree<valueType>::insertVertex(valueType * inputKey,int length){
     trieNode<valueType> * prevNode = NULL;
     insertVertex(&prevNode,&rootNode,inputKey,length,0,0,length);
 }
 
+/**
+ * Insercion de un vertice en el Trie actual. Se presentan dos posibles casos: si el 
+ * vertice no existe en el Trie este es insertado, si el vertice existe en el Trie 
+ * entonces este es eliminado del Trie. Este comportamiento facilita la operacion mergeXOR 
+ * y la representacion de hiper-voxelizaciones en el EVM.
+ * @param prevNode: Nodo previo en la exploracion.
+ * @param currentNode: Nodo actual durante la explracion.
+ * @param inputKey: Vector con los elementos del vertice a insertar.
+ * @param length: Longitud del vector de entrada.
+ * @param prevDim: Dimension previa durante la exploracion.
+ * @param currentDim: Dimension actual en la exploracion.
+ * @param matchCount: Variable que se utiliza para determinar si el vertice existe en el Trie.
+ * @return 
+ */
 template<typename valueType> 
 bool TrieTree<valueType>::insertVertex(trieNode<valueType> **prevNode,trieNode<valueType> **currentNode,valueType * inputKey,
         int length,int prevDim,int currentDim,int matchCount){
@@ -326,6 +408,11 @@ bool TrieTree<valueType>::insertVertex(trieNode<valueType> **prevNode,trieNode<v
     }
 }
 
+/**
+ * Metodo principal para comparar el Trie actual y otro Trie.
+ * @param otherTrie: Apuntador al otro Trie a comparar.
+ * @return 
+ */
 template<typename valueType> 
 bool TrieTree<valueType>::compare(TrieTree *otherTrie){
     bool compare1 = true, compare2 = true;
@@ -334,6 +421,12 @@ bool TrieTree<valueType>::compare(TrieTree *otherTrie){
     return compare1 and compare2;
 }
 
+/**
+ * Compara dos arboles Trie.
+ * @param currentNode: Nodo actual en la exploracion del Trie actual.
+ * @param otherCurrentNode: Nodo actual en la exploracion del Trie a comparar.
+ * @param comparison: Variable que almacena el resultado de la comparacion.
+ */
 template<typename valueType> 
 void TrieTree<valueType>::compare(trieNode<valueType> **currentNode,trieNode<valueType> **otherCurrentNode,bool *comparison){
     //Si en alguna llamada son diferentes
@@ -395,6 +488,10 @@ void TrieTree<valueType>::compare(trieNode<valueType> **currentNode,trieNode<val
     (*comparison) = true;
 }
 
+/**
+ * 
+ * @return 
+ */
 template<typename valueType> 
 TrieTree<valueType> *TrieTree<valueType>::clone(){
     trieNode<valueType> *copyRootNode = NULL;
@@ -576,14 +673,14 @@ bool TrieTree<valueType>::existsVertex(trieNode<valueType> **currentNode,valueTy
 //}
 
 template<typename valueType> 
-TrieTree<valueType> * TrieTree<valueType>::XOR(TrieTree *otherTrie){
+TrieTree<valueType> * TrieTree<valueType>::mergeXOR(TrieTree *otherTrie){
     int dim = dimDepth();
     TrieTree *xorTrie = clone();
 
     valueType *key = new valueType[dim];  //ELIMINAR
 
     //Se realiza la inserción de los elementos del segundo trie en el clon del primero.
-    XOR(&xorTrie,&(otherTrie->rootNode),&key,0);
+    mergeXOR(&xorTrie,&(otherTrie->rootNode),&key,0);
 
     delete [] key;
 
@@ -591,7 +688,7 @@ TrieTree<valueType> * TrieTree<valueType>::XOR(TrieTree *otherTrie){
 }
 
 template<typename valueType> 
-void TrieTree<valueType>::XOR(TrieTree **resultTrie,trieNode<valueType> **currentNode,valueType **key,int dim){
+void TrieTree<valueType>::mergeXOR(TrieTree **resultTrie,trieNode<valueType> **currentNode,valueType **key,int dim){
     if((*currentNode) == NULL){//Si el arbol esta vacio
         //cout<<vectorToString(key,dim)<<'\n';
         (*resultTrie)->insertVertex((*key),dim);
@@ -600,10 +697,10 @@ void TrieTree<valueType>::XOR(TrieTree **resultTrie,trieNode<valueType> **curren
 
     (*key)[dim] = (*currentNode)->value;
 
-    XOR(resultTrie,&(*currentNode)->nextDim,key,dim+1);
+    mergeXOR(resultTrie,&(*currentNode)->nextDim,key,dim+1);
 
     if((*currentNode)->nextTrieNode != NULL)//Explorar en la dimension actual
-        XOR(resultTrie,&(*currentNode)->nextTrieNode,key,dim);
+        mergeXOR(resultTrie,&(*currentNode)->nextTrieNode,key,dim);
 }
 
 template<typename valueType> 
@@ -612,34 +709,34 @@ void TrieTree<valueType>::putCouplet2(TrieTree* couplet){
     coupletIndex = &((*coupletIndex)->nextTrieNode);
 }
 
-// - ANALIZAR SI SE PUEDE MEJORAR EL RENDIMIENTO CON EL COUPLETINDEX
-template<typename valueType> 
-void TrieTree<valueType>::putCouplet(TrieTree * couplet){
-    trieNode<valueType> * prevNode = NULL;
-    putCouplet(&prevNode,&rootNode,couplet->rootNode);
-}
-
-/**
- * Poner el couplet al final del Trie
- * @param prevNode
- * @param currentNode
- * @param coupletRoot
- */
-template<typename valueType> 
-void TrieTree<valueType>::putCouplet(trieNode<valueType>** prevNode,trieNode<valueType> **currentNode,trieNode<valueType> *coupletRoot){
-    // - Si se llega al final del Trie.
-    if((*currentNode) == NULL){
-        if((*prevNode) != NULL)//AL menos hay un nodo en el Trie
-            (*prevNode)->nextTrieNode = coupletRoot;
-        else//El trie esta vacio
-            *currentNode = coupletRoot;
-            
-        return;
-    }
-    
-    // - Explorar sobre la primera dimension
-    putCouplet(currentNode,&((*currentNode)->nextTrieNode),coupletRoot);
-}
+//// - ANALIZAR SI SE PUEDE MEJORAR EL RENDIMIENTO CON EL COUPLETINDEX
+//template<typename valueType> 
+//void TrieTree<valueType>::putCouplet(TrieTree * couplet){
+//    trieNode<valueType> * prevNode = NULL;
+//    putCouplet(&prevNode,&rootNode,couplet->rootNode);
+//}
+//
+///**
+// * Poner el couplet al final del Trie
+// * @param prevNode
+// * @param currentNode
+// * @param coupletRoot
+// */
+//template<typename valueType> 
+//void TrieTree<valueType>::putCouplet(trieNode<valueType>** prevNode,trieNode<valueType> **currentNode,trieNode<valueType> *coupletRoot){
+//    // - Si se llega al final del Trie.
+//    if((*currentNode) == NULL){
+//        if((*prevNode) != NULL)//AL menos hay un nodo en el Trie
+//            (*prevNode)->nextTrieNode = coupletRoot;
+//        else//El trie esta vacio
+//            *currentNode = coupletRoot;
+//            
+//        return;
+//    }
+//    
+//    // - Explorar sobre la primera dimension
+//    putCouplet(currentNode,&((*currentNode)->nextTrieNode),coupletRoot);
+//}
 
 
 template<typename valueType> 
@@ -670,10 +767,10 @@ valueType TrieTree<valueType>::getCoord(){
     return (*coupletIndex)->value;
 }
 
-template<typename valueType> 
-valueType TrieTree<valueType>::coupletCoord(){
-    return (*coupletIndex)->value;
-}
+//template<typename valueType> 
+//valueType TrieTree<valueType>::coupletCoord(){
+//    return (*coupletIndex)->value;
+//}
 
 /**
  * Operacion Union para dos Tries 1D
@@ -1887,7 +1984,7 @@ void TrieTree<valueType>::readTrie2(string fileName){
         return;
     }
     
-//    cout<<"Leyendo el archivo: "<<fileName<<endl;
+    cout<<"Cargando archivo: "<<fileName<<endl;
     
     char buffer[6];
 //    cout<<"tamano del buffer: "<<sizeof(buffer)<<endl;

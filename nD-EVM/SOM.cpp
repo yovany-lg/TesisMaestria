@@ -26,36 +26,36 @@ SOM::SOM(int _neurons) {
     }
 }
 
-SOM::SOM(int _neurons,int _dcParts,int _dcFiles) {
+//SOM::SOM(int _neurons,int _dcParts,int _dcFiles) {
+////    dataSet = _dataSet;
+//    dimension = 1;
+//    neurons = _neurons;
+//    iter = 100;
+//    eta = 0.1;t2 = 100.0;
+//    sigma = 0.00001*neurons;
+//    t1 = 100.0/log10(sigma);
+//
+//    weightMatrix = new double*[neurons]; 
+//    for(int i = 0 ; i<neurons;i++){
+//        weightMatrix[i] = new double[dimension]; //Considerando el bias en la primera posicion
+//        for(int j = 0; j<(dimension);j++)
+//        {
+//            weightMatrix[i][j] = 0;   //Inicializacion de los pesos y el bias        
+//        }
+//    }
+//    
+//    dcParts = _dcParts;
+//    dcFiles = _dcFiles;
+//}
+
+SOM::SOM(int _neurons,int _dcParts, int _iter) {
 //    dataSet = _dataSet;
     dimension = 1;
     neurons = _neurons;
-    iter = 100;
-    eta = 0.1;t2 = 100.0;
-    sigma = 0.00001*neurons;
-    t1 = 100.0/log10(sigma);
-
-    weightMatrix = new double*[neurons]; 
-    for(int i = 0 ; i<neurons;i++){
-        weightMatrix[i] = new double[dimension]; //Considerando el bias en la primera posicion
-        for(int j = 0; j<(dimension);j++)
-        {
-            weightMatrix[i][j] = 0;   //Inicializacion de los pesos y el bias        
-        }
-    }
-    
-    dcParts = _dcParts;
-    dcFiles = _dcFiles;
-}
-
-SOM::SOM(int _neurons,int _dcParts) {
-//    dataSet = _dataSet;
-    dimension = 1;
-    neurons = _neurons;
-    iter = 100;
-    eta = 0.1;t2 = 100.0;
+    iter = _iter;
+    eta = 0.1;t2 = _iter;
     sigma = 0.000001*neurons;
-    t1 = 100.0/log10(sigma);
+    t1 = _iter/log10(sigma);
 
     weightMatrix = new double*[neurons]; 
     for(int i = 0 ; i<neurons;i++){
@@ -114,7 +114,7 @@ void SOM::sampling(){
     
     ifstream filesPath;    
 
-    cout<<"--- Starting Sampling"<<endl;
+    cout<<"--- Begin Sampling..."<<endl;
 //    dataSize = patterns.size();
     for(int i = 0; i < iter; i++){
 //        cout<<"Iteration["<<i<<"]..."<<endl;
@@ -189,6 +189,7 @@ void SOM::sampling(){
 //        printWeights();
 //        return;
     }
+    cout<<"--- End Sampling"<<endl;
     cout<<"----------Final Weights"<<endl;
     printWeights();
     delete dcValue;

@@ -24,68 +24,67 @@ template<typename valueType>
 class nDEVM {
 private:
 public:
+    // -- Arbol Trie del nD-EVM actual.
     TrieTree<valueType> *trieTree;
-    // - Maximo y minimo de una mascara, para evaluar contra la longitud de una animacion
-    // - o frame.
+    // -- Maximo y minimo de una mascara en las dimensiones x,y,t utilizado
+    // -- para evaluar contra la longitud de una animacion o frame.
     valueType maskMax[3];
     valueType maskMin[3];
+    // -- Contactos internos minimos y maximos de una mascara.
     valueType LcMin = 0, LcMax = 0;
+    // -- Objeto de la clase SOM.
     SOM *som;
     
+    // -- Constructores
+    // - Constructor de un EVM vacio
     nDEVM();
+    // - Constructor de un EVM a partir de un arbol Trie.
     nDEVM(TrieTree<valueType> *trie);
     nDEVM(const nDEVM& orig);
     virtual ~nDEVM();
-    /*Metodos del Trie*/
-    trieNode<valueType> *getRootNode();
-    bool isEmpty();
-    void insertVertex(valueType * inputKey,int length);
-//    void insertVertex(trieNode **otherRootNode,valueType * inputKey,int length);
-//    bool insertVertex(trieNode **prevNode,trieNode **currentNode,valueType * inputKey,int length,int prevDim,int currentDim,int matchCount);
     
-    void printEVM();
+    // -- Metodo basicos
+    // - Obtener el nodo raiz del arbol Trie
+    trieNode<valueType> *getRootNode();
+    // - Evaluar si el EVM actual esta vacio.
+    bool isEmpty();
+    // - Devuelve la cantidad de vertices extremos que contiene el EVM actual.
     valueType size();
+    // - Imprime en consola el contenido del EVM actual.
+    void printEVM();
+    string vectorToString(valueType **vector,int size);
+    string vectorToString2(valueType **vector,int size);
 
+
+    // - Inserta un vertice al EVM actual.
+    void insertVertex(valueType * inputKey,int length);
+    // - Compara el EVM actual contra otro EVM dado.
     bool compareEVM(nDEVM *otherEVM);
-    bool compareByCouplets(nDEVM *otherEVM);
-
+    // - Retorna un EVM que es un clon del EVM actual.
     nDEVM *cloneEVM();
-//    trieNode *cloneTrie();
-//    trieNode *cloneTrie(trieNode *root);
-//    void cloneTrie(trieNode **prevNode,trieNode **currentNode,trieNode **copyPrevNode,trieNode **copyCurrentNode);
-
+    // - Elimina un vertice dado del EVM actual.
     void removeVertex(valueType *key);
-//    bool removeVertex(trieNode **prevNode,trieNode **currentNode,valueType *key,int currentDim);
-
+    // - Evalua si un vertice dado existe en el EVM actual.
     bool existsVertex(valueType * inputKey,int length);
-//    bool existsVertex(trieNode **currentNode,valueType * inputKey,int length,int currentDim);
-
-//    trieNode *getSubTrie(valueType key);
-//    trieNode *getSubTrie(trieNode **currentNode,valueType key);
-//    nDEVM* couplet(valueType key);
-//    trieNode *getSubTrie2(valueType key);
-//    trieNode *getSubTrie2(trieNode **currentNode,valueType key);
-
+    // - Realiza la operacion XOR entre el EVM actual y otro EVM dado.
     nDEVM* mergeXOR(nDEVM *otherEVM);
-//    trieNode *XORTrie(trieNode **secondTrie,int dim);
-//    void XORTrie(trieNode **resultTrie,trieNode **currentNode,valueType **key,int dim);
-//    void trieXOR(trieNode **thisTrie,trieNode **otherTrie,int dim);
-
+    
+    // --- Metodos utilizados para casos especificos y ciertas pruebas.
+    bool compareByCouplets(nDEVM *otherEVM);
     void rawFileToEVM(string fileName,int x1,int x2,int x3);
-
     void populate3DVoxel(valueType **inputKey);
     void populate2DVoxel(valueType **inputKey);
     void populateVoxel(valueType **inputKey,int dim,int currentDim,int offset);
     void populateVoxel(valueType **inputKey,int dim,int currentDim);
-//    void populateVoxel2(valueType **inputKey,int dim,int currentDim);
+    
+    void populateFrameVoxel(valueType **voxelBase,int frameDim,int currentDim,
+        valueType ** voxelLengths);
 
     void EVMFile(int index);
     void EVMFile(string suffix, int index);
     void EVMFile(string folder,string suffix, int index);
     void EVMFile(ofstream *EVMFile,trieNode<valueType> *currentNode,valueType **key, int dim);
     
-    string vectorToString(valueType **vector,int size);
-    string vectorToString2(valueType **vector,int size);
     
     void putCouplet(nDEVM * couplet);
 //    void putCouplet(trieNode** prevNode,trieNode **currentNode,trieNode *coupletRoot);
@@ -183,8 +182,8 @@ public:
     void readEVM2(string fileName);
     
     // - SOM Clustering
-    void subAnimClustering(int clusters,int _dcParts,int _dcFiles);
-    void subAnimClustering(int clusters,int _dcParts);
+//    void subAnimClustering(int clusters,int _dcParts,int _dcFiles);
+    void subAnimClustering(int clusters,int _dcParts, int _iter);
     void clusterContent(int cluster);
     void clusterContent(int cluster, nDEVM * mask,int initFrame,int endFrame,
             valueType _xMax,valueType _yMax);
@@ -237,7 +236,7 @@ void nDEVM<valueType>::resetCoupletIndex(){
 
 template<typename valueType> 
 bool nDEVM<valueType>::isEmpty(){
-    trieTree->isEmpty();
+    return trieTree->isEmpty();
 }
 
 
@@ -371,7 +370,7 @@ nDEVM<valueType>* nDEVM<valueType>::mergeXOR(nDEVM* otherEVM){
         return new nDEVM();
     }
     
-    TrieTree<valueType> *resultTrie = trieTree->XOR(otherEVM->trieTree);
+    TrieTree<valueType> *resultTrie = trieTree->mergeXOR(otherEVM->trieTree);
     nDEVM<valueType> *resultEVM = new nDEVM<valueType>(resultTrie);
     resultTrie = NULL;
     return resultEVM;
@@ -507,6 +506,28 @@ void nDEVM<valueType>::populateVoxel(valueType **voxelInput,int dim,int currentD
     (*voxelInput)[currentDim+offset] = (*voxelInput)[currentDim+offset]+1;
     populateVoxel(voxelInput,dim,currentDim+1,offset);
     (*voxelInput)[currentDim+offset] = (*voxelInput)[currentDim+offset]-1;
+}
+
+/**
+ * Metodo para hacer la voxelizacion de pixeles con cualquier cantidad de 
+ * componentes de color
+ * @param voxelInput: Arreglo que contiene la informacion del pixel.
+ * @param frameDim: Dimension de la base de la voxelizacion para un Frame (2D)
+ * @param currentDim: Dimension actual en las ejecuciones recursivas...
+ * @param colors: Componentes de color
+ */
+template<typename valueType> 
+void nDEVM<valueType>::populateFrameVoxel(valueType **voxelBase,int frameDim,int currentDim,
+        valueType ** voxelLengths){
+    if(!(currentDim < frameDim)){
+        insertVertex(*voxelBase,frameDim);
+//        cout<<vectorToString(voxelBase,frameDim)<<endl;
+        return;
+    }
+    populateFrameVoxel(voxelBase,frameDim,currentDim+1,voxelLengths);
+    (*voxelBase)[currentDim] = (*voxelBase)[currentDim] + (*voxelLengths)[currentDim];
+    populateFrameVoxel(voxelBase,frameDim,currentDim+1,voxelLengths);
+    (*voxelBase)[currentDim] = (*voxelBase)[currentDim] - (*voxelLengths)[currentDim];
 }
 
 /**
@@ -1107,29 +1128,36 @@ void nDEVM<valueType>::loadImageFile(string fileName){
 template<typename valueType> 
 void nDEVM<valueType>::loadImage(string fileName){
     BMP bmpImage(fileName);
-    int colorComp = (int)bmpImage.header.bitsPerPixel/8;
-//    unsigned char *pixelColor = new unsigned char[colorComp];
-    valueType *pixelInfo = new valueType[2+colorComp]; // - [X,Y,G|(R,G,B)]
+    int colors = (int)bmpImage.header.bitsPerPixel/8;
+    valueType *voxelLengths = new valueType[2+colors]; // - [X,Y,G|(R,G,B)]
+    valueType *voxelBase = new valueType[2+colors]; // - [X,Y,G|(R,G,B)]
     unsigned int dataIdx = 0;
     
-    cout<<"Begin to load Frame..."<<endl;
+    cout<<"Loading Frame: "<<fileName<<endl;
+    voxelLengths[0] = 1;
+    voxelLengths[1] = 1;
+    for(int k = 0; k < colors; k++){
+        voxelBase[2+k] = 0; // - Las bases para los hyper-voxels
+    }
+    
     for(int i = 0; i < bmpImage.header.height; i++){
-        pixelInfo[1] = i;
-        for(int j = 0; j < bmpImage.header.width*colorComp; j+= colorComp){
-//            bgr = 0;
-//            bmpImage.getPixelRGB(j,i,&pixelRGB);
-            pixelInfo[0] = (int)(j/colorComp);
-            for(int k = 0; k < colorComp; k++){
-                pixelInfo[2+k] = 0; // - Las bases para los hyper-voxels
-            }
+        voxelBase[1] = i;
+        
+        for(int j = 0; j < bmpImage.header.width*colors; j+= colors){
+            voxelBase[0] = (int)(j/colors);
+            
 //            cout<< <<endl;            
-            populateVoxel(&pixelInfo,2+colorComp-1,0); // - Dim considera la dimension 0 :(
-            for(int k = 0; k < colorComp; k++){
-//                cout<<bmpImage.pImageData[j+k];
-                pixelInfo[2+k] = (valueType)(bmpImage.pImageData[dataIdx])+1; // - El color como tal
+//            populateVoxel(&pixelInfo,2+colorComp-1,0); // - Dim considera la dimension 0 :(
+//            populateFrameVoxel(&pixelInfo,2,0,colorComp); // - Dim considera la dimension 0 :(
+            for(int k = 0; k < colors; k++){
+//                cout<<(int)bmpImage.pImageData[dataIdx]<<',';
+                voxelLengths[2+k] = (valueType)(bmpImage.pImageData[dataIdx] + 1 ); // - El color como tal
                 dataIdx++;
             }
-            populateVoxel(&pixelInfo,2+colorComp-1,0); // - Dim considera la dimension 0 :(
+//            populateVoxel(&pixelInfo,2+colorComp-1,0); // - Dim considera la dimension 0 :(
+            populateFrameVoxel(&voxelBase,2+colors,0,&voxelLengths); // - Dim considera la dimension 0 :(
+//            cout<<"EVM Content..."<<endl;
+//            printEVM();
             // - Red
 //            cout<<"RGB: "<<bitset<8>(pixelRGB[0])<<' '<<bitset<8>(pixelRGB[1])<<' '<<bitset<8>(pixelRGB[2])<<endl;
 //            bgr |= pixelRGB[0];
@@ -1158,11 +1186,13 @@ void nDEVM<valueType>::loadImage(string fileName){
 //                    cout<<'*';
 //            }
         }
-//        cout<<endl;
     }
+//        cout<<endl;
+//    cout<<"Total data: "<<dataIdx<<endl;
     cout<<"Frame loaded..."<<endl;
 //    delete [] pixelRGB;
-    delete [] pixelInfo;
+    delete [] voxelLengths;
+    delete [] voxelBase;
 //    delete bmpImage;
 }
 
@@ -1182,26 +1212,27 @@ void nDEVM<valueType>::generateAnimation(string framePrefix, valueType initFrame
         valueType endFrame){
     // - Se guarda la animacion sobre el objeto desde que se llama    
     nDEVM<valueType> *currentFrame, *prevFrame,*diffFrame;
-    int time;
-    prevFrame = new nDEVM<valueType>();
+//    int time;
     string frameName;
     
+    prevFrame = new nDEVM<valueType>();
+
     for(int i = initFrame; i <= endFrame; i++){
         currentFrame = new nDEVM<valueType>();
-        time = i;
+//        time = i;
 
         frameName = framePrefix + to_string(i)+".bmp";
         cout<<"Loading: "<<frameName<<endl;
         
         currentFrame->loadImage(frameName);
         diffFrame = getCouplet(prevFrame,currentFrame);
-        diffFrame->saveEVM("frameCouplet",time); 
+        diffFrame->saveEVM("frameCouplet",i); 
 
         delete prevFrame;
         delete diffFrame;
         prevFrame = currentFrame;
     }
-    prevFrame->saveEVM("frameCouplet",time+1); 
+    prevFrame->saveEVM("frameCouplet",endFrame+1); 
     delete prevFrame;
     
     resetCoupletIndex();
@@ -1230,7 +1261,7 @@ void nDEVM<valueType>::generateAnimation(string framePrefix, valueType endFrame)
         time = i;
 
         frameName = framePrefix + to_string(i)+".bmp";
-        cout<<"Loading: "<<frameName<<endl;
+//        cout<<"Loading: "<<frameName<<endl;
         
         currentFrame->loadImage(frameName);
         diffFrame = getCouplet(prevFrame,currentFrame);
@@ -1815,7 +1846,7 @@ void nDEVM<valueType>::maskAnimConv2(nDEVM * mask,int endFrame,valueType _xMax,
             mask->EVMTraslation(1,1); // - Desplazamiento en X
             i++;
             // - Los archivos de DC contienen un maximo de 5000 
-            if(i >= 5000){
+            if(i >= 10000){
                 outputFile.close();
                 dcFile++;
                 cout<<partName<<" ... DONE!!"<<endl;
@@ -1944,7 +1975,6 @@ valueType nDEVM<valueType>::internalContacts(nDEVM * p,int n){
     prevSection = new nDEVM<valueType>();
     c1Coord = p->getCoord();
     couplet = p->readCouplet();
-    
     while( !(p->endEVM()) ){
         currentSection = getSection(prevSection,couplet);
         
@@ -2001,21 +2031,21 @@ double nDEVM<valueType>::discreteCompactness(valueType lMin,valueType lMax){
     return ((double)(Lc - lMin))/((double)(lMax - lMin));
 }
 
-template<typename valueType>
-void nDEVM<valueType>::subAnimClustering(int clusters,int _parts,int _dcFiles){
-//    string fileName = "dcFiles/dcFile_22_04_2015.dc";    
-    som = new SOM(clusters,_parts,_dcFiles);
-//    som->loadBinFile(fileName);
-    som->initialize();
-    som->sampling();
-    som->clustering();    
-    delete som;
-}
+//template<typename valueType>
+//void nDEVM<valueType>::subAnimClustering(int clusters,int _parts,int _dcFiles){
+////    string fileName = "dcFiles/dcFile_22_04_2015.dc";    
+//    som = new SOM(clusters,_parts,_dcFiles);
+////    som->loadBinFile(fileName);
+//    som->initialize();
+//    som->sampling();
+//    som->clustering();    
+//    delete som;
+//}
 
 template<typename valueType>
-void nDEVM<valueType>::subAnimClustering(int clusters,int _dcParts){
+void nDEVM<valueType>::subAnimClustering(int clusters,int _dcParts,int _iter){
 //    string fileName = "dcFiles/dcFile_22_04_2015.dc";    
-    som = new SOM(clusters,_dcParts);
+    som = new SOM(clusters,_dcParts,_iter);
 //    som->loadBinFile(fileName);
     som->initialize();
     som->sampling();
@@ -2539,13 +2569,16 @@ void nDEVM<valueType>::frameToImage(int width, int height,int colorCount,string 
     nDEVM<unsigned int> *frameMask = new nDEVM<unsigned int>();
     
     frameMask->frameMaskInit(colorCount,1);
-    cout<<"FrameMask Dim: "<<frameMask->dimDepth()<<endl;
+//    frameMask->printEVM();
+//    cout<<"FrameMask Dim: "<<frameMask->dimDepth()<<endl;
     
     nDEVM<unsigned int> *inter;
 
+//    cout<<"Retrieving pixel info..."<<endl;
     // - Maximo en x
     int j = 0;
     while(frameMask->maskMax[1] <= height){
+//        cout<<"Processing line "<<frameMask->maskMax[1]<<endl;
         while(frameMask->maskMax[0] <= width){
             inter = booleanOperation(frameMask,"intersection");
             
@@ -2561,6 +2594,7 @@ void nDEVM<valueType>::frameToImage(int width, int height,int colorCount,string 
         frameMask->EVMTraslation(1,1);
     }
     // CAMBIAR PARA SCRIPTS EJECUTADOS EN CONSOLA
+    cout<<"Saving: "<<imageName+".bmp"<<endl;
     bmp->saveImage(imageName+".bmp");    
-    delete bmp;
+//    delete bmp;
 }

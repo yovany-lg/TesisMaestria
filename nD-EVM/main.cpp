@@ -19,7 +19,7 @@
 #include "nDEVM.h"
 
 #include <limits>
-#include <thread>       // std::numeric_limits
+//#include <thread>       // std::numeric_limits
 
 void test2D(int size);
 string vectorToString(int **vector,int size);
@@ -86,23 +86,16 @@ int main(int argc, char** argv) {
 //      cout << "argv[" << i << "] = " << atoi(argv[i]) << endl; 
 //   return 0;     
 
-//    // - Calculo de DC con la mejora de la secuencia de secciones
-//   
-//    // --- Script para la ejecucion de la convolucion de una mascara con la animacion
-//    // --- se ejecuta desde consola y el unico argumento es timeShift, el resto se
-//    // --- extrae del archivo de configuracion. 
-//    // --- Solo se procesa un desplazamiento (timeShift) a la vez, los desplazamientos como tal
-//    // --- se llaman desde la aplicacion en JAVA "AnimConvLauncher.jar".
-//    if(argc != 2){
-//        cout<<"Argumentos invalidos..."<<endl;
-//        cout<<"timeShift"<<endl;
-//        return 0;
-//    }    
+    // -- Cargar videos en el modelo nD-EVM...
+    testAnimationLoad();
+    
+    // - Calculo de DC con la mejora de la secuencia de secciones   
+    // --- Script para la ejecucion de la convolucion de una mascara con la animacion
+    // --- se ejecuta desde consola y el unico argumento es timeShift, el resto se
+    // --- extrae del archivo de configuracion. 
+    // --- Solo se procesa un desplazamiento (timeShift) a la vez, los desplazamientos como tal
+    // --- se llaman desde la aplicacion en JAVA "AnimConvLauncher.jar".
 //    animConv(atoi(argv[1]));    
-
-    // --- Script que ejecuta todo el proceso de Clustering mediante SOM: Clustering,
-    // --- ClusterContent y ClusterFrame.
-//    SOMClustering();
     
     // --- Proceso de agrupamiento en base al archivo de configuracion 
     // --- Se considera que ya se obtuvieron los valores de DC mediante la convolucion
@@ -110,12 +103,8 @@ int main(int argc, char** argv) {
 
     // --- Script para obtener el contenido de los clusters, solo en archivos binarios
     // --- *.evm
-//    if(argc != 2){
-//        cout<<"Argumentos invalidos..."<<endl;
-//        cout<<"cluster"<<endl;
-//        return 0;
-//    }    
 //   SOMClusterContent(atoi(argv[1]));
+//   SOMClusterContent(0);
 
     // --- Script para extraer los frames de un cluster, se leen los archivos *.evm
     // --- binarios de las Secciones 
@@ -140,8 +129,7 @@ int main(int argc, char** argv) {
 //    testImageLoad();
     
     // - Test para cargar videos
-//    testAnimationLoad();
-    frameImageTest();
+//    frameImageTest();
 //    testLoadEVMSeq();
 
     // - Test Savings
@@ -338,19 +326,19 @@ void testAnimationLoad(){
     return;
 }
 
-void SOMClustering(){
-    std::stringstream stream;
-    stream <<"Clustering.exe";
-    system(stream.str().c_str());
-
-    std::stringstream stream2;
-    stream2 <<"java -jar ClusterContentLauncher.jar";
-    system(stream2.str().c_str());
-
-    std::stringstream stream3;
-    stream3 <<"java -jar ClusterFrameLauncher.jar";
-    system(stream3.str().c_str());
-}
+//void SOMClustering(){
+//    std::stringstream stream;
+//    stream <<"Clustering.exe";
+//    system(stream.str().c_str());
+//
+//    std::stringstream stream2;
+//    stream2 <<"java -jar ClusterContentLauncher.jar";
+//    system(stream2.str().c_str());
+//
+//    std::stringstream stream3;
+//    stream3 <<"java -jar ClusterFrameLauncher.jar";
+//    system(stream3.str().c_str());
+//}
 
 void clusterFrame(int cluster, string fileName,int idx){
     int width,length;
@@ -388,33 +376,30 @@ void clusterFrame(int cluster, string fileName,int idx){
     delete evm;
 }
 
-void frameImageTest(){
-    nDEVM<unsigned int> *currentFrame = new nDEVM<unsigned int>();
-    nDEVM<unsigned int> *frame2 = new nDEVM<unsigned int>();
-    string imageName = "EVMFiles/frameCouplet0";
-    currentFrame->loadImage("Sequences/frame0.bmp");
-    frame2->loadImage("Sequences/frame1.bmp");
-    currentFrame->booleanOperation(frame2,"xor");
-//    frame2->loadImage("Sequences/frame0.bmp");
-//    currentFrame->frameToImage(240,160,currentFrame->dimDepth() - 2,imageName);
-
-
+//void frameImageTest(){
+////    nDEVM<unsigned int> *currentFrame = new nDEVM<unsigned int>();
+//    string imageName = "EVMFiles/frameCouplet2";
+////    currentFrame->loadImage("Sequences/frame0.bmp");
+////    cout<<"Frame to Image..."<<endl;
+////    currentFrame->frameToImage(240,160,currentFrame->dimDepth() - 2,imageName);
+//
+//
 //    nDEVM<unsigned int> *couplet = new nDEVM<unsigned int>();
-//    nDEVM<unsigned int> *couplet2 = new nDEVM<unsigned int>();
-//    couplet->(imageName);
-//    couplet2->readEVM2("EVMFiles/frameCouplet1");
-//    couplet->booleanOperation(couplet2,"intersection");
-//    couplet->frameToImage(240,160,couplet->dimDepth() - 2,imageName);
-    
-//    delete couplet;
-}
+//    couplet->readEVM2(imageName);
+////    couplet->loadImage("Sequences/frame1.bmp");
+////    couplet2->readEVM2(imageName);
+////    couplet->booleanOperation(couplet2,"intersection");
+//    couplet->frameToImage(160,120,couplet->dimDepth() - 2,imageName);
+//    
+////    delete couplet;
+//}
 
 /**
  * Agrupamiento de sub-animaciones a traves de su DC
  */
 void Clustering(){
     // --- Lectura del archivo de configuracion...
-    int endFrame,timeLength,clusters,dcParts;
+    int endFrame,timeLength,clusters,dcParts,iter;
     string fileName;
     ifstream configFile; 
     
@@ -450,15 +435,20 @@ void Clustering(){
                 if(lineSplit[i] == "clusters:"){
                     clusters = atoi(lineSplit[i+1].c_str());
                 }
+
+                if(lineSplit[i] == "iterations:"){
+                    iter = atoi(lineSplit[i+1].c_str());
+                }
             }
         }
     }
     configFile.close();
     dcParts = endFrame - timeLength +1;
-    cout<<"--- [C++ => Clustering] => Clusters: "<<clusters<<", dcParts: "<<dcParts<<endl;
+    cout<<"--- [C++ => Clustering] => Clusters: "<<clusters<<", dcParts: "<<dcParts<<
+            ", Iterations: "<<iter<<endl;
     
     nDEVM<unsigned int> *evmClustering = new nDEVM<unsigned int>();
-    evmClustering->subAnimClustering(clusters,dcParts);
+    evmClustering->subAnimClustering(clusters,dcParts,iter);
 }
 
 /**
@@ -525,12 +515,15 @@ void SOMClusterContent(int cluster){
 
     nDEVM<unsigned int> *mask = new nDEVM<unsigned int>();
     mask->maskInit(xLength,yLength,timeLength,colors,1);
-
+    
     evmClustering->clusterContent3(cluster,mask,endFrame,width,length);
 
     delete mask;
     delete evmClustering;
 }
+
+
+
 
 /**
  * Inicializacion de la mascara y convolucion con la animacion...
