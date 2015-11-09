@@ -43,7 +43,7 @@ public:
     nDEVM(const nDEVM& orig);
     virtual ~nDEVM();
     
-    // -- Metodo basicos
+    // -- Metodos Basicos del EVM
     // - Obtener el nodo raiz del arbol Trie
     trieNode<valueType> *getRootNode();
     // - Evaluar si el EVM actual esta vacio.
@@ -54,7 +54,8 @@ public:
     void printEVM();
     string vectorToString(valueType **vector,int size);
     string vectorToString2(valueType **vector,int size);
-
+    int dimDepth();
+    int getDimDepth(trieNode<valueType> * currentNode,int dim);
 
     // - Inserta un vertice al EVM actual.
     void insertVertex(valueType * inputKey,int length);
@@ -66,16 +67,38 @@ public:
     void removeVertex(valueType *key);
     // - Evalua si un vertice dado existe en el EVM actual.
     bool existsVertex(valueType * inputKey,int length);
-    // - Realiza la operacion XOR entre el EVM actual y otro EVM dado.
+    // - Realiza la operacion XOR entre el EVM actual y otro EVM dado mediante la
+    // - comparacion de sus vertices.
     nDEVM* mergeXOR(nDEVM *otherEVM);
+    // - Agrega un Couplet al EVM actual.
+    void putCouplet(nDEVM * couplet);
+    // - Agrega una Seccion al EVM actual. Este metodo es utilizado solamente para generar
+    // - un EVM que contiene la secuencia de Secciones.
+    void putSection(nDEVM * section);
+    // - Agrega la coordenada x_1 a un Couplet (EVM actual).
+    void setCoord(valueType coord);
+    // - Obtiene la coordenada x_1 del Couplet (EVM actual).
+    valueType getCoord();
+    // - Metodo utilizado para inicializar el apuntador de Couplets al Couplet inicial.
+    void resetCoupletIndex();
+    // - Lectura del siguiente Couplet.
+    nDEVM* readCouplet();
+    // - Lectura de la siguiente Seccion. Este metodo es utilizado solamente para generar
+    // - un EVM que contiene la secuencia de Secciones.
+    nDEVM* readSection();
+    // - Determinar si el EVM actual esta vacio.
+    bool endEVM();
+    // - Obtener un Couplet a partir de dos Secciones consecutivas.
+    nDEVM* getCouplet(nDEVM* section1, nDEVM *section2);
+    // - Obtener una Seccion a partir de una Seccion y un Couplet.
+    nDEVM* getSection(nDEVM* section, nDEVM *couplet);
+    // - Metodo para obtener un EVM que contiene la secuencia de Secciones del EVM actual.
+    nDEVM* EVMSectionSequence();
+    void EVMSectionSequence(nDEVM** sectionSequence);
+    // - Metodo que obtiene la secuencia de Couplets.
+    nDEVM* EVMCoupletSequence();
+    void EVMCoupletSequence(nDEVM** sectionSequence);
     
-    // --- Metodos utilizados para casos especificos y ciertas pruebas.
-    bool compareByCouplets(nDEVM *otherEVM);
-    void rawFileToEVM(string fileName,int x1,int x2,int x3);
-    void populate3DVoxel(valueType **inputKey);
-    void populate2DVoxel(valueType **inputKey);
-    void populateVoxel(valueType **inputKey,int dim,int currentDim,int offset);
-    void populateVoxel(valueType **inputKey,int dim,int currentDim);
     
     void populateFrameVoxel(valueType **voxelBase,int frameDim,int currentDim,
         valueType ** voxelLengths);
@@ -84,106 +107,106 @@ public:
     void EVMFile(string suffix, int index);
     void EVMFile(string folder,string suffix, int index);
     void EVMFile(ofstream *EVMFile,trieNode<valueType> *currentNode,valueType **key, int dim);
-    
-    
-    void putCouplet(nDEVM * couplet);
-//    void putCouplet(trieNode** prevNode,trieNode **currentNode,trieNode *coupletRoot);
-    void putSection(nDEVM * section);
-    
-    void setCoord(valueType coord);
-    valueType getCoord();
-    valueType coupletCoord();
-    
-    void resetCoupletIndex();
-    nDEVM* readCouplet();
-    nDEVM* readSection();
-    bool endEVM();
-    nDEVM* getSection(nDEVM* section, nDEVM *couplet);
-    nDEVM* getCouplet(nDEVM* section1, nDEVM *section2);
-    nDEVM* EVMSectionSequence();
-    void EVMSectionSequence(nDEVM** sectionSequence);
-    nDEVM* EVMCoupletSequence();
-    void EVMCoupletSequence(nDEVM** sectionSequence);
-    
-    int dimDepth();
-    int getDimDepth(trieNode<valueType> * currentNode,int dim);
+      
+//    valueType coupletCoord();
 
-//-- Operaciones regularizadas
+    //-- Operaciones Booleanas Regularizadas
+    // - Algoritmo de Operaciones Booleanas
     nDEVM* booleanOperation(nDEVM* evm2,string op);
-    nDEVM<valueType> *booleanOperation(nDEVM* evm2, string op,int dim);
+    nDEVM* booleanOperation(nDEVM* evm2, string op,int dim);
     nDEVM* booleanOperation(nDEVM *evm1, nDEVM* evm2, string op, int n);
     nDEVM* booleanOperation(nDEVM *section1, nDEVM *section2, string op);
+    // - Funcion nextObject para el algoritmo de Operaciones Booleanas
     void nextObject(nDEVM *p, nDEVM *q,valueType *coord,bool *fromP, bool *fromQ);
-    // Operacion basica entre dos segmentos 1D.
-//    void generalUnionOperation(trieNode* section1, trieNode* section2,nDEVM **result);
+    // - Insercion de un vertice solo si este no existe.
     void condInsertVertex(valueType * inputKey,int length);
+    // - Operacion Union entre dos Secciones.
     nDEVM* unionOperation(nDEVM* section1, nDEVM* section2);
-    void unionOperation(trieNode<valueType>* segment1, trieNode<valueType>* segment2,nDEVM **result);
+    // - Determina si se agrega o no los Couplets que aun restan en un operando.
     bool putCoupletByOp(string op,int argPosition);
+    // - Operacion Insertar entre dos Secciones.
     nDEVM* intersectionOperation(nDEVM* section1, nDEVM* section2);
-    void intersectionOperation(trieNode<valueType>* section1, trieNode<valueType>* section2,trieNode<valueType> **result);
-    void mergeSegments(trieNode<valueType> ***currentSegment, trieNode<valueType> *otherSegment);
+    // - Operacion Diferencia entre dos Secciones.
     nDEVM* differenceOperation(nDEVM* section1, nDEVM* section2);
-    void differenceOperation(trieNode<valueType> ** section1, trieNode<valueType>** section2,trieNode<valueType> **result);
+    // - Operacion XOR entre dos Secciones.
     nDEVM* xorOperation(nDEVM* section1, nDEVM* section2);
-    void xorOperation(trieNode<valueType>* section1, trieNode<valueType>* section2,trieNode<valueType> **result);
-    trieNode<valueType> *cloneSegment(trieNode<valueType> *segment);
-    //Pruebas de operaciones Booleanas
-    void load3DRawFile(string fileName,int voxelSize);
-    void load2DRawFile(string fileName,int voxelSize);
+
+    // --- Metodos utilizados para casos especificos y ciertas pruebas.
+    bool compareByCouplets(nDEVM *otherEVM);
+    void rawFileToEVM(string fileName,int x1,int x2,int x3);
+    void populate3DVoxel(valueType **inputKey);
+    void populate2DVoxel(valueType **inputKey);
+    void populateVoxel(valueType **inputKey,int dim,int currentDim,int offset);
+    void populateVoxel(valueType **inputKey,int dim,int currentDim);
+    //Pruebas de operaciones Booleanas   
     void loadnDRawFile(string fileName,int voxelSize,int dim);
     void voxelizeRawFile(valueType **voxelInput,ifstream *inputFile,int voxelSize,int dim, int currentDim);
     
-    // -- Contenido
+    // -- Metodos utilizados para el calculo de Contenido y Compacidad Discreta
+    // - Contenido del EVM actual.
     valueType content();
     valueType content(nDEVM **p, int n);    
+    // - Longitud total de un 1D-EVM.
     valueType length();
-    valueType boundaryContent();
-    valueType boundaryContent(nDEVM *p, int n);
-    valueType perimeter();
+    // - Calculo de la Compacidad Discreta.
     double discreteCompactness(valueType lMin,valueType lMax);
+    // - Normalizacion de Compacidad Discreta.
     void dcNormalization(int _parts,int _dcFiles,double max,double min);  // - Agregar un prefijo
     void dcNormalization(int _parts,int _dcFiles);
+    // - Obtiene un EVM con diferente orden en los ejes coordenados.
     nDEVM * dimLeftShift();
+    // - Obtiene los contactos internos con respecto al primer eje coordenado.
     valueType internalContacts();
     valueType internalContacts(nDEVM * p,int n);
+    // - Obtiene el total de contactos internos.
     valueType totalInternalContacts();
     
-    // - Cargar Videos Imagenes
-    void loadImageFile(string fileName);
+    // -- Metodos para cargar Videos e Imagenes
+//    void loadImageFile(string fileName);
+    // - Representar una imagen en el EVM.
     void loadImage(string fileName);
+    // - Generar una animacion en el EVM a partir de una secuencia de frames.
     void generateAnimation(string framePrefix, valueType initFrame,
         valueType endFrame);
     void generateAnimation(string framePrefix, valueType endFrame);
-    void frameSequence(int initFrame,int endFrame);
+    // - Obtiene la secuencia de Frames de una animacion en el EVM.
     void frameSequence(int endCouplet);
+    // - Inicializa una mascara.
     void maskInit(int xLength, int yLength, int timeLength,
         int colorComponents, int colorCompSize);
+    // - Obtiene una mascara con los componentes de color en minimo.
     void minMask(int xLength, int yLength, int timeLength,
         int colorComponents);
+    // - Realiza la extrusion de una mascara.
     void populateMask(valueType **voxelInput,int maskDim,int currentDim,
         valueType ** maskLengths);
-    nDEVM<valueType> * maskIntersection(nDEVM* mask,int initCouplet,int endCouplet);
+    // - Obtiene un desplazamiento en la dimension y valor dados del EVM actual.
+    void EVMTraslation(int dim,valueType shift);
+    // - Remueve el desplazamiento aplidado a un EVM en una dimension dada.
+    void maskDimReset(int dim);
+    // - Realiza la convolucion entre una mascara y la animacion almacenada en archivos binarios.
+    void maskAnimConv(nDEVM * mask,int initFrame,int endFrame,valueType _xMax,valueType _yMax);
+    // - Realiza la interseccion entre una mascara y una animacion en el EVM.
+    nDEVM * maskIntersection(nDEVM* mask,int initCouplet,int endCouplet);
+    // - Funcion nextObject especifico para la animacion en archivos binarios.
     void animNextObject(valueType iCouplet, nDEVM *mask,valueType *coord,
         bool *fromP, bool *fromQ);
-    void EVMTraslation(int dim,valueType shift);
-    void maskDimReset(int dim);
-    void maskAnimConv(nDEVM * mask,int initFrame,int endFrame,
-        valueType _xMax,valueType _yMax);
-    nDEVM<valueType> *maskIntersection(nDEVM* mask, nDEVM* sectionSeq);
-    nDEVM<valueType> *maskAnimSections(nDEVM* mask,int endCouplet);
-    void maskAnimConv2(nDEVM * mask,int endFrame,
-        valueType _xMax,valueType _yMax);
-    void dcContent(int _part,int _dc);
+    // - Convolucion entre la mascara y la animacion en el EVM.
+    void maskAnimConv2(nDEVM * mask,int endFrame,valueType _xMax,valueType _yMax);
+    // - Interseccion de una mascara y una animacion.
+    nDEVM *maskIntersection(nDEVM* mask, nDEVM* sectionSeq);
+    // - Obtiene solo las Secciones necesarias para la interseccion con la mascara.
+    nDEVM *maskAnimSections(nDEVM* mask,int endCouplet);
     
     void saveEVM(string fileName,int index);
     void saveEVM2(string fileName,int index);
     void readEVM(string fileName);
     void readEVM2(string fileName);
     
-    // - SOM Clustering
-//    void subAnimClustering(int clusters,int _dcParts,int _dcFiles);
+    // -- SOM Clustering
+    // - Agrupamiento de sub-animaciones
     void subAnimClustering(int clusters,int _dcParts, int _iter);
+    // - Obtiene el contenido de un cluster.
     void clusterContent(int cluster);
     void clusterContent(int cluster, nDEVM * mask,int initFrame,int endFrame,
             valueType _xMax,valueType _yMax);
@@ -191,12 +214,20 @@ public:
         valueType _xMax,valueType _yMax);
     void clusterContent3(int cluster, nDEVM * mask,int endFrame,
         valueType _width,valueType _length);
+    nDEVM* clusterContentNC(int cluster, nDEVM * mask,int endFrame,
+        valueType _width,valueType _length);
+    nDEVM<valueType>* clusterContentColor(int cluster, nDEVM * mask,int endFrame,
+        valueType _width,valueType _length);
+    // - Contenido de un archivo de Compacidad Discreta.
+    void dcContent(int _part,int _dc);
     
     
-    // - Guardar imagenes de los EVMs de los frames.
+    // -- Guardar imagenes de los EVMs de los frames.
     void frameMaskInit(int colorComponents, int colorCompSize);
     valueType dimMax(int dim);
+    void dimAmplification(int dim, valueType value);
     void frameToImage(int width, int height,int colorCount,string imageName);
+    void frameToImage2(int width, int height,int colorCount,string imageName);
     void animImages(valueType _width, valueType _length,string imageName);
     void clusterFrame(int cluster, string fileName,int idx,valueType _width,
         valueType _length);
@@ -381,6 +412,13 @@ nDEVM<valueType>* nDEVM<valueType>::mergeXOR(nDEVM* otherEVM){
  * -Nombre del archivo.
  * -Dimensiones.
 */
+/**
+ * Metodo utilizado especificamente para cargar un archivo de un CT-Scan en formato *.raw.
+ * @param fileName
+ * @param x1
+ * @param x2
+ * @param x3
+ */
 template<typename valueType> 
 void nDEVM<valueType>::rawFileToEVM(string fileName,int x1,int x2,int x3){
     //const char * file = "VL-vismale-(128x256x256)-(1.5,1,1).raw";
@@ -553,13 +591,18 @@ void nDEVM<valueType>::populateVoxel(valueType **voxelInput,int dim,int currentD
  * Argumentos:
  * -Nodo Raiz.
 */
+/**
+ * Metodo principal para almacenar el contenido de un 3D-EVM en un archivo de texto, el cual puede
+ * ser visualizado mediante el SW para 3D-EVMs.
+ * @param index
+ */
 template<typename valueType> 
 void nDEVM<valueType>::EVMFile(int index){
     EVMFile("",index);
 }
 
 /**
- * Metodo para guardar un archivo 3D-EVM de texto...
+ * Metodo que realiza la exploración del arbol Trie para guardar un archivo 3D-EVM de texto...
  * @param suffix
  * @param index
  */
@@ -751,6 +794,10 @@ nDEVM<valueType>* nDEVM<valueType>::getCouplet(nDEVM* section1, nDEVM *section2)
     return section1->mergeXOR(section2);
 }
 
+/**
+ * Metodo principal para obtener la secuecia de Secciones del nD-EVM actual.
+ * @return 
+ */
 template<typename valueType> 
 nDEVM<valueType>* nDEVM<valueType>::EVMSectionSequence(){
     nDEVM* sectionSequence = new nDEVM();
@@ -758,6 +805,10 @@ nDEVM<valueType>* nDEVM<valueType>::EVMSectionSequence(){
     return sectionSequence;
 }
 
+/**
+ * Metodo que obtiene la secuencua de Secciones y la almacena en el objeto pasado como parametro.
+ * @param sectionSequence: Objeto donde se guarda la secuencia de Secciones.
+ */
 template<typename valueType> 
 void nDEVM<valueType>::EVMSectionSequence(nDEVM** sectionSequence){
     nDEVM* currentCouplet = new nDEVM();
@@ -841,10 +892,10 @@ int nDEVM<valueType>::dimDepth(){
 }
 
 /**
- * Método para realizar una operación booleana entre dos EVMs.
- * @param evm1
- * @param evm2
- * @param op
+ * Método principal para realizar una operación booleana entre dos nD-EVMs, considerando como
+ * primer parametro el nD-EVM actual.
+ * @param evm2: El segundo operando en el algoritmo de operaciones booleanas.
+ * @param op: Operacion Booleana a efectuar.
  * @return 
  */
 template<typename valueType> 
@@ -853,11 +904,27 @@ nDEVM<valueType>* nDEVM<valueType>::booleanOperation(nDEVM* evm2, string op){
     return booleanOperation(this,evm2,op,dim);
 }
 
+/**
+ * Metodo opcional para las Operaciones Booleanas.
+ * @param evm2
+ * @param op
+ * @param dim
+ * @return 
+ */
 template<typename valueType> 
 nDEVM<valueType>* nDEVM<valueType>::booleanOperation(nDEVM* evm2, string op,int dim){
     return booleanOperation(this,evm2,op,dim);
 }
 
+/**
+ * Metodo que aplica la Operacion Booleana a dos nD-EVMs.
+ * @param p: Primer operando.
+ * @param q: Segundo operando.
+ * @param op: Operacion Booleana a efectuar. Las operaciones disponibles son: "union",
+ *  "intersection", "difference" y "xor".
+ * @param n: La dimensionalidad de los nD-EVMs como parametros.
+ * @return 
+ */
 template<typename valueType> 
 nDEVM<valueType>* nDEVM<valueType>::booleanOperation(nDEVM *p, nDEVM *q, string op, int n){
     nDEVM<valueType> *pSection,*pPrevSection, *qSection,*qPrevSection, *couplet;
@@ -1119,12 +1186,16 @@ nDEVM<valueType>* nDEVM<valueType>::xorOperation(nDEVM* section1, nDEVM* section
     return result;
 }
 
-template<typename valueType> 
-void nDEVM<valueType>::loadImageFile(string fileName){
-    loadImage(fileName);
-    return;
-}
+//template<typename valueType> 
+//void nDEVM<valueType>::loadImageFile(string fileName){
+//    loadImage(fileName);
+//    return;
+//}
 
+/**
+ * Generar un EVM a partir de un frame.
+ * @param fileName: Ruta del archivo del frame.
+ */
 template<typename valueType> 
 void nDEVM<valueType>::loadImage(string fileName){
     BMP bmpImage(fileName);
@@ -1395,6 +1466,14 @@ void nDEVM<valueType>::maskInit(int xLength, int yLength, int timeLength,
     delete otherMask;
 }
 
+/**
+ * Generar una mascara con la misma configuracion que la original pero con componentesn
+ * de color al minimo.
+ * @param xLength
+ * @param yLength
+ * @param timeLength
+ * @param colorComponents
+ */
 template<typename valueType>
 void nDEVM<valueType>::minMask(int xLength, int yLength, int timeLength,
         int colorComponents){
@@ -1684,6 +1763,10 @@ void nDEVM<valueType>::EVMTraslation(int dim,valueType shift){
     maskMin[dim] += shift;
 }
 
+template<typename valueType>
+void nDEVM<valueType>::dimAmplification(int dim,valueType value){
+    trieTree->dimAmplification(dim,value);
+}
 
 template<typename valueType>
 void nDEVM<valueType>::maskDimReset(int dim){
@@ -1810,7 +1893,7 @@ void nDEVM<valueType>::maskAnimConv2(nDEVM * mask,int endFrame,valueType _xMax,
         return;
     }
     
-    sectionSeq = sectionSeq->maskAnimSections(mask,endFrame+1);
+    sectionSeq = maskAnimSections(mask,endFrame+1);
     
     // - Se guardan las rutas de los archivos correspondientes a esta parte
     // ***
@@ -1899,6 +1982,10 @@ void nDEVM<valueType>::dcContent(int _part,int _dc){
     delete idx;
 }
 
+/**
+ * Metodo principal para el calculo de Contenido de un nD-EVM
+ * @return 
+ */
 template<typename valueType>
 valueType nDEVM<valueType>::content(){
     int dim = dimDepth();
@@ -1906,6 +1993,12 @@ valueType nDEVM<valueType>::content(){
     return content(&p, dim);
 }
 
+/**
+ * Metodo que realiza el calculo de contenido de un nD-EVM.
+ * @param p: Objeto nDEVM al que se le calculara el contenido.
+ * @param n: Dimensionalidad del nD-EVM.
+ * @return 
+ */
 template<typename valueType>
 valueType nDEVM<valueType>::content(nDEVM **p, int n){
     valueType cont = 0, coordC1,coordC2;
@@ -1958,12 +2051,23 @@ valueType nDEVM<valueType>::length(){
     return trieTree->length();
 }
 
+/**
+ * Obtiene un ordenamiento diferente de los ejes coordenados, especificamente
+ * realiza un desplazamiento a la izquierda de los ejes ordenados: {x_1,x_2,x_3} => {x_2,x_3,x_1}
+ * @return 
+ */
 template<typename valueType>
 nDEVM<valueType> * nDEVM<valueType>::dimLeftShift(){
     nDEVM<valueType> * newEVM = new nDEVM<valueType>(trieTree->dimLeftShift());
     return newEVM;
 }
 
+/**
+ * Calculo de contactos internos.
+ * @param p: Objeto nDEVM del cual se obtentran los contactos internos.
+ * @param n: Dimensionalidad del p.
+ * @return 
+ */
 template<typename valueType>
 valueType nDEVM<valueType>::internalContacts(nDEVM * p,int n){
     nDEVM<valueType> * couplet;
@@ -2002,6 +2106,10 @@ valueType nDEVM<valueType>::internalContacts(nDEVM * p,int n){
     return iContacts;
 }    
 
+/**
+ * Contactos internos totales de un nD-EVM.
+ * @return 
+ */
 template<typename valueType>
 valueType nDEVM<valueType>::totalInternalContacts(){
     int dim = dimDepth();
@@ -2024,6 +2132,12 @@ valueType nDEVM<valueType>::totalInternalContacts(){
     return Lc;
 }
 
+/**
+ * Calculo de compacidad discreta para un nD-EVM.
+ * @param lMin: Los contactos internos minimos.
+ * @param lMax: Los contactos internos maximos.
+ * @return 
+ */
 template<typename valueType>
 double nDEVM<valueType>::discreteCompactness(valueType lMin,valueType lMax){
     valueType Lc = totalInternalContacts();
@@ -2412,16 +2526,211 @@ void nDEVM<valueType>::clusterContent3(int cluster, nDEVM * mask,int endFrame,
     delete idx;
 }
 
+/**
+ * Retorna una SuperMascara, la cual contiene todas las regiones que conforman al cluster.
+ * @param cluster
+ * @param mask: Mascara sin color.
+ * @param endFrame
+ * @param _width
+ * @param _length
+ */
 template<typename valueType>
-void nDEVM<valueType>::clusterFrame(int cluster, string fileName,int idx,valueType _width,
+nDEVM<valueType>* nDEVM<valueType>::clusterContentNC(int cluster, nDEVM * mask,int endFrame,
+        valueType _width,valueType _length){
+    unsigned int _xLength = mask->dimMax(1);
+    unsigned int _yLength = mask->dimMax(2);
+    
+    valueType xCount = _width - _xLength + 1 , xShift;
+    valueType yCount = _length - _yLength + 1, yShift;
+    valueType totalCount = xCount * yCount, tShift = 0, prevTShift;
+    valueType steps = 1;
+
+    nDEVM<valueType> *prevMask;
+    nDEVM<valueType> *superMask = new nDEVM<valueType>();
+    nDEVM<valueType> *finalMask = new nDEVM<valueType>();
+
+    // *** CAMBIAR PARA SCRIPTS EJECUTADOS EN CONSOLA
+//    string fileName = "clustering/cluster"+to_string(cluster)+".idx";
+    string fileName = "..\\clustering\\cluster"+to_string(cluster)+".idx";
+
+    ifstream fileInput;    
+    fileInput.open(fileName.c_str(), ios_base::in |ios_base::binary); // binary file
+    if (! fileInput.is_open()){
+        cout<<"El archivo: "<<fileName<<" no pudo abrirse..."<<endl;
+        exit(1);
+    }
+    
+    unsigned int *idx = new unsigned int; // para leer el contenido del dcFile
+    unsigned int i = 0; // Numero de secuencia...
+    
+    // - Mientras haya informacion en el archivo...
+    while(fileInput.read((char *) idx, sizeof(unsigned int))){
+        prevTShift = tShift;
+        tShift = (unsigned int) (*idx)/totalCount;
+        yShift = (unsigned int) ( (*idx) - (tShift * totalCount) )/xCount;
+        xShift = (*idx) - (tShift * totalCount) - yShift*xCount;
+
+        // - SuperMask union
+        if(tShift > prevTShift){
+            prevMask = finalMask;
+            finalMask = finalMask->booleanOperation(superMask,"union");
+            delete prevMask;
+            delete superMask;
+            
+            superMask = new nDEVM<valueType>();
+        }
+        
+        mask->EVMTraslation(0,tShift);
+        mask->EVMTraslation(1,xShift*steps);
+        mask->EVMTraslation(2,yShift*steps);
+
+        // - Mask union
+        prevMask = superMask;
+        superMask = superMask->booleanOperation(mask,"union");
+        delete prevMask;
+        
+        mask->maskDimReset(0);
+        mask->maskDimReset(1);
+        mask->maskDimReset(2);
+        i++;
+    }
+    
+    prevMask = finalMask;
+    finalMask = finalMask->booleanOperation(superMask,"union");
+    delete prevMask;
+    delete superMask;
+
+    fileInput.close();
+    
+    return finalMask;
+}
+
+/**
+ * Obtiene el EVM resultante de un cluster con frames en color,
+ * @param cluster
+ * @param mask
+ * @param endFrame
+ * @param _width
+ * @param _length
+ * @return 
+ */
+template<typename valueType>
+nDEVM<valueType>* nDEVM<valueType>::clusterContentColor(int cluster, nDEVM * mask,int endFrame,
+        valueType _width,valueType _length){
+    unsigned int _xLength = mask->dimMax(1);
+    unsigned int _yLength = mask->dimMax(2);
+    
+    valueType xCount = _width - _xLength + 1 , xShift;
+    valueType yCount = _length - _yLength + 1, yShift;
+    valueType totalCount = xCount * yCount, tShift;
+    valueType steps = 1;
+
+    nDEVM<valueType> *prevResult;// = new nDEVM<valueType>();
+    nDEVM<valueType> *intersectionResult;
+    nDEVM<valueType> *finalResult = new nDEVM<valueType>();
+    nDEVM<valueType> *prevMask;
+    nDEVM<valueType> *superMask = new nDEVM<valueType>();
+    nDEVM<unsigned int> *sectionSeq;
+    
+    sectionSeq = maskAnimSections(mask,endFrame+1);
+    
+    // - Lectura del archivo de DC
+    // *** CAMBIAR PARA SCRIPTS EJECUTADOS EN CONSOLA
+//    string fileName = "clustering/cluster"+to_string(cluster)+".idx";
+    string fileName = "..\\clustering\\cluster"+to_string(cluster)+".idx";
+//    string partName = "clustering/Cluster"+to_string(cluster)+"/clusterPart";
+    // - Partes en que se divide el cluster, contiene las intersecciones con las mascaras y sus
+    // desplazamientos...
+//    string partName = "..\\clustering\\Cluster"+to_string(cluster)+"\\clusterPart";
+
+    ifstream fileInput;    
+    fileInput.open(fileName.c_str(), ios_base::in |ios_base::binary); // binary file
+    if (! fileInput.is_open()){
+        cout<<"El archivo: "<<fileName<<" no pudo abrirse..."<<endl;
+        exit(1);
+    }
+    
+    unsigned int *idx = new unsigned int; // para leer el contenido del dcFile
+    
+    // - Mientras haya informacion en el archivo...
+    while(fileInput.read((char *) idx, sizeof(unsigned int))){
+        tShift = (unsigned int) (*idx)/totalCount;
+        yShift = (unsigned int) ( (*idx) - (tShift * totalCount) )/xCount;
+        xShift = (*idx) - (tShift * totalCount) - yShift*xCount;
+
+        mask->EVMTraslation(0,tShift);
+        mask->EVMTraslation(1,xShift*steps);
+        mask->EVMTraslation(2,yShift*steps);
+                
+        // - Estraer la secuencia de Secciones, solo si el EVM de la secuencia esta vacio
+        // o el desplazamiento en el tiempo no coincide con la mascara
+        if(sectionSeq->getCoord() != mask->getCoord()){
+//            cout<<"Cluster: "<<to_string(cluster)<<", timeShift: "<<tShift<<endl;
+            if(!superMask->isEmpty()){
+                intersectionResult = maskIntersection(superMask,sectionSeq);
+                // - Guardar archivo binario del resultado actual...
+                prevResult = finalResult;
+//                cout<<"Saving: "<<partName+to_string(clusterPart)+".evm"<<endl;
+//                finalResult->saveEVM2(partName,clusterPart);
+                finalResult = finalResult->booleanOperation(intersectionResult,"union");
+                delete intersectionResult;
+                delete prevResult;
+            }
+
+            delete sectionSeq;
+            sectionSeq = maskAnimSections(mask,endFrame+1);
+            delete superMask;
+            superMask = new nDEVM<valueType>();
+        }
+        
+        prevMask = superMask;
+        superMask = superMask->booleanOperation(mask,"union");
+        delete prevMask;
+        
+        mask->maskDimReset(0);
+        mask->maskDimReset(1);
+        mask->maskDimReset(2);
+//        i++;
+    }
+    fileInput.close();
+    
+    if(!superMask->isEmpty()){
+        intersectionResult = maskIntersection(superMask,sectionSeq);
+        // - Guardar archivo binario del resultado actual...
+        prevResult = finalResult;
+        finalResult = finalResult->booleanOperation(intersectionResult,"intersection");
+        delete intersectionResult;
+        delete prevResult;
+    }
+//    delete finalResult;
+    delete sectionSeq;
+    delete superMask;
+//    delete finalResult;
+    delete idx;
+    
+    return finalResult;
+}
+
+
+/**
+ * Genera un frame a partir de una Seccion de un Cluster
+ * @param cluster
+ * @param sectionFileName
+ * @param idx
+ * @param _width
+ * @param _length
+ */
+template<typename valueType>
+void nDEVM<valueType>::clusterFrame(int cluster, string sectionFileName,int idx,valueType _width,
         valueType _length){
     string imageName = "..\\clustering\\Cluster"+to_string(cluster)+"\\clusterSection"
             +to_string(idx);
     nDEVM<unsigned int> *section = new nDEVM<unsigned int>();
-    section->readEVM2(fileName);
+    section->readEVM2(sectionFileName);
 //    cout<<"Saving "<<imageName<<".bmp"<<endl;
     if(section->dimDepth() > 0)
-        section->frameToImage(_width,_length,section->dimDepth() - 2,imageName);
+        section->frameToImage2(_width,_length,section->dimDepth() - 2,imageName);
+//        section->frameToImage(_width,_length,section->dimDepth() - 2,imageName);
     delete section;
 }
 
@@ -2597,4 +2906,83 @@ void nDEVM<valueType>::frameToImage(int width, int height,int colorCount,string 
     cout<<"Saving: "<<imageName+".bmp"<<endl;
     bmp->saveImage(imageName+".bmp");    
 //    delete bmp;
+}
+
+template<typename valueType>
+void nDEVM<valueType>::frameToImage2(int width, int height,int colorCount,string imageName){
+    BMP *bmp = new BMP(width, height,colorCount);
+    unsigned int dataCount = width*height*colorCount;
+    bmp->pImageData = new BYTE[dataCount];
+    
+    for(int i = 0; i < dataCount; i++){
+        bmp->pImageData[i] = 255;
+    }
+    
+    nDEVM* currentCoupletX;
+    nDEVM* prevSectionX = new nDEVM();
+    nDEVM* currentSectionX;
+    unsigned int coordX1 = getCoord();
+    unsigned int coordX2;
+    currentCoupletX = readCouplet();
+
+    nDEVM* currentCoupletY;
+    nDEVM* prevSectionY;
+    nDEVM* currentSectionY;
+    unsigned int coordY1;
+    unsigned int coordY2;
+//    int pixelCount = 0;
+    
+    unsigned int idx = 0;
+    while(!endEVM()){
+        currentSectionX = getSection(prevSectionX,currentCoupletX);
+//        currentSectionX->printEVM();
+        coordX2 = getCoord();
+//        cout<<"CoupletX: "<<coordX1<<endl;
+//        currentSectionX->printEVM();
+        
+        if(!currentSectionX->isEmpty()){
+            coordY1 = currentSectionX->getCoord();
+            currentCoupletY = currentSectionX->readCouplet();
+
+            prevSectionY = new nDEVM();
+            while(!currentSectionX->endEVM()){
+                currentSectionY = getSection(prevSectionY,currentCoupletY);
+                coordY2 = currentSectionX->getCoord();
+//                cout<<"CoupletX: "<<coordX1<<", CoupletY: "<<coordY1<<endl;
+//                currentSectionY->printEVM();
+                // - Coordenadas en x.
+                for(int i = coordX1; i < coordX2; i++){
+                    // - Coordanadas en y.
+                    for(int j = coordY1; j < coordY2; j++){
+                        idx = j*width*colorCount +i*colorCount;
+//                        cout<<"idx: "<<idx<<endl;                        
+//                        cout<<"{"<<i<<","<<j;
+                        for(int k = 0; k < colorCount; k++){
+                            bmp->pImageData[idx] = currentSectionY->dimMax(k)-1;
+                            idx++;
+//                            cout<<currentSectionY->dimMax(k);
+                        }
+//                        cout<<"},";
+//                        pixelCount++;
+                    }
+                }
+                
+                prevSectionY = currentSectionY;
+                currentCoupletY = currentSectionX->readCouplet();
+                coordY1 = coordY2;
+//                coordY1 = currentSectionX->getCoord();
+            }
+            currentSectionX->resetCoupletIndex();
+        }
+        
+        // Siguiente Iteración
+        prevSectionX = currentSectionX;
+        currentCoupletX = readCouplet();
+        coordX1 = coordX2;
+    }
+//    cout<<endl<<"Total of Pixels: "<<pixelCount<<endl;
+    resetCoupletIndex();
+    cout<<"Saving: "<<imageName+".bmp"<<endl;
+    bmp->saveImage(imageName+".bmp");        
+//    return;
 }

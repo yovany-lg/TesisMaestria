@@ -31,7 +31,8 @@ public class JavaThreads {
         JavaThreads threads = new JavaThreads();
 //        threads.AnimConvThreadLauncher();
 //        threads.ClusterContentTreadLauncher();
-        threads.ClusterFrameLauncher();
+        threads.ClusterContentNCTreadLauncher();
+//        threads.ClusterFrameLauncher();
 //        threads.SOMClustering();
         
 
@@ -384,4 +385,87 @@ public class JavaThreads {
         System.out.println( "Tasks block ends...\n" ); 
     
     }
+    
+    public void ClusterContentNCTreadLauncher(){
+        int initCluster = 0, endCluster = 0;
+        // -- Lectura del archivo de configuracion...
+        String fileName = "config.txt";
+        String line = "";
+        Scanner input = null;
+        try{
+            input = new Scanner( new File( fileName ) );
+        } // end try
+        catch ( FileNotFoundException fileNotFoundException ){
+            System.err.println( "Error opening file: "+fileName );
+            System.exit( 1 );
+        } // end catch       
+        
+        // -- Se explora el contenido del archivo de configuracion linea por linea
+        while(input.hasNext()){
+            line = input.nextLine();
+            // -- Se obtiene el total de clusters
+            if(line.contains("#Clustering")){
+                String[] words = line.split(" ");    
+                for (int i = 0; i < words.length; i++) {
+                    if(words[i].equals("clusters:")){
+                        endCluster = Integer.parseInt(words[i+1]) - 1;
+                    }
+                }
+            }
+            // -- Cantidad de Threads, depende de las capacidades de la PC.
+            // -- Generalmente, para frames de 320x240 se usan 3 o 2, para frames de 240x160 se usan 4
+            if(line.contains("#ThreadCount")){
+                String[] words = line.split(" ");    
+                for (int i = 0; i < words.length; i++) {
+                    if(words[i].equals("clusters:")){ // - Para convolucion
+                        threadCount = Integer.parseInt(words[i+1]);
+                    }
+                }
+            }
+        }
+        input.close();        
+        
+        
+        int totalClusters = endCluster + 1;        
+        int clusterCount = initCluster;
+        System.out.println("*** [JAVA => ClusterContentEVMsTreadLauncher] Clusters: "+totalClusters+", threadCount: "+threadCount);
+        
+//        System.out.println("InitFrame: "+initFrame+", EndFrame: "+endFrame+
+//                ", TotalFrames: "+totalFrames);
+        
+        while(totalClusters > threadCount){
+//            System.out.println("Launching => InitFrame: "+frameCount+", EndFrame: "+
+//                    (frameCount+threadCount-1));
+            ClusterContentNCTread(clusterCount,clusterCount+threadCount-1);
+            clusterCount += threadCount;
+            totalClusters -= threadCount;
+        }
+//        System.out.println("Finally => InitFrame: " + frameCount+ ", EndFrame: "+
+//                endFrame);
+        ClusterContentNCTread(clusterCount, endCluster);        
+    }
+    
+    public void ClusterContentNCTread(int initCluster, int endCluster){
+//        System.out.println( "Starting Executor" );
+        String cmd = "";
+        // create ExecutorService to manage threads
+        ExecutorService threadExecutor = Executors.newCachedThreadPool();
+        
+        for(int i = initCluster; i <= endCluster; i++){
+            cmd = "ClusterContentNC.exe "+i;
+            CommandRunner anim = new CommandRunner(cmd);
+            threadExecutor.execute( anim ); // start task1        
+        }
+        
+        // shut down worker threads when their tasks complete
+        threadExecutor.shutdown();
+        while(!threadExecutor.isTerminated()){
+            try {
+                Thread.sleep( (long)10000 );
+            } catch (InterruptedException ex) {
+                Logger.getLogger(JavaThreads.class.getName()).log(Level.SEVERE, null, ex);
+            }
+        }
+//        System.out.println( "Tasks block ends...\n" ); 
+    }    
 }

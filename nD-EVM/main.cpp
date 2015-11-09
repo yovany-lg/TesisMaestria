@@ -56,7 +56,12 @@ void clusterFrame(int cluster, string fileName,int idx);
 void frameImageTest();
 std::vector<std::string> &split(const std::string &s, char delim, std::vector<std::string> &elems);
 std::vector<std::string> split(const std::string &s, char delim);
-
+void frameImageTest();
+void clusterContentNC(int cluster);
+void clusterContentColor(int cluster);
+void animationSize();
+void clustersSize();
+void clusterContentCount();
 
 typedef unsigned long long timestamp_t;
 
@@ -87,7 +92,7 @@ int main(int argc, char** argv) {
 //   return 0;     
 
     // -- Cargar videos en el modelo nD-EVM...
-    testAnimationLoad();
+//    testAnimationLoad();
     
     // - Calculo de DC con la mejora de la secuencia de secciones   
     // --- Script para la ejecucion de la convolucion de una mascara con la animacion
@@ -95,7 +100,7 @@ int main(int argc, char** argv) {
     // --- extrae del archivo de configuracion. 
     // --- Solo se procesa un desplazamiento (timeShift) a la vez, los desplazamientos como tal
     // --- se llaman desde la aplicacion en JAVA "AnimConvLauncher.jar".
-//    animConv(atoi(argv[1]));    
+    animConv(atoi(argv[1]));    
     
     // --- Proceso de agrupamiento en base al archivo de configuracion 
     // --- Se considera que ya se obtuvieron los valores de DC mediante la convolucion
@@ -104,6 +109,8 @@ int main(int argc, char** argv) {
     // --- Script para obtener el contenido de los clusters, solo en archivos binarios
     // --- *.evm
 //   SOMClusterContent(atoi(argv[1]));
+//    clusterContentColor(atoi(argv[1]));
+//    clusterContentNC(atoi(argv[1]));
 //   SOMClusterContent(0);
 
     // --- Script para extraer los frames de un cluster, se leen los archivos *.evm
@@ -116,8 +123,7 @@ int main(int argc, char** argv) {
 //   clusterFrame(atoi(argv[1]),argv[2],atoi(argv[3]));
     
     
-    // Pruebas Basicas de operaciones booleanas
-
+    // --- Pruebas Basicas de operaciones booleanas
     // Test de Operaciones Booleanas
 //    testOperations();
     
@@ -211,8 +217,138 @@ int main(int argc, char** argv) {
 //
 //    cout<<"Mask => xLength: "<<xLength<<", yLength: "<<yLength<<", timeLength: "<<
 //            timeLength<<", timeShift: "<<atoi(argv[1])<<endl;
+//    frameImageTest();
+
     
+    // -- EVM sizes
+//    animationSize();
+
+//    clustersSize();
+//    clusterContentCount();
+    
+    
+//    nDEVM<unsigned int> *clusterEVM = new nDEVM<unsigned int>();
+//    nDEVM<unsigned int> *couplet;
+//    clusterEVM->readEVM2("clustering/Cluster0/colorClusterEVM0");
+//    couplet = clusterEVM->readCouplet();
+//    couplet->frameToImage2(160,120,3,"clustering/Cluster0/clusterCouplet");
     return 0;
+}
+
+void clustersSize(){
+    int clusters;
+    string fileName;
+    ifstream configFile; 
+    
+    fileName = "bin/config.txt";            
+    configFile.open(fileName.c_str(), ios_base::in);
+    if (! configFile.is_open()){
+        cout<<"El archivo: "<<fileName<<" no pudo abrirse..."<<endl;
+        return;
+    }
+    
+    string line;
+    while(getline(configFile, line)){
+        vector<string> lineSplit = split(line,' ');
+        
+        if(lineSplit[0] == "#Clustering"){
+            for(int i = 1; i < lineSplit.size(); i++){
+                if(lineSplit[i] == "clusters:"){
+                    clusters = atoi(lineSplit[i+1].c_str());
+                }
+            }
+        }
+
+    }
+    configFile.close();
+    cout<<"--- [C++ => clustersSize]:"<<endl;
+    cout<<"Clustering => Clusters: "<<clusters<<endl;
+
+    unsigned int totalSize = 0;
+    unsigned int size;
+    nDEVM<unsigned int> *clusterEVM;
+//    nDEVM<unsigned int> *colorClusterEVM;
+
+    cout<<"clusters"<<"\tEVMSize"<<endl;
+    for(int i = 0; i < clusters; i++){
+//        colorClusterEVM = new nDEVM<unsigned int>();
+        clusterEVM = new nDEVM<unsigned int>();
+        if((i+1)%2 == 0){
+            cout<<"\\rowcol ";
+        }
+        cout<<i<<" & ";
+        // - Cluster con color
+//        colorClusterEVM->readEVM2("clustering/cluster"+to_string(i)+"/colorClusterEVM"+to_string(i));
+//        cout<<colorClusterEVM->size()<<"\t";
+        // - Lectura del Cluster sin color
+        clusterEVM->readEVM2("clustering/cluster"+to_string(i)+"/clusterEVM"+to_string(i));
+        size = clusterEVM->size();
+        totalSize += size;
+        cout<<size<<"\\\\"<<endl;
+        
+//        delete colorClusterEVM;
+        delete clusterEVM;
+    }
+    cout<<"\\hline\\hline\n";    
+    if((clusters+1)%2 == 0){
+            cout<<"\\rowcol ";
+    }
+    cout<<"\\textbf{Total} & "<<totalSize<<"\\\\"<<endl;
+    return;
+    
+}
+
+void animationSize(){
+    // --- Lectura del archivo de configuracion...
+    int endFrame;
+    string fileName;
+    ifstream configFile; 
+    
+    fileName = "bin/config.txt";            
+    configFile.open(fileName.c_str(), ios_base::in);
+    if (! configFile.is_open()){
+        cout<<"El archivo: "<<fileName<<" no pudo abrirse..."<<endl;
+        return;
+    }
+    
+    string line;
+    while(getline(configFile, line)){
+        vector<string> lineSplit = split(line,' ');
+        
+        if(lineSplit[0] == "#Frames"){
+            for(int i = 1; i < lineSplit.size(); i++){
+                if(lineSplit[i] == "endFrame:"){
+                    endFrame = atoi(lineSplit[i+1].c_str());
+                }
+            }            
+        }
+    }
+    configFile.close();
+    cout<<"--- [C++ => animationSize]:"<<endl;
+    cout<<"Frames => endFrame: "<<endFrame<<endl;    
+
+    int endCouplet = endFrame+1;
+    unsigned int size = 0;
+    nDEVM<unsigned int> *couplet = new nDEVM<unsigned int>();
+    for(int i = 0; i <= endCouplet; i++){
+//        cout<<"Reading Couplet "<<i<<"..."<<endl;
+        couplet->readEVM2("EVMFiles/frameCouplet"+to_string(i));
+        size += couplet->size();
+        
+        delete couplet;
+        couplet = new nDEVM<unsigned int>();
+    }
+    
+    cout<<"Animation EVM Size: "<<size<<endl;
+    return;
+}
+
+void frameImageTest(){
+    nDEVM<unsigned int> *imageEVM = new nDEVM<unsigned int>();
+    imageEVM->loadImage("Sequences/Faces/frame3.bmp");
+
+    imageEVM->frameToImage2(90,90,3,"Sequences/Faces/frameImage");
+    
 }
 
 /**
@@ -340,7 +476,13 @@ void testAnimationLoad(){
 //    system(stream3.str().c_str());
 //}
 
-void clusterFrame(int cluster, string fileName,int idx){
+/**
+ * Genera un frame a partir de una Seccion de un Cluster
+ * @param cluster
+ * @param sectionFileName
+ * @param idx
+ */
+void clusterFrame(int cluster, string sectionFileName,int idx){
     int width,length;
     string configFileName;
     ifstream configFile; 
@@ -369,10 +511,10 @@ void clusterFrame(int cluster, string fileName,int idx){
     }
     configFile.close();
     cout<<"--- [C++ => ClusterFrame]:"<<endl;    
-    cout<<"Cluster: "<<cluster<<", fileName: "<<fileName<<", idx: "<<
+    cout<<"Cluster: "<<cluster<<", sectionFileName: "<<sectionFileName<<", idx: "<<
             idx<<", frameWidth: "<<width<<", frameLength: "<<length<<endl;
     nDEVM<unsigned int> *evm = new nDEVM<unsigned int>();
-    evm->clusterFrame(cluster,fileName,idx,width,length);
+    evm->clusterFrame(cluster,sectionFileName,idx,width,length);
     delete evm;
 }
 
@@ -522,8 +664,219 @@ void SOMClusterContent(int cluster){
     delete evmClustering;
 }
 
+/**
+ * Obtener el contenido del Cluster...
+ * @param cluster: Cluster del cual se obtendra el contenido
+ * @param _xLength: Longitud en x de la mascara
+ * @param _yLength: Longitud en y de la mascara
+ * @param _timeLegth: Longitud temporal de la mascara
+ */
+void clusterContentNC(int cluster){
+    // --- Lectura del archivo de configuracion...
+    int endFrame,xLength, yLength, timeLength,width,length,colors;
+    string fileName;
+    ifstream configFile; 
+    
+    fileName = "config.txt";            
+//    fileName = "bin/config.txt";            
+    configFile.open(fileName.c_str(), ios_base::in);
+    if (! configFile.is_open()){
+        cout<<"El archivo: "<<fileName<<" no pudo abrirse..."<<endl;
+        return;
+    }
+    
+    string line;
+    while(getline(configFile, line)){
+        vector<string> lineSplit = split(line,' ');
 
+        if(lineSplit[0] == "#Frames"){
+            for(int i = 1; i < lineSplit.size(); i++){
+                if(lineSplit[i] == "endFrame:"){
+                    endFrame = atoi(lineSplit[i+1].c_str());
+                }
+                if(lineSplit[i] == "colors:"){
+                    colors = atoi(lineSplit[i+1].c_str());
+                }
+                if(lineSplit[i] == "width:"){
+                    width = atoi(lineSplit[i+1].c_str());
+                }
+                if(lineSplit[i] == "length:"){
+                    length = atoi(lineSplit[i+1].c_str());
+                }
+            }            
+        }
 
+        if(lineSplit[0] == "#Mask"){
+            for(int i = 1; i < lineSplit.size(); i++){
+                if(lineSplit[i] == "timeLength:"){
+                    timeLength = atoi(lineSplit[i+1].c_str());
+                }
+                if(lineSplit[i] == "xLength:"){
+                    xLength = atoi(lineSplit[i+1].c_str());
+                }
+                if(lineSplit[i] == "yLength:"){
+                    yLength = atoi(lineSplit[i+1].c_str());
+                }
+            }            
+        }
+    }
+    configFile.close();    
+
+    cout<<"--- [C++ => ClusterContentNC] => Cluster: "<<cluster<<", xLength: "<<xLength<<", yLength: "
+            <<yLength<<", timeLength: "<<timeLength<<endl;
+    
+    nDEVM<unsigned int> *clusterEVM = new nDEVM<unsigned int>();
+
+    nDEVM<unsigned int> *mask = new nDEVM<unsigned int>();
+    mask->maskInit(xLength,yLength,timeLength,0,1);
+    
+    clusterEVM = clusterEVM->clusterContentNC(cluster,mask,endFrame,width,length);
+//    evmFileName = "..\\clustering\\cluster"+to_string(cluster)+"\\clusterEVM";
+//    evmFileName = "clustering/cluster"+to_string(cluster)+"/clusterEVM";
+    clusterEVM->dimAmplification(0,5);
+    clusterEVM->saveEVM2("..\\clustering\\cluster"+to_string(cluster)+"\\clusterEVM",cluster);
+    clusterEVM->EVMFile("..\\clustering\\cluster"+to_string(cluster),"clusterEVM",cluster);
+    
+    delete mask;
+    delete clusterEVM;
+}
+
+void clusterContentCount(){
+    int clusters;
+    string fileName;
+    ifstream configFile; 
+
+    fileName = "bin/config.txt";            
+    configFile.open(fileName.c_str(), ios_base::in);
+    if (! configFile.is_open()){
+        cout<<"El archivo: "<<fileName<<" no pudo abrirse..."<<endl;
+        return;
+    }
+    
+    string line;
+    while(getline(configFile, line)){
+        vector<string> lineSplit = split(line,' ');
+        
+        if(lineSplit[0] == "#Clustering"){
+            for(int i = 1; i < lineSplit.size(); i++){
+                if(lineSplit[i] == "clusters:"){
+                    clusters = atoi(lineSplit[i+1].c_str());
+                }
+            }
+        }
+
+    }
+    configFile.close();
+    cout<<"--- [C++ => clusterContentCount]:"<<endl;
+    cout<<"Clustering => Clusters: "<<clusters<<endl;
+
+    unsigned int count = 0;
+    unsigned int *idx = new unsigned int;
+    ifstream fileInput;
+    
+    cout<<"Cluster\t"<<"dcCount"<<endl;
+    for(int i = 0; i < clusters; i++){
+        fileName = "clustering/cluster"+to_string(i)+".idx";
+
+        fileInput.open(fileName.c_str(), ios_base::in |ios_base::binary); // binary file
+        if (! fileInput.is_open()){
+            cout<<"El archivo: "<<fileName<<" no pudo abrirse..."<<endl;
+            return;
+        }
+        while(fileInput.read((char *) idx, sizeof(unsigned int))){
+    //        cout <<"Seq["<<i<<"]: "<<*idx <<endl; 
+            count++;
+        }
+        
+        fileInput.close();
+        cout<<i<<'\t'<<count<<endl;
+        count = 0;
+    }
+    // ***
+    
+
+    
+    delete idx;
+}
+
+/**
+ * Obtener el contenido del Cluster...
+ * @param cluster: Cluster del cual se obtendra el contenido
+ * @param _xLength: Longitud en x de la mascara
+ * @param _yLength: Longitud en y de la mascara
+ * @param _timeLegth: Longitud temporal de la mascara
+ */
+void clusterContentColor(int cluster){
+    // --- Lectura del archivo de configuracion...
+    int endFrame,xLength, yLength, timeLength,width,length,colors;
+    string fileName;
+    ifstream configFile; 
+    
+    fileName = "config.txt";            
+//    fileName = "bin/config.txt";            
+    configFile.open(fileName.c_str(), ios_base::in);
+    if (! configFile.is_open()){
+        cout<<"El archivo: "<<fileName<<" no pudo abrirse..."<<endl;
+        return;
+    }
+    
+    string line;
+    while(getline(configFile, line)){
+        vector<string> lineSplit = split(line,' ');
+
+        if(lineSplit[0] == "#Frames"){
+            for(int i = 1; i < lineSplit.size(); i++){
+                if(lineSplit[i] == "endFrame:"){
+                    endFrame = atoi(lineSplit[i+1].c_str());
+                }
+                if(lineSplit[i] == "colors:"){
+                    colors = atoi(lineSplit[i+1].c_str());
+                }
+                if(lineSplit[i] == "width:"){
+                    width = atoi(lineSplit[i+1].c_str());
+                }
+                if(lineSplit[i] == "length:"){
+                    length = atoi(lineSplit[i+1].c_str());
+                }
+            }            
+        }
+
+        if(lineSplit[0] == "#Mask"){
+            for(int i = 1; i < lineSplit.size(); i++){
+                if(lineSplit[i] == "timeLength:"){
+                    timeLength = atoi(lineSplit[i+1].c_str());
+                }
+                if(lineSplit[i] == "xLength:"){
+                    xLength = atoi(lineSplit[i+1].c_str());
+                }
+                if(lineSplit[i] == "yLength:"){
+                    yLength = atoi(lineSplit[i+1].c_str());
+                }
+            }            
+        }
+    }
+    configFile.close();    
+
+    cout<<"--- [C++ => clusterContentColor] => Cluster: "<<cluster<<", xLength: "<<xLength<<", yLength: "
+            <<yLength<<", timeLength: "<<timeLength<<endl;
+    
+    nDEVM<unsigned int> *clusterEVM = new nDEVM<unsigned int>();
+
+    nDEVM<unsigned int> *mask = new nDEVM<unsigned int>();
+    nDEVM<unsigned int> *superMask;
+    mask->maskInit(xLength,yLength,timeLength,colors,1);
+    
+    superMask = clusterEVM->clusterContentNC(cluster,mask,endFrame,width,length);
+    clusterEVM = clusterEVM->maskIntersection(superMask,0,endFrame+1);
+//    clusterEVM = clusterEVM->clusterContentColor(cluster,mask,endFrame,width,length);
+//    evmFileName = "..\\clustering\\cluster"+to_string(cluster)+"\\clusterEVM";
+//    evmFileName = "clustering/cluster"+to_string(cluster)+"/clusterEVM";
+    clusterEVM->saveEVM2("..\\clustering\\cluster"+to_string(cluster)+"\\colorClusterEVM",cluster);
+//    clusterEVM->EVMFile("..\\clustering\\cluster"+to_string(cluster),"clusterEVM",cluster);
+    
+    delete mask;
+    delete clusterEVM;
+}
 
 /**
  * Inicializacion de la mascara y convolucion con la animacion...
