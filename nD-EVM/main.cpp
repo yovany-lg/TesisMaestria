@@ -51,6 +51,7 @@ void SOMClustering();
 void Clustering();
 void SOMClusterContent(int cluster);
 void animConv(int timeShift);
+void animConv2(int timeShift);
 void maskAnimInter(int _xLength, int _yLength,int _timeLegth,int timeShift);
 void clusterFrame(int cluster, string fileName,int idx);
 void frameImageTest();
@@ -86,42 +87,78 @@ using namespace std;
  */
 int main(int argc, char** argv) {
     // - Manejo de Argumentos de entrada para scripts
-//   cout << "argc = " << argc << endl; 
-//   for(int i = 0; i < argc; i++) 
-//      cout << "argv[" << i << "] = " << atoi(argv[i]) << endl; 
+//   cout << "ArgsCount = " << argc << endl; 
+//   for(int i = 0; i < argc; i++) {
+//       string func = string(argv[i]);
+//      cout << "argv[" << i << "] = " << func << endl; 
+//   }
 //   return 0;     
+    if(argc == 1){
+        cout<<"Library description:\n"<<
+                "\n-Functions: It is the first argument nd-evm.exe \"[function]\" [Arguments]\n\n"<<
+                "  --AnimLoad: Takes a frame sequence and obtains its correspondent nD-EVM representation.\n"<<
+                "    The files generated are the couplets of the animation.";
+        return 0;
+    }
+    string func = string(argv[1]);
 
-    // -- Cargar videos en el modelo nD-EVM...
-//    testAnimationLoad();
+    if(func.compare("AnimLoad") == 0){
+        // -- Cargar videos en el modelo nD-EVM...
+//        cout<<"AnimLoad!!";
+        testAnimationLoad();
+        return 0;
+    }
     
-    // - Calculo de DC con la mejora de la secuencia de secciones   
-    // --- Script para la ejecucion de la convolucion de una mascara con la animacion
-    // --- se ejecuta desde consola y el unico argumento es timeShift, el resto se
-    // --- extrae del archivo de configuracion. 
-    // --- Solo se procesa un desplazamiento (timeShift) a la vez, los desplazamientos como tal
-    // --- se llaman desde la aplicacion en JAVA "AnimConvLauncher.jar".
-    animConv(atoi(argv[1]));    
+    if(func.compare("AnimConvDC") == 0){
+        // - Calculo de DC con la mejora de la secuencia de secciones   
+        // --- Script para la ejecucion de la convolucion de una mascara con la animacion
+        // --- se ejecuta desde consola y el unico argumento es timeShift, el resto se
+        // --- extrae del archivo de configuracion. 
+        // --- Solo se procesa un desplazamiento (timeShift) a la vez, los desplazamientos como tal
+        // --- se llaman desde la aplicacion en JAVA "AnimConvLauncher.jar".
+        animConv(atoi(argv[2]));
+        return 0;
+    }
     
-    // --- Proceso de agrupamiento en base al archivo de configuracion 
-    // --- Se considera que ya se obtuvieron los valores de DC mediante la convolucion
-//   Clustering();
+    if(func.compare("AnimConvContent") == 0){
+        // - Convolucion con el descriptor de contenido
+        animConv2(atoi(argv[2]));
+        return 0;
+    }    
+    
+    if(func.compare("Clustering")){
+        // --- Proceso de agrupamiento en base al archivo de configuracion 
+        // --- Se considera que ya se obtuvieron los valores de DC mediante la convolucion
+       Clustering();
+       return 0;
+    }
+    
+    if(func.compare("ClusterContent")){
+        // --- Script para obtener el contenido de los clusters, solo en archivos binarios
+        // --- *.evm
+       SOMClusterContent(atoi(argv[2]));
+       return 0;
+    }
 
-    // --- Script para obtener el contenido de los clusters, solo en archivos binarios
-    // --- *.evm
-//   SOMClusterContent(atoi(argv[1]));
-//    clusterContentColor(atoi(argv[1]));
-//    clusterContentNC(atoi(argv[1]));
-//   SOMClusterContent(0);
+    if(func.compare("ClusterContentNC")){
+        // --- Script para obtener el contenido de los clusters, obtiene las versiones 
+        // --- sin informacion de colo, es decir solo regiones 3D, por lo que se obtienen
+        // --- 3D-EVMs
+        clusterContentNC(atoi(argv[2]));
+        return 0;
+    }
 
+
+    if(func.compare("ClusterFrame")){
     // --- Script para extraer los frames de un cluster, se leen los archivos *.evm
     // --- binarios de las Secciones 
-//    if(argc != 4){
-//        cout<<"Argumentos invalidos..."<<endl;
-//        cout<<"cluster fileName idx"<<endl;
-//        return 0;
-//    }    
-//   clusterFrame(atoi(argv[1]),argv[2],atoi(argv[3]));
-    
+    //    if(argc != 4){
+    //        cout<<"Argumentos invalidos..."<<endl;
+    //        cout<<"cluster fileName idx"<<endl;
+    //        return 0;
+    //    }    
+       clusterFrame(atoi(argv[2]),argv[3],atoi(argv[4]));
+    }    
     
     // --- Pruebas Basicas de operaciones booleanas
     // Test de Operaciones Booleanas
@@ -151,87 +188,6 @@ int main(int argc, char** argv) {
     // - DC Files tests
 //    dcFiles();
     
-    // - Mask Tests
-//    maskTest(atoi(argv[1]),atoi(argv[2]),atoi(argv[3]),atoi(argv[4]));
-//    maskTest(4,4,3,0);
-//    maskAnimInter(100,100,5,35);
-    
-//    maskFrameComparison();
-
-
-
-//    testAnimSections(3,3,3,20);
-    
-
-
-
-    // --- Config file tests
-//    int endFrame,xLength, yLength, timeLength,width,length,colors;
-//    string fileName;
-//    ifstream configFile; 
-//    fileName = "config.txt";            
-//    configFile.open(fileName.c_str(), ios_base::in);
-//    if (! configFile.is_open()){
-//        cout<<"El archivo: "<<fileName<<" no pudo abrirse..."<<endl;
-//        return 0;
-//    }
-//    
-//    string line;
-//    while(getline(configFile, line)){
-//        vector<string> lineSplit = split(line,' ');
-//        
-//        if(lineSplit[0] == "#Frames"){
-//            for(int i = 1; i < lineSplit.size(); i++){
-//                if(lineSplit[i] == "endFrame:"){
-//                    endFrame = atoi(lineSplit[i+1].c_str());
-//                }
-//                if(lineSplit[i] == "colors:"){
-//                    colors = atoi(lineSplit[i+1].c_str());
-//                }
-//                if(lineSplit[i] == "width:"){
-//                    width = atoi(lineSplit[i+1].c_str());
-//                }
-//                if(lineSplit[i] == "length:"){
-//                    length = atoi(lineSplit[i+1].c_str());
-//                }
-//            }            
-//        }
-//
-//        if(lineSplit[0] == "#Mask"){
-//            for(int i = 1; i < lineSplit.size(); i++){
-//                if(lineSplit[i] == "xLength:"){
-//                    xLength = atoi(lineSplit[i+1].c_str());
-//                }
-//                if(lineSplit[i] == "yLength:"){
-//                    yLength = atoi(lineSplit[i+1].c_str());
-//                }
-//                if(lineSplit[i] == "timeLength:"){
-//                    timeLength = atoi(lineSplit[i+1].c_str());
-//                }
-//            }            
-//        }
-//    }
-//    
-//    cout<<"Frames => endFrame: "<<endFrame<<", colors: "<<colors<<", width: "<<
-//            width<<", length: "<<length<<endl;
-//
-//    cout<<"Mask => xLength: "<<xLength<<", yLength: "<<yLength<<", timeLength: "<<
-//            timeLength<<", timeShift: "<<atoi(argv[1])<<endl;
-//    frameImageTest();
-
-    
-    // -- EVM sizes
-//    animationSize();
-
-//    clustersSize();
-//    clusterContentCount();
-    
-    
-//    nDEVM<unsigned int> *clusterEVM = new nDEVM<unsigned int>();
-//    nDEVM<unsigned int> *couplet;
-//    clusterEVM->readEVM2("clustering/Cluster0/colorClusterEVM0");
-//    couplet = clusterEVM->readCouplet();
-//    couplet->frameToImage2(160,120,3,"clustering/Cluster0/clusterCouplet");
     return 0;
 }
 
@@ -407,7 +363,7 @@ void animConv(int timeShift){
         }
     }
     configFile.close();
-    cout<<"--- [C++ => AnimConv]:"<<endl;
+    cout<<"--- [C++ => AnimConvDC]:"<<endl;
     cout<<"Frames => endFrame: "<<endFrame<<", colors: "<<colors<<", width: "<<
             width<<", length: "<<length<<endl;
 
@@ -422,7 +378,83 @@ void animConv(int timeShift){
     
     // - HQVGA (240x160)
     // - QVGA (320x240)
+    // - Obtencion del conjunto DCValues => Discrete Compactness
     evm->maskAnimConv2(mask,endFrame,width,length);    
+}
+
+/**
+ * Metodo para realizar la convolucion con el enfoque de la secuencia de Secciones
+ * @param _xLength
+ * @param _yLength
+ * @param _timeLegth
+ * @param timeShift
+ */
+void animConv2(int timeShift){
+    // --- Lectura del archivo de configuracion...
+    int endFrame,xLength, yLength, timeLength,width,length,colors;
+    string fileName;
+    ifstream configFile; 
+    
+    fileName = "config.txt";            
+    configFile.open(fileName.c_str(), ios_base::in);
+    if (! configFile.is_open()){
+        cout<<"El archivo: "<<fileName<<" no pudo abrirse..."<<endl;
+        return;
+    }
+    
+    string line;
+    while(getline(configFile, line)){
+        vector<string> lineSplit = split(line,' ');
+        
+        if(lineSplit[0] == "#Frames"){
+            for(int i = 1; i < lineSplit.size(); i++){
+                if(lineSplit[i] == "endFrame:"){
+                    endFrame = atoi(lineSplit[i+1].c_str());
+                }
+                if(lineSplit[i] == "colors:"){
+                    colors = atoi(lineSplit[i+1].c_str());
+                }
+                if(lineSplit[i] == "width:"){
+                    width = atoi(lineSplit[i+1].c_str());
+                }
+                if(lineSplit[i] == "length:"){
+                    length = atoi(lineSplit[i+1].c_str());
+                }
+            }            
+        }
+
+        if(lineSplit[0] == "#Mask"){
+            for(int i = 1; i < lineSplit.size(); i++){
+                if(lineSplit[i] == "xLength:"){
+                    xLength = atoi(lineSplit[i+1].c_str());
+                }
+                if(lineSplit[i] == "yLength:"){
+                    yLength = atoi(lineSplit[i+1].c_str());
+                }
+                if(lineSplit[i] == "timeLength:"){
+                    timeLength = atoi(lineSplit[i+1].c_str());
+                }
+            }            
+        }
+    }
+    configFile.close();
+    cout<<"--- [C++ => AnimConvContent]:"<<endl;
+    cout<<"Frames => endFrame: "<<endFrame<<", colors: "<<colors<<", width: "<<
+            width<<", length: "<<length<<endl;
+
+    cout<<"Mask => xLength: "<<xLength<<", yLength: "<<yLength<<", timeLength: "<<
+            timeLength<<", timeShift: "<<timeShift<<endl;
+    
+    nDEVM<unsigned int> *evm = new nDEVM<unsigned int>();
+    nDEVM<unsigned int> *mask = new nDEVM<unsigned int>();
+
+    mask->maskInit2(xLength, yLength, timeLength,colors,1);
+    mask->EVMTraslation(0,timeShift);
+    
+    // - HQVGA (240x160)
+    // - QVGA (320x240)
+    // - Descriptor de Contenido
+    evm->maskAnimConv3(mask,endFrame,width,length);    
 }
 
 /**
@@ -594,11 +626,9 @@ void Clustering(){
 }
 
 /**
- * Obtener el contenido del Cluster...
+ * Obtiene el contenido de un cluster, esta version obtiene el contenido del Cluster
+ * en su totalidad, es decir, que contiene toda la informacion de color.
  * @param cluster: Cluster del cual se obtendra el contenido
- * @param _xLength: Longitud en x de la mascara
- * @param _yLength: Longitud en y de la mascara
- * @param _timeLegth: Longitud temporal de la mascara
  */
 void SOMClusterContent(int cluster){
     // --- Lectura del archivo de configuracion...
@@ -665,11 +695,9 @@ void SOMClusterContent(int cluster){
 }
 
 /**
- * Obtener el contenido del Cluster...
+ * Obtener el contenido del Cluster dado, en esta version solo se obtienen las regiones
+ * sin considerar la informacion de color, por lo que se obtienen 3D-EVMs.
  * @param cluster: Cluster del cual se obtendra el contenido
- * @param _xLength: Longitud en x de la mascara
- * @param _yLength: Longitud en y de la mascara
- * @param _timeLegth: Longitud temporal de la mascara
  */
 void clusterContentNC(int cluster){
     // --- Lectura del archivo de configuracion...

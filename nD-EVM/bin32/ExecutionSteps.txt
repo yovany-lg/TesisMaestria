@@ -1,0 +1,7 @@
+Ejecucion del framework para segmentacion de secuencias de frames:
+
+  - Para obtener los EVMs e los frames se ejecuta "AnimLoad.exe".
+  - Para obtener el conjunto de datos DCValues, el cual se obtiene mediante la
+    convolucion del EVM de la animacion y el EVM de la mascara, se ejecuta "java -jar AnimConvLauncher.jar"
+  - Una vez obtenido el conjunto de valores de DC se puede realizar el proceso de agrupamiento,
+    lo cual se realiza ejecutando "java - jar SOMClustering.jar"

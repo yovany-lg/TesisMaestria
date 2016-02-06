@@ -174,6 +174,8 @@ public:
     // - Inicializa una mascara.
     void maskInit(int xLength, int yLength, int timeLength,
         int colorComponents, int colorCompSize);
+    void maskInit2(int xLength, int yLength, int timeLength,
+        int colorComponents, int colorCompSize);
     // - Obtiene una mascara con los componentes de color en minimo.
     void minMask(int xLength, int yLength, int timeLength,
         int colorComponents);
@@ -193,6 +195,9 @@ public:
         bool *fromP, bool *fromQ);
     // - Convolucion entre la mascara y la animacion en el EVM.
     void maskAnimConv2(nDEVM * mask,int endFrame,valueType _xMax,valueType _yMax);
+    // - Convolucion para extraer el nuevo descriptor
+    void maskAnimConv3(nDEVM * mask,int endFrame,valueType _xMax,valueType _yMax);
+    double normalizedContent(nDEVM* mask);
     // - Interseccion de una mascara y una animacion.
     nDEVM *maskIntersection(nDEVM* mask, nDEVM* sectionSeq);
     // - Obtiene solo las Secciones necesarias para la interseccion con la mascara.
@@ -1467,6 +1472,54 @@ void nDEVM<valueType>::maskInit(int xLength, int yLength, int timeLength,
 }
 
 /**
+ * Inicializacion de la mascara para segmentacion de video. Las mascaras contienen 
+ * LcMax y LcMin para el calculo de DC...
+ * @param xLength
+ * @param yLength
+ * @param timeLength
+ * @param colorComponents
+ * @param colorCompSize, Tamaño en bytes de cada componente de color. En generar se usa 1 byte.
+ */
+template<typename valueType>
+void nDEVM<valueType>::maskInit2(int xLength, int yLength, int timeLength,
+        int colorComponents, int colorCompSize){
+    maskMin[0] = 0;
+    maskMax[0] = timeLength;
+    maskMin[1] = 0;
+    maskMax[1] = xLength;
+    maskMin[2] = 0;
+    maskMax[2] = yLength;
+    
+    valueType colorCompMax = pow(2,colorCompSize*8);
+    valueType * maskVoxel = new valueType[3+colorComponents];
+    valueType * maskLengths = new valueType[3+colorComponents];
+    
+    maskVoxel[0] = 0;
+    maskLengths[0] = timeLength;
+    
+    maskVoxel[1] = 0;
+    maskLengths[1] = xLength;
+    
+    maskVoxel[2] = 0;
+    maskLengths[2] = yLength;
+    
+    for(int i = 0; i < colorComponents; i++){
+        maskVoxel[3+i] = 0;
+        maskLengths[3+i] = colorCompMax;
+    }
+    populateMask(&maskVoxel,3+colorComponents,0,&maskLengths);
+    
+    LcMax = content();
+    
+    nDEVM<valueType> *otherMask = new nDEVM<valueType>();
+    otherMask->minMask(xLength,yLength,timeLength,colorComponents);
+    LcMin = otherMask->content();
+    delete [] maskVoxel;
+    delete [] maskLengths;
+    delete otherMask;
+}
+
+/**
  * Generar una mascara con la misma configuracion que la original pero con componentesn
  * de color al minimo.
  * @param xLength
@@ -1955,6 +2008,103 @@ void nDEVM<valueType>::maskAnimConv2(nDEVM * mask,int endFrame,valueType _xMax,
 //    delete currentResult;
     delete dcPtr; 
     delete sectionSeq;
+}
+
+/**
+ * Metodo para realizar la convolucion de una Mascara con la animacion representada
+ * en el EVM y almacenada en archivos de Couplets (Descriptor de ). 
+ * @param mask: Mascara para realizar la convolucion.
+ * @param endFrame: Maximo frame a procesar, el minimo es 0
+ * @param _xMax: El maximo valor en X o ancho de los frames
+ * @param _yMax: El maximo valor en Y o largo de los frames
+ */
+template<typename valueType>
+void nDEVM<valueType>::maskAnimConv3(nDEVM * mask,int endFrame,valueType _xMax,
+        valueType _yMax){
+    nDEVM<valueType> *currentResult;// = new nDEVM<valueType>();
+    nDEVM<valueType> *sectionSeq = new nDEVM<valueType>();
+    
+    string fileName = "";
+    string partName = "";
+    double *dcPtr = new double;
+    unsigned int i = 0; // - Mask Counter
+    unsigned int dcFile = 0; // - Contador de archivos de DC
+    unsigned int dcPart = mask->getCoord();
+
+    // - Validar cuando se llega al final de la animacion
+    if(mask->maskMax[0] > (endFrame + 1)){
+        cout<<"Se ha llegado al final de la animacion..."<<endl;
+        return;
+    }
+    
+    sectionSeq = maskAnimSections(mask,endFrame+1);
+    
+    // - Se guardan las rutas de los archivos correspondientes a esta parte
+    // ***
+    fileName = "..\\dcFiles\\Part"+to_string(dcPart)+"\\dcFiles.txt";
+    
+    ofstream dcFiles( fileName );
+    if ( ! dcFiles.is_open() ){    
+        cout << "El archivo "<<fileName<<" no se pudo abrir!" << '\n';    
+        return;
+    }
+
+    // ***
+    partName = "..\\dcFiles\\Part"+to_string(dcPart)+"\\dcFile"+to_string(dcFile)+".dc";
+    ofstream outputFile( partName.c_str(),ios_base::out|ios_base::binary );
+    if ( ! outputFile.is_open() ){    
+        cout << "El archivo: "+partName+" no se pudo abrir!!" << '\n';    
+        return;
+    }
+    
+    dcFiles<<partName<<'\n';
+    cout<<"Computing Part"<<dcPart<<"..."<<endl;
+    // - Recorrido en y
+    while(mask->maskMax[2] <= _yMax){
+        // - Recorrido en x
+        while(mask->maskMax[1] <= _xMax){
+            currentResult = maskIntersection(mask,sectionSeq);
+
+            *dcPtr = currentResult->normalizedContent(mask);
+            delete currentResult;
+//            cout<<"subSeq["<<i<<"] => DC: "<<*dcPtr<<endl;
+            outputFile.write((char *) dcPtr,sizeof(double));
+
+            mask->EVMTraslation(1,1); // - Desplazamiento en X
+            i++;
+            // - Los archivos de DC contienen un maximo de 5000 
+            if(i >= 10000){
+                outputFile.close();
+                dcFile++;
+                cout<<partName<<" ... DONE!!"<<endl;
+                // ***
+                partName = "..\\dcFiles\\Part"+to_string(dcPart)+"\\dcFile"+to_string(dcFile)+".dc";
+                outputFile.open( partName.c_str(),ios_base::out|ios_base::binary );
+                if ( ! outputFile.is_open() ){    
+                    cout << "El archivo: "+partName+" no se pudo abrir!!" << '\n';    
+                    return;
+                }
+                dcFiles<<partName<<'\n';
+                i = 0;
+            }
+        }
+        mask->maskDimReset(1);
+        mask->EVMTraslation(2,1); // - Desplazamiento en Y
+    }
+    outputFile.close();
+    dcFiles.close();
+    mask->maskDimReset(1);
+    mask->maskDimReset(2);
+
+//    delete currentResult;
+    delete dcPtr; 
+    delete sectionSeq;
+}
+
+template<typename valueType>
+double nDEVM<valueType>::normalizedContent(nDEVM* mask){
+    valueType currentContent = content();
+    return ((double)(currentContent - mask->LcMin))/((double)(mask->LcMax - mask->LcMin));
 }
 
 template<typename valueType>
