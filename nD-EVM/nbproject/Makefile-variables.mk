@@ -15,13 +15,13 @@ CND_PACKAGE_DIR_Debug=dist/Debug/Cygwin-Windows/package
 CND_PACKAGE_NAME_Debug=nd-evm.tar
 CND_PACKAGE_PATH_Debug=dist/Debug/Cygwin-Windows/package/nd-evm.tar
 # Release configuration
-CND_PLATFORM_Release=Cygwin-Windows
-CND_ARTIFACT_DIR_Release=dist/Release/Cygwin-Windows
+CND_PLATFORM_Release=Cygwin32_4.x-Windows
+CND_ARTIFACT_DIR_Release=dist/Release/Cygwin32_4.x-Windows
 CND_ARTIFACT_NAME_Release=nd-evm
-CND_ARTIFACT_PATH_Release=dist/Release/Cygwin-Windows/nd-evm
-CND_PACKAGE_DIR_Release=dist/Release/Cygwin-Windows/package
+CND_ARTIFACT_PATH_Release=dist/Release/Cygwin32_4.x-Windows/nd-evm
+CND_PACKAGE_DIR_Release=dist/Release/Cygwin32_4.x-Windows/package
 CND_PACKAGE_NAME_Release=nd-evm.tar
-CND_PACKAGE_PATH_Release=dist/Release/Cygwin-Windows/package/nd-evm.tar
+CND_PACKAGE_PATH_Release=dist/Release/Cygwin32_4.x-Windows/package/nd-evm.tar
 #
 # include compiler specific variables
 #
