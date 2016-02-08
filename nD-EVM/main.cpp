@@ -19,6 +19,7 @@
 #include "nDEVM.h"
 
 #include <limits>
+#include <dirent.h>
 //#include <thread>       // std::numeric_limits
 
 void test2D(int size);
@@ -64,6 +65,8 @@ void animationSize();
 void clustersSize();
 void clusterContentCount();
 
+void filesTest();
+
 typedef unsigned long long timestamp_t;
 
 static timestamp_t get_timestamp(){
@@ -86,6 +89,9 @@ using namespace std;
  * 
  */
 int main(int argc, char** argv) {
+//    filesTest();
+//    
+//    return 0;
     // - Manejo de Argumentos de entrada para scripts
 //   cout << "ArgsCount = " << argc << endl; 
 //   for(int i = 0; i < argc; i++) {
@@ -126,21 +132,21 @@ int main(int argc, char** argv) {
         return 0;
     }    
     
-    if(func.compare("Clustering")){
+    if(func.compare("Clustering") == 0){
         // --- Proceso de agrupamiento en base al archivo de configuracion 
         // --- Se considera que ya se obtuvieron los valores de DC mediante la convolucion
        Clustering();
        return 0;
     }
     
-    if(func.compare("ClusterContent")){
+    if(func.compare("ClusterContent") == 0){
         // --- Script para obtener el contenido de los clusters, solo en archivos binarios
         // --- *.evm
        SOMClusterContent(atoi(argv[2]));
        return 0;
     }
 
-    if(func.compare("ClusterContentNC")){
+    if(func.compare("ClusterContentNC") == 0){
         // --- Script para obtener el contenido de los clusters, obtiene las versiones 
         // --- sin informacion de colo, es decir solo regiones 3D, por lo que se obtienen
         // --- 3D-EVMs
@@ -149,7 +155,7 @@ int main(int argc, char** argv) {
     }
 
 
-    if(func.compare("ClusterFrame")){
+    if(func.compare("ClusterFrame") == 0){
     // --- Script para extraer los frames de un cluster, se leen los archivos *.evm
     // --- binarios de las Secciones 
     //    if(argc != 4){
@@ -158,6 +164,7 @@ int main(int argc, char** argv) {
     //        return 0;
     //    }    
        clusterFrame(atoi(argv[2]),argv[3],atoi(argv[4]));
+       return 0;
     }    
     
     // --- Pruebas Basicas de operaciones booleanas
@@ -189,6 +196,26 @@ int main(int argc, char** argv) {
 //    dcFiles();
     
     return 0;
+}
+
+
+void filesTest(){
+    DIR *dir;
+    struct dirent *ent;
+    if ((dir = opendir ("dcFiles//Part1")) != NULL) {
+      /* print all the files and directories within directory */
+      while ((ent = readdir (dir)) != NULL) {
+          string filePath = string(ent->d_name);
+          if(filePath.find(".dc")!=string::npos)
+            cout<<filePath<<'\n';
+//        printf ("%s\n", ent->d_name);
+      }
+      closedir (dir);
+    } else {
+      /* could not open directory */
+      perror ("");
+      exit(EXIT_FAILURE);
+    }    
 }
 
 void clustersSize(){

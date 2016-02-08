@@ -1,4 +1,4 @@
-#Frames initFrame: 0 endFrame: 9 colors: 3 width: 240 length: 160
+#Frames initFrame: 0 endFrame: 47 colors: 3 width: 240 length: 160
 #Mask xLength: 3 yLength: 3 timeLength: 3
 #Clustering clusters: 15 iterations: 200 initCluster: 0 endCluster: 4
 #ThreadCount conv: 4 clusters: 4

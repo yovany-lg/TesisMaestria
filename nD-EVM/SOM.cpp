@@ -108,11 +108,14 @@ void SOM::initialize(){
  */
 void SOM::sampling(){
     int winner;
-    string fileName = "";
-    string path = "";
+    string partPath = "";
+//    string path = "";
     double *dcValue = new double;
     
-    ifstream filesPath;    
+    DIR *parentDir;
+    struct dirent *fileInDir;
+    
+//    ifstream filesPath;    
 
     cout<<"--- Begin Sampling..."<<endl;
 //    dataSize = patterns.size();
@@ -120,37 +123,46 @@ void SOM::sampling(){
 //        cout<<"Iteration["<<i<<"]..."<<endl;
         // - Lectura de las partes en que se dividen los archivos de DC
         for(int j = 0; j < dcParts; j++){
-            // ***
-            fileName = "..\\dcFiles\\Part"+to_string(j)+"\\dcFiles.txt";            
+            // - Abrir el directorio
+            partPath = "..\\dcFiles\\Part"+to_string(j);            
 //            fileName = "dcFiles/Part"+to_string(j)+"/dcFiles.txt";            
-            filesPath.open(fileName.c_str(), ios_base::in);
-            if (! filesPath.is_open()){
-                cout<<"El archivo: "<<fileName<<" no pudo abrirse..."<<endl;
-                return;
+//            filesPath.open(partPath.c_str(), ios_base::in);
+//            if (! filesPath.is_open()){
+//                cout<<"El archivo: "<<fileName<<" no pudo abrirse..."<<endl;
+//                return;
+//            }
+            if ((parentDir = opendir (partPath.c_str())) == NULL) {
+                cout<<"Error opening directory "<<partPath<<"\n";
+                exit(EXIT_FAILURE);
             }
             
-            while(getline(filesPath, path)){
-//                fileName = "dcFiles/"+part+"/dcFile"+to_string(k)+".dc";
-                ifstream fileInput;
-                fileInput.open(path.c_str(), ios_base::in |ios_base::binary); // binary file
-                
-                if (! fileInput.is_open()){
-                    cout<<"El archivo: "<<path<<" no pudo abrirse!!!..."<<endl;
-                    return;
-                }else
-//                {
-//                cout<<"Reading File: "<<path<<endl;
-//                }
+            // - Mientras halla mas archivos en el diretorio
+            while((fileInDir = readdir (parentDir)) != NULL){
+                string filePath = string(fileInDir->d_name);
+                if(filePath.find(".dc")!=string::npos){
+//                    cout<<filePath<<'\n';
+                    ifstream fileInput;
+                    fileInput.open((partPath +"\\"+ filePath).c_str(), ios_base::in |ios_base::binary); // binary file
 
-                while(fileInput.read((char *) dcValue, sizeof(double))){
-                    winner = minDistanceNeuron(dcValue);
-                    weightUpdates(dcValue,winner,i);            
-//                    cout <<"DC: "<<*dcValue <<endl; 
-//                    i++;
+                    if (! fileInput.is_open()){
+                        cout<<"El archivo: "<<(partPath +"\\"+ filePath)<<" no pudo abrirse!!!..."<<endl;
+                        exit(EXIT_FAILURE);
+                    }
+    //                {
+    //                cout<<"Reading File: "<<path<<endl;
+    //                }
+
+                    while(fileInput.read((char *) dcValue, sizeof(double))){
+                        winner = minDistanceNeuron(dcValue);
+                        weightUpdates(dcValue,winner,i);            
+    //                    cout <<"DC: "<<*dcValue <<endl; 
+    //                    i++;
+                    }
+                    fileInput.close();
                 }
-                fileInput.close();
             }
-            filesPath.close();
+            closedir (parentDir);
+//            filesPath.close();
 //            part = "Part"+to_string(j);
 //            // - Lectura de los archivos de cada parte
 //            for(int k = 0; k < dcFiles; k++){
@@ -280,9 +292,13 @@ double SOM::learnRate(int n){
 
 void SOM::clustering(){
     ofstream **files = NULL;
-    string fileName = "";
-    string path = "";
-    ifstream filesPath;    
+    string fileName = "",partPath = "";
+//    string path = "";
+//    ifstream filesPath;    
+
+    DIR *parentDir;
+    struct dirent *fileInDir;
+    
 //    unsigned int dataSize = patterns.size();
     int winner;
     double *dcValue = new double;
@@ -311,33 +327,35 @@ void SOM::clustering(){
 //        part = "Part"+to_string(j);
         
         // ***
-        fileName = "..\\dcFiles\\Part"+to_string(j)+"\\dcFiles.txt";            
-        filesPath.open(fileName.c_str(), ios_base::in);
-        if (! filesPath.is_open()){
-            cout<<"El archivo: "<<fileName<<" no pudo abrirse..."<<endl;
-            return;
+        partPath = "..\\dcFiles\\Part"+to_string(j);            
+        if ((parentDir = opendir (partPath.c_str())) == NULL) {
+            cout<<"Error opening directory "<<partPath<<"\n";
+            exit(EXIT_FAILURE);
         }
 
-        while(getline(filesPath, path)){
+        while((fileInDir = readdir (parentDir)) != NULL){
 //            fileName = "dcFiles/"+part+"/dcFile"+to_string(k)+".dc";
 //            fileName = "..dcFiles\\"+part+"\\dcFile"+to_string(k)+".dc";
-            ifstream fileInput;
-            fileInput.open(path.c_str(), ios_base::in |ios_base::binary); // binary file
+            string filePath = string(fileInDir->d_name);
+            if(filePath.find(".dc")!=string::npos){
+                ifstream fileInput;
+                fileInput.open((partPath +"\\"+ filePath).c_str(), ios_base::in |ios_base::binary); // binary file
 
-            if (! fileInput.is_open()){
-                cout<<"El archivo: "<<path<<" no pudo abrirse!!!..."<<endl;
-                return;
-            }
+                if (! fileInput.is_open()){
+                    cout<<"El archivo: "<<(partPath +"\\"+ filePath)<<" no pudo abrirse!!!..."<<endl;
+                    exit(EXIT_FAILURE);
+                }
 
-            while(fileInput.read((char *) dcValue, sizeof(double))){
-                winner = minDistanceNeuron(dcValue);
-                files[winner]->write((char *) &i,sizeof(unsigned int));
-                i++;
-            }
-            fileInput.close();
+                while(fileInput.read((char *) dcValue, sizeof(double))){
+                    winner = minDistanceNeuron(dcValue);
+                    files[winner]->write((char *) &i,sizeof(unsigned int));
+                    i++;
+                }
+                fileInput.close();
+            }            
         }
-        filesPath.close();
         
+//        filesPath.close();        
         // - Lectura de los archivos de cada parte
 //        for(int k = 0; k < dcFiles; k++){
 //            // ***

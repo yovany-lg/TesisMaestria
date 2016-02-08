@@ -33,13 +33,13 @@ public class JavaThreads {
 //        threads.AnimConvThreadLauncher();
 //        threads.AnimConvCThreadLauncher();
 
-        threads.SOMClustering();
+//        threads.SOMClustering();
 //        
 //        threads.ClusterContentThreadLauncher();
 //        
 //        threads.ClusterContentNCThreadLauncher();
 //        
-//        threads.ClusterFrameLauncher();
+        threads.ClusterFrameLauncher();
         
 
 
@@ -58,7 +58,7 @@ public class JavaThreads {
         // create ExecutorService to manage threads
         ExecutorService threadExecutor = Executors.newCachedThreadPool();
         
-        cmd = "Clustering.exe";
+        cmd = "nd-evm Clustering";
         CommandRunner clustering = new CommandRunner(cmd);
         threadExecutor.execute( clustering ); // start task1        
         
@@ -447,11 +447,13 @@ public class JavaThreads {
             if(line.contains("#Clustering")){
                 String[] words = line.split(" ");    
                 for (int i = 0; i < words.length; i++) {
+                    if(words[i].equals("clusters:")){
+                        endCluster = Integer.parseInt(words[i+1])-1;
+                    }
+                    // -- Solo si existen estos campos
                     if(words[i].equals("endCluster:")){
                         endCluster = Integer.parseInt(words[i+1]);
                     }
-                }
-                for (int i = 0; i < words.length; i++) {
                     if(words[i].equals("initCluster:")){
                         initCluster = Integer.parseInt(words[i+1]);
                     }

@@ -9,6 +9,7 @@
 #define	SOM_H
 
 #include <vector>
+#include <dirent.h>
 #include "DataSet.h"
 
 //typedef double * weights;

@@ -1934,10 +1934,10 @@ void nDEVM<valueType>::maskAnimConv2(nDEVM * mask,int endFrame,valueType _xMax,
     nDEVM<valueType> *sectionSeq = new nDEVM<valueType>();
     
     string fileName = "";
-    string partName = "";
+//    string partName = "";
     double *dcPtr = new double;
-    unsigned int i = 0; // - Mask Counter
-    unsigned int dcFile = 0; // - Contador de archivos de DC
+//    unsigned int i = 0; // - Mask Counter
+//    unsigned int dcFile = 0; // - Contador de archivos de DC
     unsigned int dcPart = mask->getCoord();
 
     // - Validar cuando se llega al final de la animacion
@@ -1950,23 +1950,23 @@ void nDEVM<valueType>::maskAnimConv2(nDEVM * mask,int endFrame,valueType _xMax,
     
     // - Se guardan las rutas de los archivos correspondientes a esta parte
     // ***
-    fileName = "..\\dcFiles\\Part"+to_string(dcPart)+"\\dcFiles.txt";
-    
-    ofstream dcFiles( fileName );
-    if ( ! dcFiles.is_open() ){    
-        cout << "El archivo "<<fileName<<" no se pudo abrir!" << '\n';    
-        return;
-    }
+//    fileName = "..\\dcFiles\\Part"+to_string(dcPart)+"\\dcFiles.txt";
+//    
+//    ofstream dcFiles( fileName );
+//    if ( ! dcFiles.is_open() ){    
+//        cout << "El archivo "<<fileName<<" no se pudo abrir!" << '\n';    
+//        return;
+//    }
 
     // ***
-    partName = "..\\dcFiles\\Part"+to_string(dcPart)+"\\dcFile"+to_string(dcFile)+".dc";
-    ofstream outputFile( partName.c_str(),ios_base::out|ios_base::binary );
+    fileName = "..\\dcFiles\\Part"+to_string(dcPart)+"\\descriptorFile.dc";
+    ofstream outputFile( fileName.c_str(),ios_base::out|ios_base::binary );
     if ( ! outputFile.is_open() ){    
-        cout << "El archivo: "+partName+" no se pudo abrir!!" << '\n';    
+        cout << "El archivo: "+fileName+" no se pudo abrir!!" << '\n';    
         return;
     }
     
-    dcFiles<<partName<<'\n';
+//    dcFiles<<partName<<'\n';
     cout<<"Computing Part"<<dcPart<<"..."<<endl;
     // - Recorrido en y
     while(mask->maskMax[2] <= _yMax){
@@ -1980,28 +1980,28 @@ void nDEVM<valueType>::maskAnimConv2(nDEVM * mask,int endFrame,valueType _xMax,
             outputFile.write((char *) dcPtr,sizeof(double));
 
             mask->EVMTraslation(1,1); // - Desplazamiento en X
-            i++;
-            // - Los archivos de DC contienen un maximo de 5000 
-            if(i >= 10000){
-                outputFile.close();
-                dcFile++;
-                cout<<partName<<" ... DONE!!"<<endl;
-                // ***
-                partName = "..\\dcFiles\\Part"+to_string(dcPart)+"\\dcFile"+to_string(dcFile)+".dc";
-                outputFile.open( partName.c_str(),ios_base::out|ios_base::binary );
-                if ( ! outputFile.is_open() ){    
-                    cout << "El archivo: "+partName+" no se pudo abrir!!" << '\n';    
-                    return;
-                }
-                dcFiles<<partName<<'\n';
-                i = 0;
-            }
+//            i++;
+//            // - Los archivos de DC contienen un maximo de 5000 
+//            if(i >= 10000){
+//                outputFile.close();
+//                dcFile++;
+//                cout<<partName<<" ... DONE!!"<<endl;
+//                // ***
+//                partName = "..\\dcFiles\\Part"+to_string(dcPart)+"\\dcFile"+to_string(dcFile)+".dc";
+//                outputFile.open( partName.c_str(),ios_base::out|ios_base::binary );
+//                if ( ! outputFile.is_open() ){    
+//                    cout << "El archivo: "+partName+" no se pudo abrir!!" << '\n';    
+//                    return;
+//                }
+////                dcFiles<<partName<<'\n';
+//                i = 0;
+//            }
         }
         mask->maskDimReset(1);
         mask->EVMTraslation(2,1); // - Desplazamiento en Y
     }
     outputFile.close();
-    dcFiles.close();
+//    dcFiles.close();
     mask->maskDimReset(1);
     mask->maskDimReset(2);
 
@@ -2025,10 +2025,10 @@ void nDEVM<valueType>::maskAnimConv3(nDEVM * mask,int endFrame,valueType _xMax,
     nDEVM<valueType> *sectionSeq = new nDEVM<valueType>();
     
     string fileName = "";
-    string partName = "";
+//    string partName = "";
     double *dcPtr = new double;
-    unsigned int i = 0; // - Mask Counter
-    unsigned int dcFile = 0; // - Contador de archivos de DC
+//    unsigned int i = 0; // - Mask Counter
+//    unsigned int dcFile = 0; // - Contador de archivos de DC
     unsigned int dcPart = mask->getCoord();
 
     // - Validar cuando se llega al final de la animacion
@@ -2041,23 +2041,23 @@ void nDEVM<valueType>::maskAnimConv3(nDEVM * mask,int endFrame,valueType _xMax,
     
     // - Se guardan las rutas de los archivos correspondientes a esta parte
     // ***
-    fileName = "..\\dcFiles\\Part"+to_string(dcPart)+"\\dcFiles.txt";
+//    fileName = "..\\dcFiles\\Part"+to_string(dcPart)+"\\dcFiles.txt";
     
-    ofstream dcFiles( fileName );
-    if ( ! dcFiles.is_open() ){    
-        cout << "El archivo "<<fileName<<" no se pudo abrir!" << '\n';    
-        return;
-    }
+//    ofstream dcFiles( fileName );
+//    if ( ! dcFiles.is_open() ){    
+//        cout << "El archivo "<<fileName<<" no se pudo abrir!" << '\n';    
+//        return;
+//    }
 
     // ***
-    partName = "..\\dcFiles\\Part"+to_string(dcPart)+"\\dcFile"+to_string(dcFile)+".dc";
-    ofstream outputFile( partName.c_str(),ios_base::out|ios_base::binary );
+    fileName = "..\\dcFiles\\Part"+to_string(dcPart)+"\\descriptorFile.dc";
+    ofstream outputFile( fileName.c_str(),ios_base::out|ios_base::binary );
     if ( ! outputFile.is_open() ){    
-        cout << "El archivo: "+partName+" no se pudo abrir!!" << '\n';    
+        cout << "El archivo: "+fileName+" no se pudo abrir!!" << '\n';    
         return;
     }
     
-    dcFiles<<partName<<'\n';
+//    dcFiles<<partName<<'\n';
     cout<<"Computing Part"<<dcPart<<"..."<<endl;
     // - Recorrido en y
     while(mask->maskMax[2] <= _yMax){
@@ -2071,28 +2071,28 @@ void nDEVM<valueType>::maskAnimConv3(nDEVM * mask,int endFrame,valueType _xMax,
             outputFile.write((char *) dcPtr,sizeof(double));
 
             mask->EVMTraslation(1,1); // - Desplazamiento en X
-            i++;
+//            i++;
             // - Los archivos de DC contienen un maximo de 5000 
-            if(i >= 10000){
-                outputFile.close();
-                dcFile++;
-                cout<<partName<<" ... DONE!!"<<endl;
-                // ***
-                partName = "..\\dcFiles\\Part"+to_string(dcPart)+"\\dcFile"+to_string(dcFile)+".dc";
-                outputFile.open( partName.c_str(),ios_base::out|ios_base::binary );
-                if ( ! outputFile.is_open() ){    
-                    cout << "El archivo: "+partName+" no se pudo abrir!!" << '\n';    
-                    return;
-                }
-                dcFiles<<partName<<'\n';
-                i = 0;
-            }
+//            if(i >= 10000){
+//                outputFile.close();
+//                dcFile++;
+//                cout<<partName<<" ... DONE!!"<<endl;
+//                // ***
+//                partName = "..\\dcFiles\\Part"+to_string(dcPart)+"\\dcFile"+to_string(dcFile)+".dc";
+//                outputFile.open( partName.c_str(),ios_base::out|ios_base::binary );
+//                if ( ! outputFile.is_open() ){    
+//                    cout << "El archivo: "+partName+" no se pudo abrir!!" << '\n';    
+//                    return;
+//                }
+////                dcFiles<<partName<<'\n';
+//                i = 0;
+//            }
         }
         mask->maskDimReset(1);
         mask->EVMTraslation(2,1); // - Desplazamiento en Y
     }
     outputFile.close();
-    dcFiles.close();
+//    dcFiles.close();
     mask->maskDimReset(1);
     mask->maskDimReset(2);
 
